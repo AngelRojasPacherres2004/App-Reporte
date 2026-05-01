@@ -107,7 +107,7 @@
                         android:clickable="true"
                         android:focusable="true"
                         app:cardBackgroundColor="@color/primary"
-                        app:cardCornerRadius="12dp"
+                        app:cardCornerRadius="16dp"
                         app:strokeWidth="0dp">
 
                         <LinearLayout
@@ -115,12 +115,12 @@
                             android:layout_height="wrap_content"
                             android:gravity="center"
                             android:orientation="vertical"
-                            android:padding="12dp">
+                            android:padding="16dp">
 
                             <ImageView
                                 android:id="@+id/ivAdminIcon"
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
                                 android:contentDescription="@null"
                                 android:src="@android:drawable/ic_lock_lock"
                                 app:tint="@color/on_primary" />
@@ -129,15 +129,15 @@
                                 android:id="@+id/tvAdminText"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
+                                android:layout_marginTop="8dp"
                                 android:text="@string/admin"
                                 android:textColor="@color/on_primary"
-                                android:textSize="11sp"
+                                android:textSize="14sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
 
-                    <!-- User Profile (Merged Teacher and Parent) -->
+                    <!-- User Profile -->
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/cardUser"
                         android:layout_width="0dp"
@@ -147,7 +147,7 @@
                         android:clickable="true"
                         android:focusable="true"
                         app:cardBackgroundColor="@color/profile_unselected"
-                        app:cardCornerRadius="12dp"
+                        app:cardCornerRadius="16dp"
                         app:strokeWidth="0dp">
 
                         <LinearLayout
@@ -155,12 +155,12 @@
                             android:layout_height="wrap_content"
                             android:gravity="center"
                             android:orientation="vertical"
-                            android:padding="12dp">
+                            android:padding="16dp">
 
                             <ImageView
                                 android:id="@+id/ivUserIcon"
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
                                 android:contentDescription="@null"
                                 android:src="@android:drawable/ic_menu_myplaces"
                                 app:tint="@color/on_surface" />
@@ -169,10 +169,10 @@
                                 android:id="@+id/tvUserText"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
-                                android:text="@string/user"
+                                android:layout_marginTop="8dp"
+                                android:text="Usuario"
                                 android:textColor="@color/on_surface"
-                                android:textSize="11sp"
+                                android:textSize="14sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>

@@ -9,7 +9,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     companion object {
         private const val DATABASE_NAME = "AppReporte.db"
-        private const val DATABASE_VERSION = 1
+        private const val DATABASE_VERSION = 2
         private const val TABLE_USERS = "users"
         private const val COLUMN_ID = "id"
         private const val COLUMN_EMAIL = "email"
@@ -58,14 +58,26 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         return role
     }
 
-    fun checkUser(email: String, pass: String, rol: String): Boolean {
+    fun getAllUsers(): List<Triple<String, String, String>> {
+        val userList = mutableListOf<Triple<String, String, String>>()
         val db = this.readableDatabase
-        val columns = arrayOf(COLUMN_ID)
-        val selection = "$COLUMN_EMAIL = ? AND $COLUMN_PASSWORD = ? AND $COLUMN_ROL = ?"
-        val selectionArgs = arrayOf(email, pass, rol)
-        val cursor = db.query(TABLE_USERS, columns, selection, selectionArgs, null, null, null)
-        val count = cursor.count
+        val cursor = db.rawQuery("SELECT $COLUMN_EMAIL, $COLUMN_PASSWORD, $COLUMN_ROL FROM $TABLE_USERS", null)
+        if (cursor.moveToFirst()) {
+            do {
+                userList.add(Triple(cursor.getString(0), cursor.getString(1), cursor.getString(2)))
+            } while (cursor.moveToNext())
+        }
         cursor.close()
-        return count > 0
+        return userList
+    }
+
+    fun addUser(email: String, pass: String, rol: String): Boolean {
+        val db = this.writableDatabase
+        val values = ContentValues()
+        values.put(COLUMN_EMAIL, email)
+        values.put(COLUMN_PASSWORD, pass)
+        values.put(COLUMN_ROL, rol)
+        val result = db.insert(TABLE_USERS, null, values)
+        return result != -1L
     }
 }

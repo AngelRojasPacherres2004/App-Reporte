@@ -34,6 +34,17 @@
         <activity
             android:name=".DocenteDashboardActivity"
             android:exported="false" />
+        <activity
+            android:name=".ForoSalonesActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ForoDetalleActivity"
+            android:exported="false" />
+        <activity
+            android:name=".PostDetalleActivity"
+            android:exported="false"
+            android:label="Comentarios"
+            android:theme="@style/Theme.AppReporte" />
     </application>
 
 </manifest>
