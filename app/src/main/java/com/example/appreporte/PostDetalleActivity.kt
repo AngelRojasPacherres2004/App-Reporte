@@ -18,21 +18,28 @@ class PostDetalleActivity : AppCompatActivity() {
     private lateinit var binding: ActivityPostDetalleBinding
     private val comments = mutableListOf<Comment>()
     private lateinit var adapter: CommentAdapter
+    private lateinit var dbHelper: DatabaseHelper
+    private var postId: Int = -1
+    private var userEmail: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityPostDetalleBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        dbHelper = DatabaseHelper(this)
+
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         binding.toolbar.setNavigationOnClickListener { finish() }
 
         // Obtener datos del post desde el Intent
+        postId = intent.getIntExtra("POST_ID", -1)
         val author = intent.getStringExtra("POST_AUTHOR") ?: "Autor"
         val title = intent.getStringExtra("POST_TITLE") ?: "Título"
         val content = intent.getStringExtra("POST_CONTENT") ?: "Contenido"
         val time = intent.getStringExtra("POST_TIME") ?: "HACE MOMENTOS"
+        userEmail = intent.getStringExtra("USER_EMAIL") ?: "Usuario"
 
         // Mostrar datos del post en la vista incluida
         binding.includedPost.tvAuthorName.text = author
@@ -42,14 +49,22 @@ class PostDetalleActivity : AppCompatActivity() {
         binding.includedPost.tvCommentsCount.visibility = View.GONE // No necesitamos mostrar el conteo aquí
 
         setupRecyclerView()
+        loadComments()
         setupCommentInput()
     }
 
-    private fun setupRecyclerView() {
-        // Datos de prueba
-        comments.add(Comment("Carlos Ruiz", "Espero que así sea, también tengo esa duda.", "HACE 5 MIN"))
-        comments.add(Comment("Ana Belén", "El docente dijo que sí en la última clase.", "HACE 2 MIN"))
+    private fun loadComments() {
+        comments.clear()
+        if (postId != -1) {
+            val dbComments = dbHelper.getCommentsByPost(postId)
+            for (c in dbComments) {
+                comments.add(Comment(c.first, c.second, c.third))
+            }
+        }
+        adapter.notifyDataSetChanged()
+    }
 
+    private fun setupRecyclerView() {
         adapter = CommentAdapter(comments)
         binding.rvComments.layoutManager = LinearLayoutManager(this)
         binding.rvComments.adapter = adapter
@@ -58,12 +73,15 @@ class PostDetalleActivity : AppCompatActivity() {
     private fun setupCommentInput() {
         binding.btnSendComment.setOnClickListener {
             val text = binding.etComment.text?.toString() ?: ""
-            if (text.isNotEmpty()) {
-                comments.add(Comment("Usuario Actual", text, "AHORA"))
-                adapter.notifyItemInserted(comments.size - 1)
-                binding.rvComments.scrollToPosition(comments.size - 1)
-                binding.etComment.text?.clear()
-                Toast.makeText(this, "Comentario enviado", Toast.LENGTH_SHORT).show()
+            if (text.isNotEmpty() && postId != -1) {
+                val time = "AHORA"
+                if (dbHelper.addComment(postId, userEmail, text, time)) {
+                    comments.add(Comment(userEmail, text, time))
+                    adapter.notifyItemInserted(comments.size - 1)
+                    binding.rvComments.scrollToPosition(comments.size - 1)
+                    binding.etComment.text?.clear()
+                    Toast.makeText(this, "Comentario enviado", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }

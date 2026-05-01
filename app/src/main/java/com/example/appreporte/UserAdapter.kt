@@ -6,8 +6,10 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-class UserAdapter(private var users: List<Triple<String, String, String>>) :
-    RecyclerView.Adapter<UserAdapter.UserViewHolder>() {
+class UserAdapter(
+    private var users: List<Triple<String, String, String>>,
+    private val onUserClick: (String) -> Unit
+) : RecyclerView.Adapter<UserAdapter.UserViewHolder>() {
 
     class UserViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvEmail: TextView = view.findViewById(R.id.tvUserEmail)
@@ -23,6 +25,10 @@ class UserAdapter(private var users: List<Triple<String, String, String>>) :
         val user = users[position]
         holder.tvEmail.text = user.first
         holder.tvRole.text = "Rol: ${user.third}"
+        
+        holder.itemView.setOnClickListener {
+            onUserClick(user.first)
+        }
     }
 
     override fun getItemCount() = users.size

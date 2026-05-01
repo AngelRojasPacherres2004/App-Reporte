@@ -22,15 +22,18 @@ class DocenteDashboardActivity : AppCompatActivity() {
     }
 
     private fun setupClickListeners() {
+        val userEmail = intent.getStringExtra("USER_EMAIL")
         // Lógica para el botón "CREAR PUBLICACIÓN" de la tarjeta azul
         binding.root.findViewById<android.view.View>(R.id.btnCreatePost)?.setOnClickListener {
             val intent = Intent(this, ForoSalonesActivity::class.java)
             intent.putExtra("USER_ROL", userRole)
+            intent.putExtra("USER_EMAIL", userEmail)
             startActivity(intent)
         }
     }
 
     private fun setupBottomNavigation() {
+        val userEmail = intent.getStringExtra("USER_EMAIL")
         binding.bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_inicio -> true
@@ -38,6 +41,7 @@ class DocenteDashboardActivity : AppCompatActivity() {
                 R.id.nav_foro -> {
                     val intent = Intent(this, ForoSalonesActivity::class.java)
                     intent.putExtra("USER_ROL", userRole)
+                    intent.putExtra("USER_EMAIL", userEmail)
                     startActivity(intent)
                     true
                 }

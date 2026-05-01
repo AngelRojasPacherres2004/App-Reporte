@@ -34,9 +34,7 @@ class MainActivity : AppCompatActivity() {
 
             val userRole = dbHelper.checkUser(email, password)
             if (userRole != null) {
-                // Navegación automática: El sistema detecta el rol real (admin, docente o usuario)
-                // y redirige a la pantalla adecuada sin importar el perfil seleccionado visualmente.
-                navigateToSplash(userRole)
+                navigateToSplash(userRole, email)
             } else {
                 binding.tvErrorMessage.visibility = View.VISIBLE
                 binding.tilPassword.error = " "
@@ -86,9 +84,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun navigateToSplash(role: String) {
+    private fun navigateToSplash(role: String, email: String) {
         val intent = Intent(this, LoadingActivity::class.java)
         intent.putExtra("USER_ROL", role)
+        intent.putExtra("USER_EMAIL", email)
         startActivity(intent)
         finish()
     }

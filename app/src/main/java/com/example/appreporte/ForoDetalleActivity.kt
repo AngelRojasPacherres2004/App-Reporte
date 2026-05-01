@@ -12,7 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.appreporte.databinding.ActivityForoDetalleBinding
 
-data class Post(val author: String, val title: String, val content: String, val time: String)
+data class Post(val id: Int, val author: String, val title: String, val content: String, val time: String)
 
 class ForoDetalleActivity : AppCompatActivity() {
 
@@ -20,14 +20,19 @@ class ForoDetalleActivity : AppCompatActivity() {
     private val posts = mutableListOf<Post>()
     private lateinit var adapter: PostAdapter
     private var userRole: String = "usuario"
+    private var userEmail: String = ""
+    private var salonName: String = ""
+    private lateinit var dbHelper: DatabaseHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityForoDetalleBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        val salonName = intent.getStringExtra("SALON_NAME") ?: "Foro"
+        dbHelper = DatabaseHelper(this)
+        salonName = intent.getStringExtra("SALON_NAME") ?: "Foro"
         userRole = intent.getStringExtra("USER_ROL") ?: "usuario"
+        userEmail = intent.getStringExtra("USER_EMAIL") ?: ""
         
         binding.toolbar.title = salonName
         setSupportActionBar(binding.toolbar)
@@ -35,8 +40,18 @@ class ForoDetalleActivity : AppCompatActivity() {
         binding.toolbar.setNavigationOnClickListener { finish() }
 
         setupRecyclerView()
+        loadPosts()
         setupPublish()
         setupBottomNavigation()
+    }
+
+    private fun loadPosts() {
+        posts.clear()
+        val dbPosts = dbHelper.getPostsBySalon(salonName)
+        for (p in dbPosts) {
+            posts.add(Post(p.first, p.second.first, p.second.second, p.second.third, p.third))
+        }
+        adapter.notifyDataSetChanged()
     }
 
     private fun setupBottomNavigation() {
@@ -65,10 +80,7 @@ class ForoDetalleActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerView() {
-        posts.add(Post("Elena Rodríguez", "Consulta sobre Examen", "¿Podrían confirmarme si el examen de matemáticas se mantiene?", "HACE 12 MIN"))
-        posts.add(Post("Marcos Silva", "Agradecimiento", "Muchas gracias por la información compartida.", "AYER"))
-
-        adapter = PostAdapter(posts)
+        adapter = PostAdapter(posts, userEmail)
         binding.rvPosts.layoutManager = LinearLayoutManager(this)
         binding.rvPosts.adapter = adapter
     }
@@ -88,17 +100,22 @@ class ForoDetalleActivity : AppCompatActivity() {
             binding.btnPublish.setOnClickListener {
                 val content = binding.etPostContent.text?.toString() ?: ""
                 if (content.isNotEmpty()) {
-                    posts.add(0, Post("Padre de Familia", "Comentario", content, "AHORA"))
-                    adapter.notifyItemInserted(0)
-                    binding.rvPosts.scrollToPosition(0)
-                    binding.etPostContent.text?.clear()
+                    val time = "AHORA"
+                    val author = userEmail
+                    val title = "Comentario"
+                    val id = dbHelper.addPost(salonName, author, title, content, time).toInt()
+                    if (id != -1) {
+                        posts.add(0, Post(id, author, title, content, time))
+                        adapter.notifyItemInserted(0)
+                        binding.rvPosts.scrollToPosition(0)
+                        binding.etPostContent.text?.clear()
+                    }
                 }
             }
         }
     }
 
     private fun showCreatePostDialog() {
-        // Usar un ContextThemeWrapper para asegurar que los componentes de Material tengan el tema correcto
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_create_post, null)
         val etTitle = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etDialogTitle)
         val etDesc = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etDialogDesc)
@@ -110,10 +127,15 @@ class ForoDetalleActivity : AppCompatActivity() {
                 val title = etTitle.text?.toString() ?: ""
                 val desc = etDesc.text?.toString() ?: ""
                 if (title.isNotEmpty() && desc.isNotEmpty()) {
-                    posts.add(0, Post("Docente", title, desc, "AHORA"))
-                    adapter.notifyItemInserted(0)
-                    binding.rvPosts.scrollToPosition(0)
-                    Toast.makeText(this, "Publicado con éxito", Toast.LENGTH_SHORT).show()
+                    val time = "AHORA"
+                    val author = userEmail
+                    val id = dbHelper.addPost(salonName, author, title, desc, time).toInt()
+                    if (id != -1) {
+                        posts.add(0, Post(id, author, title, desc, time))
+                        adapter.notifyItemInserted(0)
+                        binding.rvPosts.scrollToPosition(0)
+                        Toast.makeText(this, "Publicado con éxito", Toast.LENGTH_SHORT).show()
+                    }
                 } else {
                     Toast.makeText(this, "Por favor complete todos los campos", Toast.LENGTH_SHORT).show()
                 }
@@ -122,7 +144,7 @@ class ForoDetalleActivity : AppCompatActivity() {
             .show()
     }
 
-    class PostAdapter(private val posts: List<Post>) : RecyclerView.Adapter<PostAdapter.ViewHolder>() {
+    class PostAdapter(private val posts: List<Post>, private val userEmail: String) : RecyclerView.Adapter<PostAdapter.ViewHolder>() {
         class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
             val tvAuthor: TextView = view.findViewById(R.id.tvAuthorName)
             val tvTitle: TextView = view.findViewById(R.id.tvTitle)
@@ -145,10 +167,12 @@ class ForoDetalleActivity : AppCompatActivity() {
             holder.itemView.setOnClickListener {
                 val context = holder.itemView.context
                 val intent = android.content.Intent(context, PostDetalleActivity::class.java).apply {
+                    putExtra("POST_ID", post.id)
                     putExtra("POST_AUTHOR", post.author)
                     putExtra("POST_TITLE", post.title)
                     putExtra("POST_CONTENT", post.content)
                     putExtra("POST_TIME", post.time)
+                    putExtra("USER_EMAIL", userEmail)
                 }
                 context.startActivity(intent)
             }

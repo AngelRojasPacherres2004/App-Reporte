@@ -17,6 +17,7 @@ class AdminDashboardActivity : AppCompatActivity() {
     private lateinit var binding: ActivityDashboardAdminBinding
     private lateinit var dbHelper: DatabaseHelper
     private lateinit var userAdapter: UserAdapter
+    private lateinit var classroomAdapter: ClassroomAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,28 +26,111 @@ class AdminDashboardActivity : AppCompatActivity() {
 
         dbHelper = DatabaseHelper(this)
         
-        setupRecyclerView()
+        setupRecyclerViews()
         setupBottomNavigation()
         setupClickListeners()
     }
 
-    private fun setupRecyclerView() {
-        userAdapter = UserAdapter(dbHelper.getAllUsers())
+    private fun setupRecyclerViews() {
+        // Setup User Adapter
+        userAdapter = UserAdapter(dbHelper.getAllUsers()) { userEmail ->
+            showAssignClassroomDialog(userEmail)
+        }
         binding.rvUsers.layoutManager = LinearLayoutManager(this)
         binding.rvUsers.adapter = userAdapter
+
+        // Setup Classroom Adapter
+        classroomAdapter = ClassroomAdapter(dbHelper.getAllClassrooms()) { classroomId ->
+            if (dbHelper.deleteClassroom(classroomId)) {
+                Toast.makeText(this, "Salón eliminado", Toast.LENGTH_SHORT).show()
+                classroomAdapter.updateClassrooms(dbHelper.getAllClassrooms())
+            }
+        }
+        binding.rvClassrooms.layoutManager = LinearLayoutManager(this)
+        binding.rvClassrooms.adapter = classroomAdapter
     }
 
     private fun setupClickListeners() {
         binding.btnManageUsers.setOnClickListener {
-            // Mostrar la lista y el FAB, ocultar el botón de gestión
             binding.llUserListContainer.visibility = View.VISIBLE
+            binding.llClassroomListContainer.visibility = View.GONE
             binding.fabAddUser.visibility = View.VISIBLE
             binding.btnManageUsers.visibility = View.GONE
+            binding.btnManageClassrooms.visibility = View.VISIBLE
+        }
+
+        binding.btnManageClassrooms.setOnClickListener {
+            binding.llClassroomListContainer.visibility = View.VISIBLE
+            binding.llUserListContainer.visibility = View.GONE
+            binding.fabAddUser.visibility = View.GONE
+            binding.btnManageUsers.visibility = View.VISIBLE
+            binding.btnManageClassrooms.visibility = View.GONE
+            
+            showAddClassroomFab()
         }
 
         binding.fabAddUser.setOnClickListener {
-            showAddUserDialog()
+            if (binding.llUserListContainer.visibility == View.VISIBLE) {
+                showAddUserDialog()
+            } else {
+                showAddClassroomDialog()
+            }
         }
+    }
+
+    private fun showAddClassroomFab() {
+        binding.fabAddUser.visibility = View.VISIBLE
+        // Podríamos cambiar el icono del FAB aquí si quisiéramos
+    }
+
+    private fun showAddClassroomDialog() {
+        val input = TextInputEditText(this)
+        input.hint = "Nombre del salón"
+        val container = android.widget.FrameLayout(this)
+        val params = android.widget.FrameLayout.LayoutParams(
+            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+        params.setMargins(48, 16, 48, 16)
+        input.layoutParams = params
+        container.addView(input)
+
+        AlertDialog.Builder(this)
+            .setTitle("Nuevo Salón")
+            .setView(container)
+            .setPositiveButton("Añadir") { _, _ ->
+                val name = input.text.toString()
+                if (name.isNotEmpty()) {
+                    if (dbHelper.addClassroom(name)) {
+                        Toast.makeText(this, "Salón añadido", Toast.LENGTH_SHORT).show()
+                        classroomAdapter.updateClassrooms(dbHelper.getAllClassrooms())
+                    }
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun showAssignClassroomDialog(userEmail: String) {
+        val classrooms = dbHelper.getAllClassrooms()
+        val names = classrooms.map { it.second }.toTypedArray()
+        val assignedIds = dbHelper.getUserClassrooms(userEmail)
+        val checkedItems = BooleanArray(names.size) { index ->
+            assignedIds.contains(classrooms[index].first)
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("Asignar Salones a $userEmail")
+            .setMultiChoiceItems(names, checkedItems) { _, which, isChecked ->
+                val classroomId = classrooms[which].first
+                if (isChecked) {
+                    dbHelper.assignUserToClassroom(userEmail, classroomId)
+                } else {
+                    dbHelper.removeUserFromClassroom(userEmail, classroomId)
+                }
+            }
+            .setPositiveButton("Cerrar", null)
+            .show()
     }
 
     private fun showAddUserDialog() {

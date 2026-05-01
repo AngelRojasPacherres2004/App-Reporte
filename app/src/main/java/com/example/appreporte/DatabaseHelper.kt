@@ -9,31 +9,176 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     companion object {
         private const val DATABASE_NAME = "AppReporte.db"
-        private const val DATABASE_VERSION = 2
+        private const val DATABASE_VERSION = 4 // Incremented version
         private const val TABLE_USERS = "users"
         private const val COLUMN_ID = "id"
         private const val COLUMN_EMAIL = "email"
         private const val COLUMN_PASSWORD = "password"
         private const val COLUMN_ROL = "rol"
+
+        private const val TABLE_CLASSROOMS = "classrooms"
+        private const val COLUMN_CLASSROOM_ID = "id"
+        private const val COLUMN_CLASSROOM_NAME = "name"
+
+        private const val TABLE_USER_CLASSROOMS = "user_classrooms"
+        private const val COLUMN_UC_USER_EMAIL = "user_email"
+        private const val COLUMN_UC_CLASSROOM_ID = "classroom_id"
+
+        // Forum Tables
+        private const val TABLE_POSTS = "posts"
+        private const val COLUMN_POST_ID = "id"
+        private const val COLUMN_POST_SALON = "salon_name"
+        private const val COLUMN_POST_AUTHOR = "author"
+        private const val COLUMN_POST_TITLE = "title"
+        private const val COLUMN_POST_CONTENT = "content"
+        private const val COLUMN_POST_TIME = "time"
+
+        private const val TABLE_COMMENTS = "comments"
+        private const val COLUMN_COMMENT_ID = "id"
+        private const val COLUMN_COMMENT_POST_ID = "post_id"
+        private const val COLUMN_COMMENT_AUTHOR = "author"
+        private const val COLUMN_COMMENT_CONTENT = "content"
+        private const val COLUMN_COMMENT_TIME = "time"
     }
 
     override fun onCreate(db: SQLiteDatabase) {
-        val createTable = ("CREATE TABLE " + TABLE_USERS + "("
+        val createUsersTable = ("CREATE TABLE " + TABLE_USERS + "("
                 + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
-                + COLUMN_EMAIL + " TEXT,"
+                + COLUMN_EMAIL + " TEXT UNIQUE,"
                 + COLUMN_PASSWORD + " TEXT,"
                 + COLUMN_ROL + " TEXT" + ")")
-        db.execSQL(createTable)
+        db.execSQL(createUsersTable)
+
+        val createClassroomsTable = ("CREATE TABLE " + TABLE_CLASSROOMS + "("
+                + COLUMN_CLASSROOM_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + COLUMN_CLASSROOM_NAME + " TEXT UNIQUE" + ")")
+        db.execSQL(createClassroomsTable)
+
+        val createUserClassroomsTable = ("CREATE TABLE " + TABLE_USER_CLASSROOMS + "("
+                + COLUMN_UC_USER_EMAIL + " TEXT,"
+                + COLUMN_UC_CLASSROOM_ID + " INTEGER,"
+                + "PRIMARY KEY ($COLUMN_UC_USER_EMAIL, $COLUMN_UC_CLASSROOM_ID),"
+                + "FOREIGN KEY($COLUMN_UC_USER_EMAIL) REFERENCES $TABLE_USERS($COLUMN_EMAIL),"
+                + "FOREIGN KEY($COLUMN_UC_CLASSROOM_ID) REFERENCES $TABLE_CLASSROOMS($COLUMN_CLASSROOM_ID))")
+        db.execSQL(createUserClassroomsTable)
+
+        val createPostsTable = ("CREATE TABLE " + TABLE_POSTS + "("
+                + COLUMN_POST_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + COLUMN_POST_SALON + " TEXT,"
+                + COLUMN_POST_AUTHOR + " TEXT,"
+                + COLUMN_POST_TITLE + " TEXT,"
+                + COLUMN_POST_CONTENT + " TEXT,"
+                + COLUMN_POST_TIME + " TEXT" + ")")
+        db.execSQL(createPostsTable)
+
+        val createCommentsTable = ("CREATE TABLE " + TABLE_COMMENTS + "("
+                + COLUMN_COMMENT_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + COLUMN_COMMENT_POST_ID + " INTEGER,"
+                + COLUMN_COMMENT_AUTHOR + " TEXT,"
+                + COLUMN_COMMENT_CONTENT + " TEXT,"
+                + COLUMN_COMMENT_TIME + " TEXT,"
+                + "FOREIGN KEY($COLUMN_COMMENT_POST_ID) REFERENCES $TABLE_POSTS($COLUMN_POST_ID))")
+        db.execSQL(createCommentsTable)
 
         // Insertar usuarios iniciales
         insertUser(db, "admin@reporte.com", "admin123", "admin")
         insertUser(db, "user@reporte.com", "user123", "usuario")
         insertUser(db, "docente@reporte.com", "docente123", "docente")
+
+        // Insertar salones iniciales
+        insertClassroom(db, "Sala de 3 años")
+        insertClassroom(db, "Sala de 4 años")
+        insertClassroom(db, "Sala de 5 años")
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_COMMENTS")
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_POSTS")
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_USER_CLASSROOMS")
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_CLASSROOMS")
         db.execSQL("DROP TABLE IF EXISTS $TABLE_USERS")
         onCreate(db)
+    }
+
+    private fun insertClassroom(db: SQLiteDatabase, name: String) {
+        val values = ContentValues()
+        values.put(COLUMN_CLASSROOM_NAME, name)
+        db.insert(TABLE_CLASSROOMS, null, values)
+    }
+
+    fun getAllClassrooms(): List<Pair<Int, String>> {
+        val list = mutableListOf<Pair<Int, String>>()
+        val db = this.readableDatabase
+        val cursor = db.rawQuery("SELECT $COLUMN_CLASSROOM_ID, $COLUMN_CLASSROOM_NAME FROM $TABLE_CLASSROOMS", null)
+        if (cursor.moveToFirst()) {
+            do {
+                list.add(Pair(cursor.getInt(0), cursor.getString(1)))
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        return list
+    }
+
+    fun addClassroom(name: String): Boolean {
+        val db = this.writableDatabase
+        val values = ContentValues()
+        values.put(COLUMN_CLASSROOM_NAME, name)
+        val result = db.insert(TABLE_CLASSROOMS, null, values)
+        return result != -1L
+    }
+
+    fun deleteClassroom(id: Int): Boolean {
+        val db = this.writableDatabase
+        db.delete(TABLE_USER_CLASSROOMS, "$COLUMN_UC_CLASSROOM_ID = ?", arrayOf(id.toString()))
+        val result = db.delete(TABLE_CLASSROOMS, "$COLUMN_CLASSROOM_ID = ?", arrayOf(id.toString()))
+        return result > 0
+    }
+
+    fun assignUserToClassroom(email: String, classroomId: Int): Boolean {
+        val db = this.writableDatabase
+        val values = ContentValues()
+        values.put(COLUMN_UC_USER_EMAIL, email)
+        values.put(COLUMN_UC_CLASSROOM_ID, classroomId)
+        val result = db.insertWithOnConflict(TABLE_USER_CLASSROOMS, null, values, SQLiteDatabase.CONFLICT_IGNORE)
+        return result != -1L
+    }
+
+    fun removeUserFromClassroom(email: String, classroomId: Int): Boolean {
+        val db = this.writableDatabase
+        val result = db.delete(TABLE_USER_CLASSROOMS, "$COLUMN_UC_USER_EMAIL = ? AND $COLUMN_UC_CLASSROOM_ID = ?", arrayOf(email, classroomId.toString()))
+        return result > 0
+    }
+
+    fun getUserClassrooms(email: String): List<Int> {
+        val list = mutableListOf<Int>()
+        val db = this.readableDatabase
+        val cursor = db.rawQuery("SELECT $COLUMN_UC_CLASSROOM_ID FROM $TABLE_USER_CLASSROOMS WHERE $COLUMN_UC_USER_EMAIL = ?", arrayOf(email))
+        if (cursor.moveToFirst()) {
+            do {
+                list.add(cursor.getInt(0))
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        return list
+    }
+
+    fun getUserClassroomsWithNames(email: String): List<Pair<Int, String>> {
+        val list = mutableListOf<Pair<Int, String>>()
+        val db = this.readableDatabase
+        val query = """
+            SELECT c.$COLUMN_CLASSROOM_ID, c.$COLUMN_CLASSROOM_NAME 
+            FROM $TABLE_CLASSROOMS c
+            JOIN $TABLE_USER_CLASSROOMS uc ON c.$COLUMN_CLASSROOM_ID = uc.$COLUMN_UC_CLASSROOM_ID
+            WHERE uc.$COLUMN_UC_USER_EMAIL = ?
+        """.trimIndent()
+        val cursor = db.rawQuery(query, arrayOf(email))
+        if (cursor.moveToFirst()) {
+            do {
+                list.add(Pair(cursor.getInt(0), cursor.getString(1)))
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        return list
     }
 
     private fun insertUser(db: SQLiteDatabase, email: String, pass: String, rol: String) {
@@ -79,5 +224,60 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         values.put(COLUMN_ROL, rol)
         val result = db.insert(TABLE_USERS, null, values)
         return result != -1L
+    }
+
+    // --- Forum Methods ---
+
+    fun addPost(salon: String, author: String, title: String, content: String, time: String): Long {
+        val db = this.writableDatabase
+        val values = ContentValues()
+        values.put(COLUMN_POST_SALON, salon)
+        values.put(COLUMN_POST_AUTHOR, author)
+        values.put(COLUMN_POST_TITLE, title)
+        values.put(COLUMN_POST_CONTENT, content)
+        values.put(COLUMN_POST_TIME, time)
+        return db.insert(TABLE_POSTS, null, values)
+    }
+
+    fun getPostsBySalon(salon: String): List<Triple<Int, Triple<String, String, String>, String>> {
+        val list = mutableListOf<Triple<Int, Triple<String, String, String>, String>>()
+        val db = this.readableDatabase
+        val cursor = db.rawQuery("SELECT * FROM $TABLE_POSTS WHERE $COLUMN_POST_SALON = ? ORDER BY $COLUMN_POST_ID DESC", arrayOf(salon))
+        if (cursor.moveToFirst()) {
+            do {
+                val id = cursor.getInt(0)
+                val author = cursor.getString(2)
+                val title = cursor.getString(3)
+                val content = cursor.getString(4)
+                val time = cursor.getString(5)
+                list.add(Triple(id, Triple(author, title, content), time))
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        return list
+    }
+
+    fun addComment(postId: Int, author: String, content: String, time: String): Boolean {
+        val db = this.writableDatabase
+        val values = ContentValues()
+        values.put(COLUMN_COMMENT_POST_ID, postId)
+        values.put(COLUMN_COMMENT_AUTHOR, author)
+        values.put(COLUMN_COMMENT_CONTENT, content)
+        values.put(COLUMN_COMMENT_TIME, time)
+        val result = db.insert(TABLE_COMMENTS, null, values)
+        return result != -1L
+    }
+
+    fun getCommentsByPost(postId: Int): List<Triple<String, String, String>> {
+        val list = mutableListOf<Triple<String, String, String>>()
+        val db = this.readableDatabase
+        val cursor = db.rawQuery("SELECT $COLUMN_COMMENT_AUTHOR, $COLUMN_COMMENT_CONTENT, $COLUMN_COMMENT_TIME FROM $TABLE_COMMENTS WHERE $COLUMN_COMMENT_POST_ID = ?", arrayOf(postId.toString()))
+        if (cursor.moveToFirst()) {
+            do {
+                list.add(Triple(cursor.getString(0), cursor.getString(1), cursor.getString(2)))
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        return list
     }
 }

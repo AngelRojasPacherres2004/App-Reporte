@@ -14,27 +14,36 @@ import com.example.appreporte.databinding.ActivityForoSalonesBinding
 class ForoSalonesActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityForoSalonesBinding
-
+    private lateinit var dbHelper: DatabaseHelper
     private var userRole: String = "usuario"
+    private var userEmail: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityForoSalonesBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        dbHelper = DatabaseHelper(this)
         userRole = intent.getStringExtra("USER_ROL") ?: "usuario"
+        userEmail = intent.getStringExtra("USER_EMAIL") ?: ""
 
         setupRecyclerView()
         setupBottomNavigation()
     }
 
     private fun setupRecyclerView() {
-        val salones = listOf("Salón 1A", "Salón 1B", "Salón 2A", "Salón 2B")
+        val salones = if (userRole == "admin") {
+            dbHelper.getAllClassrooms().map { it.second }
+        } else {
+            dbHelper.getUserClassroomsWithNames(userEmail).map { it.second }
+        }
+
         binding.rvSalones.layoutManager = LinearLayoutManager(this)
         binding.rvSalones.adapter = SalonesAdapter(salones) { salon ->
             val intent = Intent(this, ForoDetalleActivity::class.java)
             intent.putExtra("SALON_NAME", salon)
             intent.putExtra("USER_ROL", userRole)
+            intent.putExtra("USER_EMAIL", userEmail)
             startActivity(intent)
         }
     }
