@@ -84,6 +84,20 @@
                         android:textColor="@color/white"
                         android:textSize="14sp" />
 
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnViewForo"
+                        style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp"
+                        android:backgroundTint="@color/white"
+                        android:text="VER FORO DEL SALÓN"
+                        android:textAllCaps="false"
+                        android:textColor="@color/primary"
+                        app:cornerRadius="24dp"
+                        app:icon="@android:drawable/stat_notify_chat"
+                        app:iconTint="@color/primary" />
+
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -96,6 +110,6 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         app:backgroundTint="@color/white"
-        app:menu="@menu/bottom_nav_menu" />
+        app:menu="@menu/bottom_nav_menu_padre" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
