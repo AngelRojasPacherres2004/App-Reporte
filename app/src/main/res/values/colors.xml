@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">#005AC1</color>
+    <color name="primary_variant">#0B61CC</color>
+    <color name="on_primary">#FFFFFF</color>
+    <color name="background">#F8F9FE</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="on_surface">#44474E</color>
+    <color name="on_surface_variant">#44474E</color>
+    <color name="outline">#E0E2EC</color>
+    <color name="error">#BA1A1A</color>
+    <color name="error_container">#FFF8F8</color>
+    <color name="profile_unselected">#F1F3F9</color>
+    <color name="support_green">#00875A</color>
+    <color name="success_container">#E7F5ED</color>
+    <color name="card_blue_light">#F1F4FF</color>
+    <color name="card_purple_light">#F4F2FF</color>
+    <color name="card_orange_light">#FFF4ED</color>
+    <color name="priority_red">#E53935</color>
+    <color name="priority_red_light">#FFEBEE</color>
+    <color name="stable_green">#43A047</color>
+    <color name="stable_green_light">#E8F5E9</color>
+    <color name="forum_blue">#005AC1</color>
+
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+</resources>
