@@ -13,18 +13,18 @@
         android:layout_height="wrap_content"
         android:padding="24dp">
 
-        <!-- Header: Logo and Theme Toggle -->
+        <!-- Header: Logo, Título y Modo Nocturno -->
         <ImageView
             android:id="@+id/ivLogo"
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:contentDescription="@null"
-            android:src="@android:drawable/ic_menu_edit"
+            android:src="@drawable/logo_original"
             app:layout_constraintEnd_toStartOf="@+id/tvBrandName"
             app:layout_constraintHorizontal_chainStyle="packed"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:tint="@color/primary" />
+            app:layout_constraintBottom_toBottomOf="@+id/tvBrandName" />
 
         <TextView
             android:id="@+id/tvBrandName"
@@ -33,7 +33,7 @@
             android:layout_marginStart="8dp"
             android:text="@string/brand_name"
             android:textColor="@color/primary"
-            android:textSize="28sp"
+            android:textSize="30sp"
             android:textStyle="bold"
             app:layout_constraintBottom_toBottomOf="@+id/ivLogo"
             app:layout_constraintEnd_toStartOf="@+id/ivThemeToggle"
@@ -46,7 +46,7 @@
             android:layout_height="24dp"
             android:layout_marginStart="16dp"
             android:contentDescription="@null"
-            android:src="@android:drawable/ic_menu_day"
+            android:src="@drawable/ic_moon"
             app:layout_constraintBottom_toBottomOf="@+id/tvBrandName"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@+id/tvBrandName"
@@ -311,21 +311,6 @@
                         android:layout_weight="1"
                         android:background="@color/outline" />
                 </LinearLayout>
-
-                <!-- Google Button -->
-                <com.google.android.material.button.MaterialButton
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="56dp"
-                    android:layout_marginTop="16dp"
-                    android:text="@string/continue_with_google"
-                    android:textAllCaps="false"
-                    android:textColor="@color/on_surface"
-                    app:cornerRadius="28dp"
-                    app:icon="@android:drawable/ic_menu_search"
-                    app:iconGravity="textStart"
-                    app:iconTint="@android:color/holo_red_dark"
-                    app:strokeColor="@color/outline" />
 
                 <!-- Login Button -->
                 <com.google.android.material.button.MaterialButton

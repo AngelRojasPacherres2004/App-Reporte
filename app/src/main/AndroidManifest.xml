@@ -13,38 +13,52 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppReporte">
+
         <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <activity
             android:name=".LoadingActivity"
             android:exported="false" />
+
         <activity
             android:name=".PadreDashboardActivity"
             android:exported="false" />
+
         <activity
             android:name=".AdminDashboardActivity"
             android:exported="false" />
+
         <activity
             android:name=".DocenteDashboardActivity"
             android:exported="false" />
+
         <activity
             android:name=".ForoSalonesActivity"
             android:exported="false" />
+
         <activity
             android:name=".ForoDetalleActivity"
             android:exported="false" />
+
         <activity
             android:name=".PostDetalleActivity"
             android:exported="false"
             android:label="Comentarios"
             android:theme="@style/Theme.AppReporte" />
+
+        <!-- Pantalla del Chatbot con su nombre oficial -->
+        <activity
+            android:name=".ChatbotPadreActivity"
+            android:exported="false"
+            android:label="Asistente EduConnect" />
+
     </application>
 
 </manifest>
