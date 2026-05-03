@@ -23,8 +23,9 @@ class DocenteDashboardActivity : AppCompatActivity() {
 
     private fun setupClickListeners() {
         val userEmail = intent.getStringExtra("USER_EMAIL")
+        
         // Lógica para el botón "CREAR PUBLICACIÓN" de la tarjeta azul
-        binding.root.findViewById<android.view.View>(R.id.btnCreatePost)?.setOnClickListener {
+        binding.btnCreatePost.setOnClickListener {
             val intent = Intent(this, ForoSalonesActivity::class.java)
             intent.putExtra("USER_ROL", userRole)
             intent.putExtra("USER_EMAIL", userEmail)
@@ -45,7 +46,6 @@ class DocenteDashboardActivity : AppCompatActivity() {
                     startActivity(intent)
                     true
                 }
-                R.id.nav_asistente -> true
                 R.id.nav_perfil -> true
                 else -> false
             }

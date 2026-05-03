@@ -62,6 +62,7 @@
     <string name="welcome_teacher_desc_new">Aquí tienes un vistazo rápido a la actividad de la institución hoy. 5 asuntos pendientes requieren tu atención inmediata.</string>
     <string name="review_complaints">Revisar Quejas</string>
     <string name="system_config">Configuración del Sistema</string>
+    <string name="manage_students">Gestionar Alumnos</string>
     <string name="priority">Prioridad</string>
     <string name="pending_complaints">Quejas Pendientes</string>
     <string name="stable">Estable</string>

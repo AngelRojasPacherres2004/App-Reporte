@@ -13,10 +13,6 @@
         android:icon="@android:drawable/ic_menu_help"
         android:title="Foro" />
     <item
-        android:id="@+id/nav_asistente"
-        android:icon="@android:drawable/ic_menu_view"
-        android:title="Asistente" />
-    <item
         android:id="@+id/nav_perfil"
         android:icon="@android:drawable/ic_menu_myplaces"
         android:title="Perfil" />

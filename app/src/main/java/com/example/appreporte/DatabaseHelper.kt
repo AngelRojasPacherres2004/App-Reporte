@@ -9,7 +9,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     companion object {
         private const val DATABASE_NAME = "AppReporte.db"
-        private const val DATABASE_VERSION = 4 // Incremented version
+        private const val DATABASE_VERSION = 5 // Incremented version
         private const val TABLE_USERS = "users"
         private const val COLUMN_ID = "id"
         private const val COLUMN_EMAIL = "email"
@@ -23,6 +23,12 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         private const val TABLE_USER_CLASSROOMS = "user_classrooms"
         private const val COLUMN_UC_USER_EMAIL = "user_email"
         private const val COLUMN_UC_CLASSROOM_ID = "classroom_id"
+
+        private const val TABLE_STUDENTS = "students"
+        private const val COLUMN_STUDENT_ID = "id"
+        private const val COLUMN_STUDENT_NAME = "name"
+        private const val COLUMN_STUDENT_CLASSROOM_ID = "classroom_id"
+        private const val COLUMN_STUDENT_PARENT_EMAIL = "parent_email"
 
         // Forum Tables
         private const val TABLE_POSTS = "posts"
@@ -80,6 +86,15 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 + "FOREIGN KEY($COLUMN_COMMENT_POST_ID) REFERENCES $TABLE_POSTS($COLUMN_POST_ID))")
         db.execSQL(createCommentsTable)
 
+        val createStudentsTable = ("CREATE TABLE " + TABLE_STUDENTS + "("
+                + COLUMN_STUDENT_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + COLUMN_STUDENT_NAME + " TEXT,"
+                + COLUMN_STUDENT_CLASSROOM_ID + " INTEGER,"
+                + COLUMN_STUDENT_PARENT_EMAIL + " TEXT,"
+                + "FOREIGN KEY($COLUMN_STUDENT_CLASSROOM_ID) REFERENCES $TABLE_CLASSROOMS($COLUMN_CLASSROOM_ID),"
+                + "FOREIGN KEY($COLUMN_STUDENT_PARENT_EMAIL) REFERENCES $TABLE_USERS($COLUMN_EMAIL))")
+        db.execSQL(createStudentsTable)
+
         // Insertar usuarios iniciales
         insertUser(db, "admin@reporte.com", "admin123", "admin")
         insertUser(db, "user@reporte.com", "user123", "usuario")
@@ -89,6 +104,18 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         insertClassroom(db, "Sala de 3 años")
         insertClassroom(db, "Sala de 4 años")
         insertClassroom(db, "Sala de 5 años")
+
+        // Asignar salones al docente por defecto para pruebas
+        assignUserToClassroom(db, "docente@reporte.com", 1)
+        assignUserToClassroom(db, "docente@reporte.com", 2)
+        assignUserToClassroom(db, "docente@reporte.com", 3)
+    }
+
+    private fun assignUserToClassroom(db: SQLiteDatabase, email: String, classroomId: Int) {
+        val values = ContentValues()
+        values.put(COLUMN_UC_USER_EMAIL, email)
+        values.put(COLUMN_UC_CLASSROOM_ID, classroomId)
+        db.insertWithOnConflict(TABLE_USER_CLASSROOMS, null, values, SQLiteDatabase.CONFLICT_IGNORE)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
@@ -275,6 +302,50 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         if (cursor.moveToFirst()) {
             do {
                 list.add(Triple(cursor.getString(0), cursor.getString(1), cursor.getString(2)))
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        return list
+    }
+
+    // --- Student Methods ---
+
+    fun addStudent(name: String, classroomId: Int, parentEmail: String): Boolean {
+        val db = this.writableDatabase
+        val values = ContentValues()
+        values.put(COLUMN_STUDENT_NAME, name)
+        values.put(COLUMN_STUDENT_CLASSROOM_ID, classroomId)
+        values.put(COLUMN_STUDENT_PARENT_EMAIL, parentEmail)
+        val result = db.insert(TABLE_STUDENTS, null, values)
+        return result != -1L
+    }
+
+    fun getStudentsByClassroom(classroomId: Int): List<Triple<Int, String, String>> {
+        val list = mutableListOf<Triple<Int, String, String>>()
+        val db = this.readableDatabase
+        val cursor = db.rawQuery("SELECT $COLUMN_STUDENT_ID, $COLUMN_STUDENT_NAME, $COLUMN_STUDENT_PARENT_EMAIL FROM $TABLE_STUDENTS WHERE $COLUMN_STUDENT_CLASSROOM_ID = ?", arrayOf(classroomId.toString()))
+        if (cursor.moveToFirst()) {
+            do {
+                list.add(Triple(cursor.getInt(0), cursor.getString(1), cursor.getString(2)))
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        return list
+    }
+
+    fun deleteStudent(id: Int): Boolean {
+        val db = this.writableDatabase
+        val result = db.delete(TABLE_STUDENTS, "$COLUMN_STUDENT_ID = ?", arrayOf(id.toString()))
+        return result > 0
+    }
+
+    fun getParents(): List<String> {
+        val list = mutableListOf<String>()
+        val db = this.readableDatabase
+        val cursor = db.rawQuery("SELECT $COLUMN_EMAIL FROM $TABLE_USERS WHERE $COLUMN_ROL = 'usuario'", null)
+        if (cursor.moveToFirst()) {
+            do {
+                list.add(cursor.getString(0))
             } while (cursor.moveToNext())
         }
         cursor.close()

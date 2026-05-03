@@ -45,6 +45,10 @@
             android:exported="false"
             android:label="Comentarios"
             android:theme="@style/Theme.AppReporte" />
+        <activity
+            android:name=".GestionAlumnosActivity"
+            android:exported="false"
+            android:label="Gestión de Alumnos" />
     </application>
 
 </manifest>

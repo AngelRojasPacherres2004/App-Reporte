@@ -69,6 +69,12 @@ class AdminDashboardActivity : AppCompatActivity() {
             showAddClassroomFab()
         }
 
+        binding.btnManageStudents.setOnClickListener {
+            val intent = android.content.Intent(this, GestionAlumnosActivity::class.java)
+            // Para el admin no pasamos email o pasamos null para que vea todos los salones
+            startActivity(intent)
+        }
+
         binding.fabAddUser.setOnClickListener {
             if (binding.llUserListContainer.visibility == View.VISIBLE) {
                 showAddUserDialog()
@@ -169,10 +175,25 @@ class AdminDashboardActivity : AppCompatActivity() {
     private fun setupBottomNavigation() {
         binding.bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
-                R.id.nav_inicio -> true
-                R.id.nav_reportes -> true
+                R.id.nav_inicio -> {
+                    // Volver al estado inicial si es necesario
+                    binding.llUserListContainer.visibility = View.GONE
+                    binding.llClassroomListContainer.visibility = View.GONE
+                    binding.btnManageUsers.visibility = View.VISIBLE
+                    binding.btnManageClassrooms.visibility = View.VISIBLE
+                    binding.fabAddUser.visibility = View.GONE
+                    true
+                }
+                R.id.nav_gestion -> {
+                    binding.btnManageUsers.performClick()
+                    true
+                }
                 R.id.nav_foro -> true
-                R.id.nav_asistente -> true
+                R.id.nav_alumnos -> {
+                    val intent = android.content.Intent(this, GestionAlumnosActivity::class.java)
+                    startActivity(intent)
+                    true
+                }
                 R.id.nav_perfil -> true
                 else -> false
             }
