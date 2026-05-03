@@ -16,26 +16,29 @@
             android:layout_height="wrap_content"
             android:padding="16dp">
 
-            <com.google.android.material.imageview.ShapeableImageView
-                android:id="@+id/ivAdminProfile"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:src="@android:drawable/ic_menu_myplaces"
+            <!-- 1. Logo de la App a la izquierda -->
+            <ImageView
+                android:id="@+id/ivLogoHeader"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@drawable/logo_original"
+                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
+                app:layout_constraintTop_toTopOf="parent" />
 
+            <!-- Títulos apilados: EduConnect y Admin -->
             <LinearLayout
-                android:id="@+id/llAdminInfo"
+                android:id="@+id/llHeaderTitles"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="12dp"
                 android:orientation="vertical"
-                app:layout_constraintBottom_toBottomOf="@id/ivAdminProfile"
-                app:layout_constraintStart_toEndOf="@id/ivAdminProfile"
-                app:layout_constraintTop_toTopOf="@id/ivAdminProfile">
+                app:layout_constraintBottom_toBottomOf="@+id/ivLogoHeader"
+                app:layout_constraintStart_toEndOf="@+id/ivLogoHeader"
+                app:layout_constraintTop_toTopOf="@+id/ivLogoHeader">
 
                 <TextView
+                    android:id="@+id/tvHeaderTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="EduConnect"
@@ -44,41 +47,43 @@
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/tvHeaderSubtitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Admin"
                     android:textColor="@color/primary"
-                    android:textSize="18sp"
+                    android:textSize="14sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
+            <!-- 2. Contenedor de iconos a la derecha -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:gravity="center_vertical"
                 android:orientation="horizontal"
-                app:layout_constraintBottom_toBottomOf="@id/llAdminInfo"
+                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="@id/llAdminInfo">
+                app:layout_constraintTop_toTopOf="parent">
 
+                <!-- Botón de Modo Oscuro (Luna/Sol) -->
                 <ImageView
+                    android:id="@+id/ivThemeToggle"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:layout_marginEnd="16dp"
-                    android:src="@android:drawable/ic_menu_search"
+                    android:src="@drawable/ic_moon"
                     app:tint="@color/on_surface" />
 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_marginEnd="16dp"
-                    android:src="@android:drawable/ic_menu_day"
-                    app:tint="@color/on_surface" />
+                <!-- 3. Avatar Circular del Admin al final -->
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:id="@+id/ivAdminProfile"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/admin_avatar"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@android:drawable/ic_menu_manage"
-                    app:tint="@color/on_surface" />
             </LinearLayout>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
@@ -99,7 +104,7 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="#EDF1FD"
+                app:cardBackgroundColor="@color/surface"
                 app:cardCornerRadius="24dp"
                 app:strokeWidth="0dp">
 
@@ -306,7 +311,6 @@
                 android:layout_marginTop="24dp"
                 android:orientation="vertical"
                 android:visibility="gone">
-
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -315,7 +319,6 @@
                     android:textSize="20sp"
                     android:textStyle="bold"
                     android:layout_marginBottom="16dp"/>
-
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rvClassrooms"
                     android:layout_width="match_parent"
@@ -323,7 +326,6 @@
                     android:nestedScrollingEnabled="false" />
             </LinearLayout>
 
-            <!-- User List Section (Initially Hidden) -->
             <LinearLayout
                 android:id="@+id/llUserListContainer"
                 android:layout_width="match_parent"
@@ -331,7 +333,6 @@
                 android:layout_marginTop="24dp"
                 android:orientation="vertical"
                 android:visibility="gone">
-
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -340,7 +341,6 @@
                     android:textSize="20sp"
                     android:textStyle="bold"
                     android:layout_marginBottom="16dp"/>
-
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rvUsers"
                     android:layout_width="match_parent"
@@ -353,7 +353,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
-                app:cardBackgroundColor="#EBEDF5"
+                app:cardBackgroundColor="@color/surface"
                 app:cardCornerRadius="24dp"
                 app:strokeWidth="0dp">
 
@@ -376,14 +376,13 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="20dp">
-
                         <com.google.android.material.imageview.ShapeableImageView
                             android:id="@+id/ivStaff1"
                             android:layout_width="44dp"
                             android:layout_height="44dp"
-                            android:src="@android:drawable/ic_menu_myplaces"
+                            android:scaleType="centerCrop"
+                            android:src="@drawable/admin_avatar"
                             app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
-
                         <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -391,14 +390,12 @@
                             android:layout_marginStart="12dp"
                             android:layout_toEndOf="@id/ivStaff1"
                             android:orientation="vertical">
-
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Dr. Linda Chen"
                                 android:textColor="@color/on_surface"
                                 android:textStyle="bold" />
-
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
@@ -406,7 +403,6 @@
                                 android:textColor="@color/on_surface_variant"
                                 android:textSize="12sp" />
                         </LinearLayout>
-
                         <ImageView
                             android:layout_width="8dp"
                             android:layout_height="8dp"
@@ -420,14 +416,13 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="16dp">
-
                         <com.google.android.material.imageview.ShapeableImageView
                             android:id="@+id/ivStaff2"
                             android:layout_width="44dp"
                             android:layout_height="44dp"
-                            android:src="@android:drawable/ic_menu_myplaces"
+                            android:scaleType="centerCrop"
+                            android:src="@drawable/admin_avatar"
                             app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
-
                         <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -435,14 +430,12 @@
                             android:layout_marginStart="12dp"
                             android:layout_toEndOf="@id/ivStaff2"
                             android:orientation="vertical">
-
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Marcus Thorne"
                                 android:textColor="@color/on_surface"
                                 android:textStyle="bold" />
-
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
@@ -450,7 +443,6 @@
                                 android:textColor="@color/on_surface_variant"
                                 android:textSize="12sp" />
                         </LinearLayout>
-
                         <ImageView
                             android:layout_width="8dp"
                             android:layout_height="8dp"
@@ -469,21 +461,21 @@
                         android:textAllCaps="false"
                         android:textColor="@color/on_surface"
                         app:cornerRadius="16dp" />
-
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
+    <!-- Barra de navegación con colores claros aplicados -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigation"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        app:backgroundTint="@color/white"
-        app:itemIconTint="@color/on_surface_variant"
-        app:itemTextColor="@color/on_surface_variant"
+        app:backgroundTint="@color/background"
+        app:itemIconTint="@color/on_surface"
+        app:itemTextColor="@color/on_surface"
         app:menu="@menu/bottom_nav_menu_admin" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton

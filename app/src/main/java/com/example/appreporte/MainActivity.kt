@@ -23,6 +23,28 @@ class MainActivity : AppCompatActivity() {
 
         setupProfileSelection()
 
+        // 1. Revisamos en qué modo está la app actualmente
+        val isNightMode = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
+
+        // 2. Dependiendo del modo, mostramos el ícono correcto (Sol o Luna)
+        if (isNightMode) {
+            binding.ivThemeToggle.setImageResource(R.drawable.ic_sun)
+        } else {
+            binding.ivThemeToggle.setImageResource(R.drawable.ic_moon)
+        }
+
+        // 3. Lógica para cambiar de modo al hacer clic en el ícono
+        binding.ivThemeToggle.setOnClickListener {
+            if (isNightMode) {
+                // Si estaba oscuro, pasamos a claro
+                androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO)
+            } else {
+                // Si estaba claro, pasamos a oscuro
+                androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES)
+            }
+        }
+
+        // Lógica del botón de inicio de sesión
         binding.btnIngresar.setOnClickListener {
             val email = binding.etEmail.text.toString().trim()
             val password = binding.etPassword.text.toString().trim()
@@ -54,7 +76,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun selectProfile(role: String) {
         selectedRole = role
-        
+
         // Reset all
         val unselectedBg = ContextCompat.getColor(this, R.color.profile_unselected)
         val onSurface = ContextCompat.getColor(this, R.color.on_surface)
