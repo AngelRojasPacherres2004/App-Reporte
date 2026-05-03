@@ -45,6 +45,12 @@ class DocenteDashboardActivity : AppCompatActivity() {
             val intent = Intent(this, GestionReportesSalonesActivity::class.java)
             startActivity(intent)
         }
+
+        // Botón "REVISAR QUEJAS" de la Welcome Card
+        binding.root.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnReviewComplaints)?.setOnClickListener {
+            val intent = Intent(this, ComplaintsActivity::class.java)
+            startActivity(intent)
+        }
     }
 
     private fun setupBottomNavigation() {

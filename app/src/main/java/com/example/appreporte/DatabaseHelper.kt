@@ -4,12 +4,15 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
     companion object {
         private const val DATABASE_NAME = "AppReporte.db"
-        private const val DATABASE_VERSION = 7 // Added phone to users
+        private const val DATABASE_VERSION = 8 // Incremented for complaints fix
         private const val TABLE_USERS = "users"
         private const val COLUMN_ID = "id"
         private const val COLUMN_EMAIL = "email"
@@ -58,6 +61,15 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         private const val COLUMN_GRADE_VALUE = "value"
         private const val COLUMN_GRADE_SUBJECT = "subject"
         private const val COLUMN_GRADE_DATE = "date"
+
+        // Complaints Table
+        private const val TABLE_COMPLAINTS = "complaints"
+        private const val COLUMN_COMPLAINT_ID = "id"
+        private const val COLUMN_COMPLAINT_POST_ID = "post_id"
+        private const val COLUMN_COMPLAINT_PARENT_EMAIL = "parent_email"
+        private const val COLUMN_COMPLAINT_CONTENT = "content"
+        private const val COLUMN_COMPLAINT_STATUS = "status" // en proceso, rechazado, atendido
+        private const val COLUMN_COMPLAINT_DATE = "date"
     }
 
     override fun onCreate(db: SQLiteDatabase) {
@@ -121,6 +133,17 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 + "FOREIGN KEY($COLUMN_GRADE_STUDENT_ID) REFERENCES $TABLE_STUDENTS($COLUMN_STUDENT_ID))")
         db.execSQL(createGradesTable)
 
+        val createComplaintsTable = ("CREATE TABLE " + TABLE_COMPLAINTS + "("
+                + COLUMN_COMPLAINT_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + COLUMN_COMPLAINT_POST_ID + " INTEGER,"
+                + COLUMN_COMPLAINT_PARENT_EMAIL + " TEXT,"
+                + COLUMN_COMPLAINT_CONTENT + " TEXT,"
+                + COLUMN_COMPLAINT_STATUS + " TEXT,"
+                + COLUMN_COMPLAINT_DATE + " TEXT,"
+                + "FOREIGN KEY($COLUMN_COMPLAINT_POST_ID) REFERENCES $TABLE_POSTS($COLUMN_POST_ID),"
+                + "FOREIGN KEY($COLUMN_COMPLAINT_PARENT_EMAIL) REFERENCES $TABLE_USERS($COLUMN_EMAIL))")
+        db.execSQL(createComplaintsTable)
+
         // Insertar usuarios iniciales
         insertUser(db, "admin@reporte.com", "admin123", "admin", "")
         insertUser(db, "user@reporte.com", "user123", "usuario", "912345678")
@@ -133,6 +156,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_COMPLAINTS")
         db.execSQL("DROP TABLE IF EXISTS $TABLE_GRADES")
         db.execSQL("DROP TABLE IF EXISTS $TABLE_STUDENTS")
         db.execSQL("DROP TABLE IF EXISTS $TABLE_COMMENTS")
@@ -431,6 +455,26 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         return list
     }
 
+    fun getStudentsByParent(parentEmail: String): List<Map<String, String>> {
+        val list = mutableListOf<Map<String, String>>()
+        val db = this.readableDatabase
+        val cursor = db.rawQuery("SELECT * FROM $TABLE_STUDENTS WHERE $COLUMN_STUDENT_PARENT_EMAIL = ?", arrayOf(parentEmail))
+        if (cursor.moveToFirst()) {
+            do {
+                val map = mutableMapOf<String, String>()
+                map["id"] = cursor.getInt(0).toString()
+                map["names"] = cursor.getString(1)
+                map["lastnames"] = cursor.getString(2)
+                map["dni"] = cursor.getString(3)
+                map["classroom_id"] = cursor.getInt(4).toString()
+                map["parent_email"] = cursor.getString(5)
+                list.add(map)
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        return list
+    }
+
     fun updateClassroom(id: Int, newName: String): Boolean {
         val db = this.writableDatabase
         val values = ContentValues()
@@ -481,5 +525,61 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         }
         cursor.close()
         return phone
+    }
+
+    // --- COMPLAINTS METHODS ---
+
+    fun addComplaint(postId: Int, parentEmail: String, content: String): Boolean {
+        val db = this.writableDatabase
+        val values = ContentValues()
+        values.put(COLUMN_COMPLAINT_POST_ID, postId)
+        values.put(COLUMN_COMPLAINT_PARENT_EMAIL, parentEmail)
+        values.put(COLUMN_COMPLAINT_CONTENT, content)
+        values.put(COLUMN_COMPLAINT_STATUS, "en proceso")
+        values.put(COLUMN_COMPLAINT_DATE, SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date()))
+        val result = db.insert(TABLE_COMPLAINTS, null, values)
+        return result != -1L
+    }
+
+    fun getAllComplaints(salonName: String? = null): List<Map<String, String>> {
+        val list = mutableListOf<Map<String, String>>()
+        val db = this.readableDatabase
+        
+        var query = "SELECT c.*, p.$COLUMN_POST_TITLE FROM $TABLE_COMPLAINTS c " +
+                "INNER JOIN $TABLE_POSTS p ON c.$COLUMN_COMPLAINT_POST_ID = p.$COLUMN_POST_ID "
+        
+        val selectionArgs = if (salonName != null) {
+            query += "WHERE p.$COLUMN_POST_SALON = ? "
+            arrayOf(salonName)
+        } else {
+            null
+        }
+        
+        query += "ORDER BY c.$COLUMN_COMPLAINT_ID DESC"
+        
+        val cursor = db.rawQuery(query, selectionArgs)
+        if (cursor.moveToFirst()) {
+            do {
+                val map = mutableMapOf<String, String>()
+                map["id"] = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_COMPLAINT_ID)).toString()
+                map["post_id"] = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_COMPLAINT_POST_ID)).toString()
+                map["post_title"] = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_POST_TITLE))
+                map["parent_email"] = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_COMPLAINT_PARENT_EMAIL))
+                map["content"] = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_COMPLAINT_CONTENT))
+                map["status"] = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_COMPLAINT_STATUS))
+                map["date"] = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_COMPLAINT_DATE))
+                list.add(map)
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        return list
+    }
+
+    fun updateComplaintStatus(complaintId: Int, newStatus: String): Boolean {
+        val db = this.writableDatabase
+        val values = ContentValues()
+        values.put(COLUMN_COMPLAINT_STATUS, newStatus)
+        val result = db.update(TABLE_COMPLAINTS, values, "$COLUMN_COMPLAINT_ID = ?", arrayOf(complaintId.toString()))
+        return result > 0
     }
 }

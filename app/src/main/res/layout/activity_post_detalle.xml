@@ -42,6 +42,18 @@
                     android:id="@+id/includedPost"
                     layout="@layout/item_post" />
 
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnQueja"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="end"
+                    android:text="Realizar Queja"
+                    android:textColor="#F44336"
+                    android:visibility="gone"
+                    app:icon="@android:drawable/ic_menu_report_image"
+                    app:iconTint="#F44336" />
+
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"

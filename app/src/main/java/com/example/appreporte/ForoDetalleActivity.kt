@@ -23,6 +23,7 @@ class ForoDetalleActivity : AppCompatActivity() {
     private var userEmail: String = ""
     private var salonName: String = ""
     private lateinit var dbHelper: DatabaseHelper
+    private lateinit var complaintsAdapter: ComplaintsActivity.ComplaintsAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,9 +41,60 @@ class ForoDetalleActivity : AppCompatActivity() {
         binding.toolbar.setNavigationOnClickListener { finish() }
 
         setupRecyclerView()
+        setupComplaintsRecyclerView()
         loadPosts()
         setupPublish()
         setupBottomNavigation()
+        setupTabs()
+    }
+
+    private fun setupTabs() {
+        if (userRole == "docente") {
+            binding.tabLayout.visibility = View.VISIBLE
+            binding.tabLayout.addOnTabSelectedListener(object : com.google.android.material.tabs.TabLayout.OnTabSelectedListener {
+                override fun onTabSelected(tab: com.google.android.material.tabs.TabLayout.Tab?) {
+                    if (tab?.position == 0) {
+                        binding.rvPosts.visibility = View.VISIBLE
+                        binding.rvComplaints.visibility = View.GONE
+                        binding.fabAddPost.visibility = View.VISIBLE
+                    } else {
+                        binding.rvPosts.visibility = View.GONE
+                        binding.rvComplaints.visibility = View.VISIBLE
+                        binding.fabAddPost.visibility = View.GONE
+                        loadComplaints()
+                    }
+                }
+                override fun onTabUnselected(tab: com.google.android.material.tabs.TabLayout.Tab?) {}
+                override fun onTabReselected(tab: com.google.android.material.tabs.TabLayout.Tab?) {}
+            })
+        }
+    }
+
+    private fun setupComplaintsRecyclerView() {
+        complaintsAdapter = ComplaintsActivity.ComplaintsAdapter(emptyList()) { complaintId ->
+            showStatusDialog(complaintId)
+        }
+        binding.rvComplaints.layoutManager = LinearLayoutManager(this)
+        binding.rvComplaints.adapter = complaintsAdapter
+    }
+
+    private fun loadComplaints() {
+        val complaints = dbHelper.getAllComplaints(salonName)
+        complaintsAdapter.updateData(complaints)
+    }
+
+    private fun showStatusDialog(complaintId: Int) {
+        val options = arrayOf("no atendido", "en proceso", "atendido")
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+            .setTitle("Seleccionar nuevo estado")
+            .setItems(options) { _, which ->
+                val newStatus = options[which]
+                if (dbHelper.updateComplaintStatus(complaintId, newStatus)) {
+                    Toast.makeText(this, "Estado actualizado", Toast.LENGTH_SHORT).show()
+                    loadComplaints()
+                }
+            }
+            .show()
     }
 
     private fun loadPosts() {
@@ -80,7 +132,7 @@ class ForoDetalleActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerView() {
-        adapter = PostAdapter(posts, userEmail)
+        adapter = PostAdapter(posts, userEmail, userRole)
         binding.rvPosts.layoutManager = LinearLayoutManager(this)
         binding.rvPosts.adapter = adapter
     }
@@ -144,7 +196,7 @@ class ForoDetalleActivity : AppCompatActivity() {
             .show()
     }
 
-    class PostAdapter(private val posts: List<Post>, private val userEmail: String) : RecyclerView.Adapter<PostAdapter.ViewHolder>() {
+    class PostAdapter(private val posts: List<Post>, private val userEmail: String, private val userRole: String) : RecyclerView.Adapter<PostAdapter.ViewHolder>() {
         class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
             val tvAuthor: TextView = view.findViewById(R.id.tvAuthorName)
             val tvTitle: TextView = view.findViewById(R.id.tvTitle)
@@ -173,6 +225,7 @@ class ForoDetalleActivity : AppCompatActivity() {
                     putExtra("POST_CONTENT", post.content)
                     putExtra("POST_TIME", post.time)
                     putExtra("USER_EMAIL", userEmail)
+                    putExtra("USER_ROL", userRole)
                 }
                 context.startActivity(intent)
             }

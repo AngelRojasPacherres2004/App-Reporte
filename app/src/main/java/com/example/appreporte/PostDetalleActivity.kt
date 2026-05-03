@@ -1,11 +1,14 @@
 package com.example.appreporte
 
+import android.content.DialogInterface
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -40,6 +43,7 @@ class PostDetalleActivity : AppCompatActivity() {
         val content = intent.getStringExtra("POST_CONTENT") ?: "Contenido"
         val time = intent.getStringExtra("POST_TIME") ?: "HACE MOMENTOS"
         userEmail = intent.getStringExtra("USER_EMAIL") ?: "Usuario"
+        val userRol = intent.getStringExtra("USER_ROL") ?: ""
 
         // Mostrar datos del post en la vista incluida
         binding.includedPost.tvAuthorName.text = author
@@ -48,9 +52,39 @@ class PostDetalleActivity : AppCompatActivity() {
         binding.includedPost.tvTime.text = time
         binding.includedPost.tvCommentsCount.visibility = View.GONE // No necesitamos mostrar el conteo aquí
 
+        // Si es padre, mostrar botón de queja
+        if (userRol == "usuario") {
+            binding.btnQueja.visibility = View.VISIBLE
+            binding.btnQueja.setOnClickListener {
+                showQuejaDialog()
+            }
+        }
+
         setupRecyclerView()
         loadComments()
         setupCommentInput()
+    }
+
+    private fun showQuejaDialog() {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Realizar Queja")
+        
+        val input = EditText(this)
+        input.hint = "Explique el motivo de su queja..."
+        builder.setView(input)
+
+        builder.setPositiveButton("Enviar") { _, _ ->
+            val content = input.text.toString()
+            if (content.isNotEmpty()) {
+                if (dbHelper.addComplaint(postId, userEmail, content)) {
+                    Toast.makeText(this, "Queja enviada correctamente", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "Error al enviar queja", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+        builder.setNegativeButton("Cancelar", null)
+        builder.show()
     }
 
     private fun loadComments() {

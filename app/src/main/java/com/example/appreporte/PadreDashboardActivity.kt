@@ -66,6 +66,12 @@ class PadreDashboardActivity : AppCompatActivity() {
             navigateToForo()
         }
 
+        binding.btnVerReportes.setOnClickListener {
+            val intent = Intent(this, PadreReporteActivity::class.java)
+            intent.putExtra("USER_EMAIL", userEmail)
+            startActivity(intent)
+        }
+
         // Clic en la foto de perfil para abrir ajustes/perfil
         binding.ivPadreProfile.setOnClickListener {
             val intent = Intent(this, PerfilActivity::class.java)
@@ -127,7 +133,9 @@ class PadreDashboardActivity : AppCompatActivity() {
                 }
                 // ----------------------------------------------
                 R.id.nav_reportes -> {
-                    Toast.makeText(this, "Reportes en desarrollo", Toast.LENGTH_SHORT).show()
+                    val intent = Intent(this, PadreReporteActivity::class.java)
+                    intent.putExtra("USER_EMAIL", userEmail)
+                    startActivity(intent)
                     true
                 }
                 R.id.nav_perfil -> {

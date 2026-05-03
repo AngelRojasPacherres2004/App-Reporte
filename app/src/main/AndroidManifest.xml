@@ -84,6 +84,16 @@
             android:exported="false"
             android:label="Mi Perfil" />
 
+        <activity
+            android:name=".PadreReporteActivity"
+            android:exported="false"
+            android:label="Mis Reportes" />
+
+        <activity
+            android:name=".ComplaintsActivity"
+            android:exported="false"
+            android:label="Gestión de Quejas" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
