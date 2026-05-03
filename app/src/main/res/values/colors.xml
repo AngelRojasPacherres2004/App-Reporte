@@ -24,4 +24,8 @@
 
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Colores para la barra de navegación inferior (Modo Claro) -->
+    <color name="nav_background">#FFFFFF</color>
+    <color name="nav_item_color">#616161</color>
 </resources>

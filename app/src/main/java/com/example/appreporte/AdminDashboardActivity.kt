@@ -30,7 +30,7 @@ class AdminDashboardActivity : AppCompatActivity() {
         setupRecyclerViews()
         setupBottomNavigation()
         setupClickListeners()
-        setupThemeToggle() // Se agrega el control del tema
+        setupThemeToggle()
     }
 
     private fun setupThemeToggle() {
@@ -192,7 +192,6 @@ class AdminDashboardActivity : AppCompatActivity() {
         binding.bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_inicio -> true
-                R.id.nav_reportes -> true
                 R.id.nav_foro -> true
                 R.id.nav_asistente -> true
                 R.id.nav_perfil -> true

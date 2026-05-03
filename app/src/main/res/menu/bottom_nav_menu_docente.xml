@@ -4,18 +4,23 @@
         android:id="@+id/nav_inicio"
         android:icon="@android:drawable/ic_menu_today"
         android:title="Inicio" />
+
+    <!-- Este es el botón para la Gestión de Quejas (RF-06) -->
     <item
         android:id="@+id/nav_reportes"
-        android:icon="@android:drawable/ic_menu_sort_by_size"
+        android:icon="@android:drawable/ic_menu_manage"
         android:title="Reportes" />
+
     <item
         android:id="@+id/nav_foro"
         android:icon="@android:drawable/ic_menu_help"
         android:title="Foro" />
+
     <item
         android:id="@+id/nav_asistente"
         android:icon="@android:drawable/ic_menu_view"
         android:title="Asistente" />
+
     <item
         android:id="@+id/nav_perfil"
         android:icon="@android:drawable/ic_menu_myplaces"

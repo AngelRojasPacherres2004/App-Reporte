@@ -59,6 +59,13 @@
             android:exported="false"
             android:label="Asistente EduConnect" />
 
+        <!-- Pantalla de Gestión de Quejas (RF-06) -->
+        <activity
+            android:name=".DocenteComplaintsActivity"
+            android:exported="false"
+            android:label="Gestión de Quejas"
+            android:theme="@style/Theme.AppReporte" />
+
     </application>
 
 </manifest>

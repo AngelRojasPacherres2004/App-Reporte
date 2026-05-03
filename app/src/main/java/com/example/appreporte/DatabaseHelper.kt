@@ -9,7 +9,8 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     companion object {
         private const val DATABASE_NAME = "AppReporte.db"
-        private const val DATABASE_VERSION = 4 // Incremented version
+        private const val DATABASE_VERSION = 5 // Incrementado para añadir Quejas
+
         private const val TABLE_USERS = "users"
         private const val COLUMN_ID = "id"
         private const val COLUMN_EMAIL = "email"
@@ -39,6 +40,15 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         private const val COLUMN_COMMENT_AUTHOR = "author"
         private const val COLUMN_COMMENT_CONTENT = "content"
         private const val COLUMN_COMMENT_TIME = "time"
+
+        // Quejas Tables (RF-06)
+        private const val TABLE_QUEJAS = "quejas"
+        private const val COLUMN_QUEJA_ID = "id"
+        private const val COLUMN_QUEJA_EMAIL = "user_email"
+        private const val COLUMN_QUEJA_MENSAJE = "mensaje"
+        private const val COLUMN_QUEJA_CLASIFICACION = "clasificacion"
+        private const val COLUMN_QUEJA_ESTADO = "estado"
+        private const val COLUMN_QUEJA_FECHA = "fecha"
     }
 
     override fun onCreate(db: SQLiteDatabase) {
@@ -80,6 +90,16 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 + "FOREIGN KEY($COLUMN_COMMENT_POST_ID) REFERENCES $TABLE_POSTS($COLUMN_POST_ID))")
         db.execSQL(createCommentsTable)
 
+        // Crear Tabla de Quejas
+        val createQuejasTable = ("CREATE TABLE " + TABLE_QUEJAS + "("
+                + COLUMN_QUEJA_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + COLUMN_QUEJA_EMAIL + " TEXT,"
+                + COLUMN_QUEJA_MENSAJE + " TEXT,"
+                + COLUMN_QUEJA_CLASIFICACION + " TEXT,"
+                + COLUMN_QUEJA_ESTADO + " TEXT,"
+                + COLUMN_QUEJA_FECHA + " DATETIME DEFAULT CURRENT_TIMESTAMP" + ")")
+        db.execSQL(createQuejasTable)
+
         // Insertar usuarios iniciales
         insertUser(db, "admin@reporte.com", "admin123", "admin")
         insertUser(db, "user@reporte.com", "user123", "usuario")
@@ -89,9 +109,13 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         insertClassroom(db, "Sala de 3 años")
         insertClassroom(db, "Sala de 4 años")
         insertClassroom(db, "Sala de 5 años")
+
+        // Insertar una queja de prueba para que veas el diseño al instante
+        insertQuejaPrueba(db, "user@reporte.com", "Falta de ventilación en el aula 3.", "Infraestructura", "Pendiente")
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_QUEJAS")
         db.execSQL("DROP TABLE IF EXISTS $TABLE_COMMENTS")
         db.execSQL("DROP TABLE IF EXISTS $TABLE_POSTS")
         db.execSQL("DROP TABLE IF EXISTS $TABLE_USER_CLASSROOMS")
@@ -100,6 +124,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         onCreate(db)
     }
 
+    // --- Métodos originales de Users y Classrooms ---
     private fun insertClassroom(db: SQLiteDatabase, name: String) {
         val values = ContentValues()
         values.put(COLUMN_CLASSROOM_NAME, name)
@@ -227,7 +252,6 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
     }
 
     // --- Forum Methods ---
-
     fun addPost(salon: String, author: String, title: String, content: String, time: String): Long {
         val db = this.writableDatabase
         val values = ContentValues()
@@ -279,5 +303,49 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         }
         cursor.close()
         return list
+    }
+
+    // --- NUEVOS MÉTODOS PARA QUEJAS (RF-06) ---
+    private fun insertQuejaPrueba(db: SQLiteDatabase, email: String, mensaje: String, clasificacion: String, estado: String) {
+        val values = ContentValues()
+        values.put(COLUMN_QUEJA_EMAIL, email)
+        values.put(COLUMN_QUEJA_MENSAJE, mensaje)
+        values.put(COLUMN_QUEJA_CLASIFICACION, clasificacion)
+        values.put(COLUMN_QUEJA_ESTADO, estado)
+        db.insert(TABLE_QUEJAS, null, values)
+    }
+
+    fun getAllQuejas(): List<Complaint> {
+        val list = mutableListOf<Complaint>()
+        val db = this.readableDatabase
+        val cursor = db.rawQuery("SELECT * FROM $TABLE_QUEJAS ORDER BY $COLUMN_QUEJA_FECHA DESC", null)
+        if (cursor.moveToFirst()) {
+            do {
+                list.add(Complaint(
+                    cursor.getInt(0),
+                    cursor.getString(1),
+                    cursor.getString(2),
+                    cursor.getString(3),
+                    cursor.getString(4),
+                    cursor.getString(5) ?: "N/A"
+                ))
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        return list
+    }
+
+    fun updateQuejaStatus(id: Int, nuevoEstado: String): Boolean {
+        val db = this.writableDatabase
+        val values = ContentValues()
+        values.put(COLUMN_QUEJA_ESTADO, nuevoEstado)
+
+        // TOQUE PRO: Actualizamos la fecha a la hora exacta en la que el docente resolvió la queja
+        val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
+        val fechaActual = dateFormat.format(java.util.Date())
+        values.put(COLUMN_QUEJA_FECHA, fechaActual)
+
+        val result = db.update(TABLE_QUEJAS, values, "$COLUMN_QUEJA_ID = ?", arrayOf(id.toString()))
+        return result > 0
     }
 }

@@ -16,26 +16,28 @@
             android:layout_height="wrap_content"
             android:padding="16dp">
 
-            <com.google.android.material.imageview.ShapeableImageView
-                android:id="@+id/ivDocenteProfile"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:src="@android:drawable/ic_menu_myplaces"
+            <!-- LOGO ORIGINAL -->
+            <ImageView
+                android:id="@+id/ivLogoHeader"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@drawable/logo_original"
+                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
+                app:layout_constraintTop_toTopOf="parent" />
 
             <LinearLayout
-                android:id="@+id/llDocenteInfo"
+                android:id="@+id/llHeaderTitles"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="12dp"
                 android:orientation="vertical"
-                app:layout_constraintBottom_toBottomOf="@id/ivDocenteProfile"
-                app:layout_constraintStart_toEndOf="@id/ivDocenteProfile"
-                app:layout_constraintTop_toTopOf="@id/ivDocenteProfile">
+                app:layout_constraintBottom_toBottomOf="@+id/ivLogoHeader"
+                app:layout_constraintStart_toEndOf="@+id/ivLogoHeader"
+                app:layout_constraintTop_toTopOf="@+id/ivLogoHeader">
 
                 <TextView
+                    android:id="@+id/tvHeaderTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="EduConnect"
@@ -44,41 +46,41 @@
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/tvHeaderSubtitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Docente"
                     android:textColor="@color/primary"
-                    android:textSize="18sp"
+                    android:textSize="14sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:gravity="center_vertical"
                 android:orientation="horizontal"
-                app:layout_constraintBottom_toBottomOf="@id/llDocenteInfo"
+                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="@id/llDocenteInfo">
+                app:layout_constraintTop_toTopOf="parent">
 
+                <!-- ICONO LUNA/SOL (Se gestiona en Kotlin) -->
                 <ImageView
+                    android:id="@+id/ivThemeToggle"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:layout_marginEnd="16dp"
-                    android:src="@android:drawable/ic_menu_search"
+                    android:src="@drawable/ic_moon"
                     app:tint="@color/on_surface" />
 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_marginEnd="16dp"
-                    android:src="@android:drawable/ic_menu_day"
-                    app:tint="@color/on_surface" />
-
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@android:drawable/ic_menu_manage"
-                    app:tint="@color/on_surface" />
+                <!-- AVATAR ADMIN -->
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:id="@+id/ivAdminProfile"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/admin_avatar"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
             </LinearLayout>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
@@ -134,6 +136,7 @@
                         android:textSize="14sp" />
 
                     <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnRevisarQuejasHeader"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="20dp"
@@ -163,7 +166,6 @@
                 android:layout_marginTop="24dp"
                 android:orientation="horizontal">
 
-                <!-- Card 1 -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -224,7 +226,6 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- Card 2 -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -423,8 +424,8 @@
                                     <TextView
                                         android:layout_width="wrap_content"
                                         android:layout_height="wrap_content"
-                                        android:layout_toStartOf="@id/tvTime1"
                                         android:layout_alignParentStart="true"
+                                        android:layout_toStartOf="@id/tvTime1"
                                         android:text="@string/complaint_1_title"
                                         android:textColor="@color/on_surface"
                                         android:textStyle="bold" />
@@ -434,8 +435,8 @@
                                         android:layout_width="wrap_content"
                                         android:layout_height="wrap_content"
                                         android:layout_alignParentEnd="true"
-                                        android:text="2h\nago"
                                         android:gravity="center"
+                                        android:text="2h\nago"
                                         android:textColor="@color/on_surface_variant"
                                         android:textSize="10sp" />
                                 </RelativeLayout>
@@ -483,8 +484,8 @@
                                     <TextView
                                         android:layout_width="wrap_content"
                                         android:layout_height="wrap_content"
-                                        android:layout_toStartOf="@id/tvTime2"
                                         android:layout_alignParentStart="true"
+                                        android:layout_toStartOf="@id/tvTime2"
                                         android:text="@string/complaint_2_title"
                                         android:textColor="@color/on_surface"
                                         android:textStyle="bold" />
@@ -494,8 +495,8 @@
                                         android:layout_width="wrap_content"
                                         android:layout_height="wrap_content"
                                         android:layout_alignParentEnd="true"
-                                        android:text="4h\nago"
                                         android:gravity="center"
+                                        android:text="4h\nago"
                                         android:textColor="@color/on_surface_variant"
                                         android:textSize="10sp" />
                                 </RelativeLayout>
@@ -528,14 +529,15 @@
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
+    <!-- AQUÍ ESTÁ EL CAMBIO PRINCIPAL PARA LA PARTE DE ABAJO -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigation"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        app:backgroundTint="@color/white"
-        app:itemIconTint="@color/on_surface_variant"
-        app:itemTextColor="@color/on_surface_variant"
+        app:backgroundTint="@color/nav_background"
+        app:itemIconTint="@color/nav_item_color"
+        app:itemTextColor="@color/nav_item_color"
         app:menu="@menu/bottom_nav_menu_docente" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

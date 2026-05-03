@@ -26,4 +26,10 @@
 
     <!-- Rojo para los errores -->
     <color name="error">#EF4444</color>
+
+    <!-- INTEGRACIÓN DE LA BARRA INFERIOR -->
+    <!-- Usamos 'surface' para que la barra resalte ligeramente sobre el fondo -->
+    <color name="nav_background">#1F222B</color>
+    <!-- Usamos 'on_surface' para que los iconos sean legibles -->
+    <color name="nav_item_color">#E2E8F0</color>
 </resources>

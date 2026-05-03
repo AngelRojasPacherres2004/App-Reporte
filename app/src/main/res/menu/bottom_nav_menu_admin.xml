@@ -4,18 +4,19 @@
         android:id="@+id/nav_inicio"
         android:icon="@android:drawable/ic_menu_today"
         android:title="Inicio" />
-    <item
-        android:id="@+id/nav_gestion"
-        android:icon="@android:drawable/ic_menu_manage"
-        android:title="gestión" />
+
+    <!-- ELIMINADO: nav_gestion ya no pertenece al Administrador en este flujo -->
+
     <item
         android:id="@+id/nav_foro"
         android:icon="@android:drawable/ic_menu_help"
         android:title="Foro" />
+
     <item
         android:id="@+id/nav_asistente"
         android:icon="@android:drawable/ic_menu_view"
         android:title="Asistente" />
+
     <item
         android:id="@+id/nav_perfil"
         android:icon="@android:drawable/ic_menu_myplaces"
