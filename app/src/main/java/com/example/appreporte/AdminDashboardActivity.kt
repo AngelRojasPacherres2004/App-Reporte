@@ -8,6 +8,7 @@ import android.widget.AutoCompleteTextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.appreporte.databinding.ActivityDashboardAdminBinding
 import com.google.android.material.textfield.TextInputEditText
@@ -25,10 +26,32 @@ class AdminDashboardActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         dbHelper = DatabaseHelper(this)
-        
+
         setupRecyclerViews()
         setupBottomNavigation()
         setupClickListeners()
+        setupThemeToggle() // Se agrega el control del tema
+    }
+
+    private fun setupThemeToggle() {
+        // Revisar el estado actual del sistema
+        val isNightMode = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
+
+        // Configurar el ícono inicial
+        if (isNightMode) {
+            binding.ivThemeToggle.setImageResource(R.drawable.ic_sun)
+        } else {
+            binding.ivThemeToggle.setImageResource(R.drawable.ic_moon)
+        }
+
+        // Configurar el clic para alternar
+        binding.ivThemeToggle.setOnClickListener {
+            if (isNightMode) {
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+            } else {
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+            }
+        }
     }
 
     private fun setupRecyclerViews() {
@@ -65,7 +88,7 @@ class AdminDashboardActivity : AppCompatActivity() {
             binding.fabAddUser.visibility = View.GONE
             binding.btnManageUsers.visibility = View.VISIBLE
             binding.btnManageClassrooms.visibility = View.GONE
-            
+
             showAddClassroomFab()
         }
 
@@ -86,7 +109,6 @@ class AdminDashboardActivity : AppCompatActivity() {
 
     private fun showAddClassroomFab() {
         binding.fabAddUser.visibility = View.VISIBLE
-        // Podríamos cambiar el icono del FAB aquí si quisiéramos
     }
 
     private fun showAddClassroomDialog() {
