@@ -280,6 +280,21 @@
                         app:iconGravity="textStart"
                         app:iconTint="#673AB7" />
 
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnScheduleReports"
+                        style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="56dp"
+                        android:layout_marginTop="12dp"
+                        android:backgroundTint="@color/white"
+                        android:text="Programar Reportes"
+                        android:textAllCaps="false"
+                        android:textColor="#673AB7"
+                        app:cornerRadius="16dp"
+                        app:icon="@android:drawable/ic_menu_today"
+                        app:iconGravity="textStart"
+                        app:iconTint="#673AB7" />
+
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

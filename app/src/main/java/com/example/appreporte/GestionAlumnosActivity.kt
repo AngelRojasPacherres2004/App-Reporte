@@ -65,14 +65,42 @@ class GestionAlumnosActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerView() {
-        studentAdapter = StudentAdapter(emptyList()) { studentId ->
+        studentAdapter = StudentAdapter(emptyList(), { studentId ->
             if (dbHelper.deleteStudent(studentId)) {
                 Toast.makeText(this, "Alumno eliminado", Toast.LENGTH_SHORT).show()
                 updateStudentList()
             }
+        }, { studentId, studentName, parentEmail ->
+            showReportPeriodDialog(studentId, studentName, parentEmail)
+        })
+    }
+
+    private fun showReportPeriodDialog(studentId: Int, studentName: String, parentEmail: String) {
+        val periods = arrayOf("Diario", "Mensual", "Bimestral")
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Seleccionar Periodo de Reporte")
+            .setItems(periods) { _, which ->
+                val selectedPeriod = periods[which]
+                generateAndSendReport(studentId, studentName, parentEmail, selectedPeriod)
+            }
+            .show()
+    }
+
+    private fun generateAndSendReport(studentId: Int, studentName: String, parentEmail: String, period: String) {
+        val phone = dbHelper.getParentPhone(parentEmail)
+        if (phone.isEmpty()) {
+            Toast.makeText(this, "El padre no tiene un teléfono registrado", Toast.LENGTH_SHORT).show()
+            return
         }
-        binding.rvStudents.layoutManager = LinearLayoutManager(this)
-        binding.rvStudents.adapter = studentAdapter
+
+        val reportGenerator = ReportGenerator(this)
+        val reportFile = reportGenerator.generateStudentReport(studentId, studentName, period)
+
+        if (reportFile != null) {
+            WhatsAppSender.sendPdfToWhatsApp(this, phone, reportFile)
+        } else {
+            Toast.makeText(this, "Error al generar el reporte", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun addStudent() {

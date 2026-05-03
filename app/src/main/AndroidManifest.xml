@@ -49,6 +49,24 @@
             android:name=".GestionAlumnosActivity"
             android:exported="false"
             android:label="Gestión de Alumnos" />
+        <activity
+            android:name=".GradingActivity"
+            android:exported="false"
+            android:label="Gestión de Notas" />
+        <activity
+            android:name=".AttendanceActivity"
+            android:exported="false"
+            android:label="Control de Asistencia" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 
 </manifest>

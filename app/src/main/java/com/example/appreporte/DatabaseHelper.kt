@@ -9,12 +9,13 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     companion object {
         private const val DATABASE_NAME = "AppReporte.db"
-        private const val DATABASE_VERSION = 5 // Incremented version
+        private const val DATABASE_VERSION = 7 // Incremented version to force migration
         private const val TABLE_USERS = "users"
         private const val COLUMN_ID = "id"
         private const val COLUMN_EMAIL = "email"
         private const val COLUMN_PASSWORD = "password"
         private const val COLUMN_ROL = "rol"
+        private const val COLUMN_PHONE = "phone"
 
         private const val TABLE_CLASSROOMS = "classrooms"
         private const val COLUMN_CLASSROOM_ID = "id"
@@ -29,6 +30,21 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         private const val COLUMN_STUDENT_NAME = "name"
         private const val COLUMN_STUDENT_CLASSROOM_ID = "classroom_id"
         private const val COLUMN_STUDENT_PARENT_EMAIL = "parent_email"
+
+        // Academic Tables
+        private const val TABLE_GRADES = "grades"
+        private const val COLUMN_GRADE_ID = "id"
+        private const val COLUMN_GRADE_STUDENT_ID = "student_id"
+        private const val COLUMN_GRADE_SUBJECT = "subject"
+        private const val COLUMN_GRADE_VALUE = "grade"
+        private const val COLUMN_GRADE_DATE = "date"
+        private const val COLUMN_GRADE_PERIOD = "period" // daily, monthly, bimonthly
+
+        private const val TABLE_ATTENDANCE = "attendance"
+        private const val COLUMN_ATT_ID = "id"
+        private const val COLUMN_ATT_STUDENT_ID = "student_id"
+        private const val COLUMN_ATT_STATUS = "status" // present, absent, late
+        private const val COLUMN_ATT_DATE = "date"
 
         // Forum Tables
         private const val TABLE_POSTS = "posts"
@@ -52,7 +68,8 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + COLUMN_EMAIL + " TEXT UNIQUE,"
                 + COLUMN_PASSWORD + " TEXT,"
-                + COLUMN_ROL + " TEXT" + ")")
+                + COLUMN_ROL + " TEXT,"
+                + COLUMN_PHONE + " TEXT" + ")")
         db.execSQL(createUsersTable)
 
         val createClassroomsTable = ("CREATE TABLE " + TABLE_CLASSROOMS + "("
@@ -95,10 +112,28 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 + "FOREIGN KEY($COLUMN_STUDENT_PARENT_EMAIL) REFERENCES $TABLE_USERS($COLUMN_EMAIL))")
         db.execSQL(createStudentsTable)
 
+        val createGradesTable = ("CREATE TABLE " + TABLE_GRADES + "("
+                + COLUMN_GRADE_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + COLUMN_GRADE_STUDENT_ID + " INTEGER,"
+                + COLUMN_GRADE_SUBJECT + " TEXT,"
+                + COLUMN_GRADE_VALUE + " REAL,"
+                + COLUMN_GRADE_DATE + " TEXT,"
+                + COLUMN_GRADE_PERIOD + " TEXT,"
+                + "FOREIGN KEY($COLUMN_GRADE_STUDENT_ID) REFERENCES $TABLE_STUDENTS($COLUMN_STUDENT_ID))")
+        db.execSQL(createGradesTable)
+
+        val createAttendanceTable = ("CREATE TABLE " + TABLE_ATTENDANCE + "("
+                + COLUMN_ATT_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + COLUMN_ATT_STUDENT_ID + " INTEGER,"
+                + COLUMN_ATT_STATUS + " TEXT,"
+                + COLUMN_ATT_DATE + " TEXT,"
+                + "FOREIGN KEY($COLUMN_ATT_STUDENT_ID) REFERENCES $TABLE_STUDENTS($COLUMN_STUDENT_ID))")
+        db.execSQL(createAttendanceTable)
+
         // Insertar usuarios iniciales
-        insertUser(db, "admin@reporte.com", "admin123", "admin")
-        insertUser(db, "user@reporte.com", "user123", "usuario")
-        insertUser(db, "docente@reporte.com", "docente123", "docente")
+        insertUser(db, "admin@reporte.com", "admin123", "admin", "+51987654321")
+        insertUser(db, "user@reporte.com", "user123", "usuario", "+51999888777")
+        insertUser(db, "docente@reporte.com", "docente123", "docente", "+51911222333")
 
         // Insertar salones iniciales
         insertClassroom(db, "Sala de 3 años")
@@ -119,11 +154,19 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        // Disable foreign keys to avoid issues during drop
+        db.execSQL("PRAGMA foreign_keys = OFF;")
+        
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_ATTENDANCE")
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_GRADES")
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_STUDENTS")
         db.execSQL("DROP TABLE IF EXISTS $TABLE_COMMENTS")
         db.execSQL("DROP TABLE IF EXISTS $TABLE_POSTS")
         db.execSQL("DROP TABLE IF EXISTS $TABLE_USER_CLASSROOMS")
         db.execSQL("DROP TABLE IF EXISTS $TABLE_CLASSROOMS")
         db.execSQL("DROP TABLE IF EXISTS $TABLE_USERS")
+        
+        db.execSQL("PRAGMA foreign_keys = ON;")
         onCreate(db)
     }
 
@@ -208,11 +251,15 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         return list
     }
 
-    private fun insertUser(db: SQLiteDatabase, email: String, pass: String, rol: String) {
+    // User data class
+    data class User(val email: String, val pass: String, val rol: String, val phone: String)
+
+    private fun insertUser(db: SQLiteDatabase, email: String, pass: String, rol: String, phone: String) {
         val values = ContentValues()
         values.put(COLUMN_EMAIL, email)
         values.put(COLUMN_PASSWORD, pass)
         values.put(COLUMN_ROL, rol)
+        values.put(COLUMN_PHONE, phone)
         db.insert(TABLE_USERS, null, values)
     }
 
@@ -230,25 +277,26 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         return role
     }
 
-    fun getAllUsers(): List<Triple<String, String, String>> {
-        val userList = mutableListOf<Triple<String, String, String>>()
+    fun getAllUsers(): List<User> {
+        val userList = mutableListOf<User>()
         val db = this.readableDatabase
-        val cursor = db.rawQuery("SELECT $COLUMN_EMAIL, $COLUMN_PASSWORD, $COLUMN_ROL FROM $TABLE_USERS", null)
+        val cursor = db.rawQuery("SELECT $COLUMN_EMAIL, $COLUMN_PASSWORD, $COLUMN_ROL, $COLUMN_PHONE FROM $TABLE_USERS", null)
         if (cursor.moveToFirst()) {
             do {
-                userList.add(Triple(cursor.getString(0), cursor.getString(1), cursor.getString(2)))
+                userList.add(User(cursor.getString(0), cursor.getString(1), cursor.getString(2), cursor.getString(3) ?: ""))
             } while (cursor.moveToNext())
         }
         cursor.close()
         return userList
     }
 
-    fun addUser(email: String, pass: String, rol: String): Boolean {
+    fun addUser(email: String, pass: String, rol: String, phone: String): Boolean {
         val db = this.writableDatabase
         val values = ContentValues()
         values.put(COLUMN_EMAIL, email)
         values.put(COLUMN_PASSWORD, pass)
         values.put(COLUMN_ROL, rol)
+        values.put(COLUMN_PHONE, phone)
         val result = db.insert(TABLE_USERS, null, values)
         return result != -1L
     }
@@ -350,5 +398,80 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         }
         cursor.close()
         return list
+    }
+
+    fun getParentPhone(email: String): String {
+        val db = this.readableDatabase
+        val cursor = db.rawQuery("SELECT $COLUMN_PHONE FROM $TABLE_USERS WHERE $COLUMN_EMAIL = ?", arrayOf(email))
+        var phone = ""
+        if (cursor.moveToFirst()) {
+            phone = cursor.getString(0) ?: ""
+        }
+        cursor.close()
+        return phone
+    }
+
+    // --- Grades & Attendance Methods ---
+
+    fun addGrade(studentId: Int, subject: String, grade: Double, date: String, period: String): Boolean {
+        val db = this.writableDatabase
+        val values = ContentValues()
+        values.put(COLUMN_GRADE_STUDENT_ID, studentId)
+        values.put(COLUMN_GRADE_SUBJECT, subject)
+        values.put(COLUMN_GRADE_VALUE, grade)
+        values.put(COLUMN_GRADE_DATE, date)
+        values.put(COLUMN_GRADE_PERIOD, period)
+        val result = db.insert(TABLE_GRADES, null, values)
+        return result != -1L
+    }
+
+    fun getGradesByStudent(studentId: Int, startDate: String? = null): List<Triple<String, Double, String>> {
+        val list = mutableListOf<Triple<String, Double, String>>()
+        val db = this.readableDatabase
+        val query = if (startDate != null) {
+            "SELECT $COLUMN_GRADE_SUBJECT, $COLUMN_GRADE_VALUE, $COLUMN_GRADE_DATE FROM $TABLE_GRADES WHERE $COLUMN_GRADE_STUDENT_ID = ? AND $COLUMN_GRADE_DATE >= ?"
+        } else {
+            "SELECT $COLUMN_GRADE_SUBJECT, $COLUMN_GRADE_VALUE, $COLUMN_GRADE_DATE FROM $TABLE_GRADES WHERE $COLUMN_GRADE_STUDENT_ID = ?"
+        }
+        val args = if (startDate != null) arrayOf(studentId.toString(), startDate) else arrayOf(studentId.toString())
+        
+        val cursor = db.rawQuery(query, args)
+        if (cursor.moveToFirst()) {
+            do {
+                list.add(Triple(cursor.getString(0), cursor.getDouble(1), cursor.getString(2)))
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        return list
+    }
+
+    fun addAttendance(studentId: Int, status: String, date: String): Boolean {
+        val db = this.writableDatabase
+        val values = ContentValues()
+        values.put(COLUMN_ATT_STUDENT_ID, studentId)
+        values.put(COLUMN_ATT_STATUS, status)
+        values.put(COLUMN_ATT_DATE, date)
+        val result = db.insert(TABLE_ATTENDANCE, null, values)
+        return result != -1L
+    }
+
+    fun getAttendanceStats(studentId: Int, startDate: String? = null): Map<String, Int> {
+        val stats = mutableMapOf<String, Int>()
+        val db = this.readableDatabase
+        val query = if (startDate != null) {
+            "SELECT $COLUMN_ATT_STATUS, COUNT(*) FROM $TABLE_ATTENDANCE WHERE $COLUMN_ATT_STUDENT_ID = ? AND $COLUMN_ATT_DATE >= ? GROUP BY $COLUMN_ATT_STATUS"
+        } else {
+            "SELECT $COLUMN_ATT_STATUS, COUNT(*) FROM $TABLE_ATTENDANCE WHERE $COLUMN_ATT_STUDENT_ID = ? GROUP BY $COLUMN_ATT_STATUS"
+        }
+        val args = if (startDate != null) arrayOf(studentId.toString(), startDate) else arrayOf(studentId.toString())
+
+        val cursor = db.rawQuery(query, args)
+        if (cursor.moveToFirst()) {
+            do {
+                stats[cursor.getString(0)] = cursor.getInt(1)
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        return stats
     }
 }

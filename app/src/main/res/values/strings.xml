@@ -78,4 +78,12 @@
     <string name="complaint_2_title">Transporte - Ruta 04 Retrasada</string>
     <string name="complaint_2_desc">Incidente vial en la Av. Principal. Requiere comunicación masiva.</string>
     <string name="attend_all">Atender Todas</string>
+
+    <!-- Grading and Attendance -->
+    <string name="manage_grades">Gestión de Notas</string>
+    <string name="manage_grades_desc">Registra y edita las calificaciones de tus alumnos por materia y periodo.</string>
+    <string name="enter_grades">Ingresar Notas</string>
+    <string name="attendance_control">Control de Asistencia</string>
+    <string name="attendance_control_desc">Toma lista diariamente y reporta inasistencias de forma automática.</string>
+    <string name="take_attendance">Pasar Lista</string>
 </resources>

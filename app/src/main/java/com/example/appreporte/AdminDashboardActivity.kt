@@ -75,6 +75,10 @@ class AdminDashboardActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
+        binding.btnScheduleReports.setOnClickListener {
+            scheduleAutomatedReports()
+        }
+
         binding.fabAddUser.setOnClickListener {
             if (binding.llUserListContainer.visibility == View.VISIBLE) {
                 showAddUserDialog()
@@ -82,6 +86,34 @@ class AdminDashboardActivity : AppCompatActivity() {
                 showAddClassroomDialog()
             }
         }
+    }
+
+    private fun scheduleAutomatedReports() {
+        val options = arrayOf("Diario", "Mensual", "Bimestral")
+        AlertDialog.Builder(this)
+            .setTitle("Programar Reportes Automáticos")
+            .setItems(options) { _, which ->
+                val selectedPeriod = options[which]
+                val (interval, timeUnit) = when (selectedPeriod) {
+                    "Diario" -> 24L to java.util.concurrent.TimeUnit.HOURS
+                    "Mensual" -> 30L to java.util.concurrent.TimeUnit.DAYS
+                    "Bimestral" -> 60L to java.util.concurrent.TimeUnit.DAYS
+                    else -> 24L to java.util.concurrent.TimeUnit.HOURS
+                }
+
+                val data = androidx.work.workDataOf("PERIOD" to selectedPeriod)
+                val workRequest = androidx.work.PeriodicWorkRequestBuilder<ReportWorker>(interval, timeUnit)
+                    .setInputData(data)
+                    .build()
+
+                androidx.work.WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                    "AutomatedReports_$selectedPeriod",
+                    androidx.work.ExistingPeriodicWorkPolicy.UPDATE,
+                    workRequest
+                )
+                Toast.makeText(this, "Reporte $selectedPeriod programado con éxito", Toast.LENGTH_SHORT).show()
+            }
+            .show()
     }
 
     private fun showAddClassroomFab() {
@@ -143,6 +175,7 @@ class AdminDashboardActivity : AppCompatActivity() {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_user, null)
         val etEmail = dialogView.findViewById<TextInputEditText>(R.id.etEmail)
         val etPassword = dialogView.findViewById<TextInputEditText>(R.id.etPassword)
+        val etPhone = dialogView.findViewById<TextInputEditText>(R.id.etPhone)
         val spinnerRol = dialogView.findViewById<AutoCompleteTextView>(R.id.spinnerRol)
 
         val roles = arrayOf("admin", "docente", "usuario")
@@ -154,10 +187,11 @@ class AdminDashboardActivity : AppCompatActivity() {
             .setPositiveButton("Guardar") { _, _ ->
                 val email = etEmail.text.toString()
                 val pass = etPassword.text.toString()
+                val phone = etPhone.text.toString()
                 val rol = spinnerRol.text.toString()
 
-                if (email.isNotEmpty() && pass.isNotEmpty() && rol.isNotEmpty()) {
-                    val success = dbHelper.addUser(email, pass, rol)
+                if (email.isNotEmpty() && pass.isNotEmpty() && rol.isNotEmpty() && phone.isNotEmpty()) {
+                    val success = dbHelper.addUser(email, pass, rol, phone)
                     if (success) {
                         Toast.makeText(this, "Usuario añadido", Toast.LENGTH_SHORT).show()
                         userAdapter.updateUsers(dbHelper.getAllUsers())

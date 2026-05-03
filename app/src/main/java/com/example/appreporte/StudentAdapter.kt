@@ -8,13 +8,15 @@ import androidx.recyclerview.widget.RecyclerView
 
 class StudentAdapter(
     private var students: List<Triple<Int, String, String>>,
-    private val onDeleteClick: (Int) -> Unit
+    private val onDeleteClick: (Int) -> Unit,
+    private val onSendReportClick: (Int, String, String) -> Unit
 ) : RecyclerView.Adapter<StudentAdapter.StudentViewHolder>() {
 
     class StudentViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvName: TextView = view.findViewById(R.id.tvStudentName)
         val tvParent: TextView = view.findViewById(R.id.tvParentEmail)
         val btnDelete: View = view.findViewById(R.id.btnDeleteStudent)
+        val btnSendReport: View = view.findViewById(R.id.btnSendReport)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): StudentViewHolder {
@@ -27,8 +29,13 @@ class StudentAdapter(
         val student = students[position]
         holder.tvName.text = student.second
         holder.tvParent.text = "Padre: ${student.third}"
+        
         holder.btnDelete.setOnClickListener {
             onDeleteClick(student.first)
+        }
+
+        holder.btnSendReport.setOnClickListener {
+            onSendReportClick(student.first, student.second, student.third)
         }
     }
 

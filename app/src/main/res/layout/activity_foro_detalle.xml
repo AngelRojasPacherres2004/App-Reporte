@@ -84,7 +84,8 @@
                         app:iconGravity="textStart"
                         app:iconPadding="0dp"
                         app:iconTint="@color/white"
-                        style="@style/Widget.Material3.Button.IconButton.Filled" />
+                        app:backgroundTint="@color/primary"
+                        app:shapeAppearanceOverlay="@style/ShapeAppearance.Circle" />
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

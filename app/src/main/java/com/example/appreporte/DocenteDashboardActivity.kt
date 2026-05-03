@@ -31,6 +31,14 @@ class DocenteDashboardActivity : AppCompatActivity() {
             intent.putExtra("USER_EMAIL", userEmail)
             startActivity(intent)
         }
+
+        binding.btnManageGrades.setOnClickListener {
+            // TODO: Implement Grading Activity
+        }
+
+        binding.btnManageAttendance.setOnClickListener {
+            // TODO: Implement Attendance Activity
+        }
     }
 
     private fun setupBottomNavigation() {
