@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/dashboard_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background">
@@ -17,27 +16,73 @@
             android:layout_height="wrap_content"
             android:padding="16dp">
 
+            <!-- 1. Logo de la App -->
             <ImageView
-                android:id="@+id/ivLogoDash"
+                android:id="@+id/ivLogoHeader"
                 android:layout_width="32dp"
                 android:layout_height="32dp"
-                android:src="@android:drawable/ic_menu_edit"
+                android:src="@drawable/logo_original"
+                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:tint="@color/primary" />
+                app:layout_constraintTop_toTopOf="parent" />
 
-            <TextView
-                android:id="@+id/tvBrandNameDash"
+            <!-- Títulos apilados: EduConnect y Padre -->
+            <LinearLayout
+                android:id="@+id/llHeaderTitles"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:text="@string/brand_name"
-                android:textColor="@color/primary"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                app:layout_constraintBottom_toBottomOf="@+id/ivLogoDash"
-                app:layout_constraintStart_toEndOf="@+id/ivLogoDash"
-                app:layout_constraintTop_toTopOf="@+id/ivLogoDash" />
+                android:layout_marginStart="12dp"
+                android:orientation="vertical"
+                app:layout_constraintBottom_toBottomOf="@+id/ivLogoHeader"
+                app:layout_constraintStart_toEndOf="@+id/ivLogoHeader"
+                app:layout_constraintTop_toTopOf="@+id/ivLogoHeader">
+
+                <TextView
+                    android:id="@+id/tvHeaderTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="EduConnect"
+                    android:textColor="@color/primary"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvHeaderSubtitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Padre"
+                    android:textColor="@color/primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- 2. Iconos derecha (Luna y Perfil) -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <ImageView
+                    android:id="@+id/ivThemeToggle"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_marginEnd="16dp"
+                    android:src="@drawable/ic_moon"
+                    app:tint="@color/on_surface" />
+
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:id="@+id/ivPadreProfile"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/admin_avatar"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
+
+            </LinearLayout>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </com.google.android.material.appbar.AppBarLayout>
@@ -53,9 +98,52 @@
             android:orientation="vertical"
             android:padding="16dp">
 
+            <!-- Welcome Card Padre -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                app:cardBackgroundColor="@color/surface"
+                app:cardCornerRadius="24dp"
+                app:strokeWidth="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="24dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="¡Hola,"
+                        android:textColor="@color/on_surface"
+                        android:textSize="28sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Padre de Familia!"
+                        android:textColor="@color/primary"
+                        android:textSize="28sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="Hoy es un gran día para seguir el progreso de su hijo. Revisa las nuevas actualizaciones."
+                        android:textColor="@color/on_surface"
+                        android:textSize="14sp" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Card: Foro del Salón -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
                 app:cardBackgroundColor="@color/primary"
                 app:cardCornerRadius="24dp"
                 app:strokeWidth="0dp">
@@ -67,39 +155,38 @@
                     android:padding="24dp">
 
                     <TextView
-                        android:id="@+id/tvWelcomeTitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/welcome_user"
+                        android:text="Foro del Salón"
                         android:textColor="@color/white"
-                        android:textSize="24sp"
+                        android:textSize="20sp"
                         android:textStyle="bold" />
 
                     <TextView
-                        android:id="@+id/tvWelcomeDesc"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:text="@string/welcome_desc"
-                        android:textColor="@color/white"
+                        android:layout_marginTop="8dp"
+                        android:text="Participe en la comunidad y manténgase informado sobre las actividades escolares."
+                        android:textColor="#E0E0E0"
                         android:textSize="14sp" />
 
+                    <!-- Le quitamos las 3 líneas del ícono que estaban causando el error -->
                     <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnViewForo"
+                        android:id="@+id/btnVerForo"
                         style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
+                        android:layout_width="match_parent"
+                        android:layout_height="56dp"
                         android:layout_marginTop="20dp"
                         android:backgroundTint="@color/white"
                         android:text="VER FORO DEL SALÓN"
-                        android:textAllCaps="false"
+                        android:textAllCaps="true"
                         android:textColor="@color/primary"
-                        app:cornerRadius="24dp"
-                        app:icon="@android:drawable/stat_notify_chat"
-                        app:iconTint="@color/primary" />
+                        app:cornerRadius="16dp" />
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
+            <!-- Puedes agregar más secciones específicas para el padre aquí abajo -->
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
@@ -109,7 +196,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        app:backgroundTint="@color/white"
+        app:backgroundTint="@color/background"
+        app:itemIconTint="@color/on_surface"
+        app:itemTextColor="@color/on_surface"
         app:menu="@menu/bottom_nav_menu_padre" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
