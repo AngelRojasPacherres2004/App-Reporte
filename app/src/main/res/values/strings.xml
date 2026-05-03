@@ -77,4 +77,26 @@
     <string name="complaint_2_title">Transporte - Ruta 04 Retrasada</string>
     <string name="complaint_2_desc">Incidente vial en la Av. Principal. Requiere comunicación masiva.</string>
     <string name="attend_all">Atender Todas</string>
+    <string name="report_and_grades">Reportes y Notas</string>
+    <string name="assign_grades_desc">Asigna calificaciones diarias, mensuales o bimestrales a los alumnos.</string>
+    <string name="assign_grades_btn">Asignar Notas</string>
+    <string name="select_grade_type">Seleccione tipo de nota:</string>
+    <string name="subject_hint">Curso / Materia</string>
+    <string name="grade_value_hint">Calificación (Nota)</string>
+    <string name="select_classroom_notes">Seleccione Salón para Notas</string>
+    <string name="students_of">Alumnos de %1$s</string>
+    <string name="assign_grade_to">Asignar Nota a %1$s</string>
+    <string name="save">Guardar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="grade_assigned_success">Nota asignada correctamente</string>
+    <string name="grade_assigned_error">Error al asignar nota</string>
+    <string name="fill_all_fields">Por favor complete todos los campos</string>
+    <string name="add_grade">Asignar Nota</string>
+    <string name="generate_pdf_report">Generar Reporte PDF</string>
+    <string name="sending_report">Preparando reporte...</string>
+    <string name="error_no_phone">El padre no tiene un número registrado</string>
+    <string name="error_pdf">Error al generar PDF</string>
+    <string name="share_report">Compartir reporte</string>
+    <string name="phone">Teléfono</string>
+    <string name="phone_hint">Ej: 912345678</string>
 </resources>

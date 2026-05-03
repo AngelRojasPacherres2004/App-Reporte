@@ -30,6 +30,11 @@ class DocenteDashboardActivity : AppCompatActivity() {
             intent.putExtra("USER_EMAIL", userEmail)
             startActivity(intent)
         }
+
+        binding.btnAssignGradesDocente.setOnClickListener {
+            val intent = Intent(this, GestionReportesSalonesActivity::class.java)
+            startActivity(intent)
+        }
     }
 
     private fun setupBottomNavigation() {
@@ -37,7 +42,11 @@ class DocenteDashboardActivity : AppCompatActivity() {
         binding.bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_inicio -> true
-                R.id.nav_reportes -> true
+                R.id.nav_reportes -> {
+                    val intent = Intent(this, GestionReportesSalonesActivity::class.java)
+                    startActivity(intent)
+                    true
+                }
                 R.id.nav_foro -> {
                     val intent = Intent(this, ForoSalonesActivity::class.java)
                     intent.putExtra("USER_ROL", userRole)

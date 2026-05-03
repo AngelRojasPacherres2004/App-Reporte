@@ -59,6 +59,36 @@
             android:exported="false"
             android:label="Asistente EduConnect" />
 
+        <activity
+            android:name=".GestionAlumnosSalonesActivity"
+            android:exported="false"
+            android:label="Seleccionar Salón" />
+
+        <activity
+            android:name=".AlumnosListaActivity"
+            android:exported="false"
+            android:label="Lista de Alumnos" />
+
+        <activity
+            android:name=".GestionReportesSalonesActivity"
+            android:exported="false"
+            android:label="Reportes por Salón" />
+
+        <activity
+            android:name=".AlumnosReporteListaActivity"
+            android:exported="false"
+            android:label="Asignar Notas" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
     </application>
 
 </manifest>

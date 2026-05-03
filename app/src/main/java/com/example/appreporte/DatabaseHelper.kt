@@ -9,12 +9,13 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     companion object {
         private const val DATABASE_NAME = "AppReporte.db"
-        private const val DATABASE_VERSION = 4 // Incremented version
+        private const val DATABASE_VERSION = 7 // Added phone to users
         private const val TABLE_USERS = "users"
         private const val COLUMN_ID = "id"
         private const val COLUMN_EMAIL = "email"
         private const val COLUMN_PASSWORD = "password"
         private const val COLUMN_ROL = "rol"
+        private const val COLUMN_PHONE = "phone"
 
         private const val TABLE_CLASSROOMS = "classrooms"
         private const val COLUMN_CLASSROOM_ID = "id"
@@ -39,6 +40,24 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         private const val COLUMN_COMMENT_AUTHOR = "author"
         private const val COLUMN_COMMENT_CONTENT = "content"
         private const val COLUMN_COMMENT_TIME = "time"
+
+        // Students Table
+        private const val TABLE_STUDENTS = "students"
+        private const val COLUMN_STUDENT_ID = "id"
+        private const val COLUMN_STUDENT_NAMES = "names"
+        private const val COLUMN_STUDENT_LASTNAMES = "lastnames"
+        private const val COLUMN_STUDENT_DNI = "dni"
+        private const val COLUMN_STUDENT_CLASSROOM_ID = "classroom_id"
+        private const val COLUMN_STUDENT_PARENT_EMAIL = "parent_email"
+
+        // Grades Table
+        private const val TABLE_GRADES = "grades"
+        private const val COLUMN_GRADE_ID = "id"
+        private const val COLUMN_GRADE_STUDENT_ID = "student_id"
+        private const val COLUMN_GRADE_TYPE = "type" // diaria, mensual, bimestral
+        private const val COLUMN_GRADE_VALUE = "value"
+        private const val COLUMN_GRADE_SUBJECT = "subject"
+        private const val COLUMN_GRADE_DATE = "date"
     }
 
     override fun onCreate(db: SQLiteDatabase) {
@@ -46,7 +65,8 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + COLUMN_EMAIL + " TEXT UNIQUE,"
                 + COLUMN_PASSWORD + " TEXT,"
-                + COLUMN_ROL + " TEXT" + ")")
+                + COLUMN_ROL + " TEXT,"
+                + COLUMN_PHONE + " TEXT" + ")")
         db.execSQL(createUsersTable)
 
         val createClassroomsTable = ("CREATE TABLE " + TABLE_CLASSROOMS + "("
@@ -80,10 +100,31 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 + "FOREIGN KEY($COLUMN_COMMENT_POST_ID) REFERENCES $TABLE_POSTS($COLUMN_POST_ID))")
         db.execSQL(createCommentsTable)
 
+        val createStudentsTable = ("CREATE TABLE " + TABLE_STUDENTS + "("
+                + COLUMN_STUDENT_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + COLUMN_STUDENT_NAMES + " TEXT,"
+                + COLUMN_STUDENT_LASTNAMES + " TEXT,"
+                + COLUMN_STUDENT_DNI + " TEXT UNIQUE,"
+                + COLUMN_STUDENT_CLASSROOM_ID + " INTEGER,"
+                + COLUMN_STUDENT_PARENT_EMAIL + " TEXT,"
+                + "FOREIGN KEY($COLUMN_STUDENT_CLASSROOM_ID) REFERENCES $TABLE_CLASSROOMS($COLUMN_CLASSROOM_ID),"
+                + "FOREIGN KEY($COLUMN_STUDENT_PARENT_EMAIL) REFERENCES $TABLE_USERS($COLUMN_EMAIL))")
+        db.execSQL(createStudentsTable)
+
+        val createGradesTable = ("CREATE TABLE " + TABLE_GRADES + "("
+                + COLUMN_GRADE_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + COLUMN_GRADE_STUDENT_ID + " INTEGER,"
+                + COLUMN_GRADE_TYPE + " TEXT,"
+                + COLUMN_GRADE_VALUE + " TEXT,"
+                + COLUMN_GRADE_SUBJECT + " TEXT,"
+                + COLUMN_GRADE_DATE + " TEXT,"
+                + "FOREIGN KEY($COLUMN_GRADE_STUDENT_ID) REFERENCES $TABLE_STUDENTS($COLUMN_STUDENT_ID))")
+        db.execSQL(createGradesTable)
+
         // Insertar usuarios iniciales
-        insertUser(db, "admin@reporte.com", "admin123", "admin")
-        insertUser(db, "user@reporte.com", "user123", "usuario")
-        insertUser(db, "docente@reporte.com", "docente123", "docente")
+        insertUser(db, "admin@reporte.com", "admin123", "admin", "")
+        insertUser(db, "user@reporte.com", "user123", "usuario", "912345678")
+        insertUser(db, "docente@reporte.com", "docente123", "docente", "")
 
         // Insertar salones iniciales
         insertClassroom(db, "Sala de 3 años")
@@ -92,6 +133,8 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_GRADES")
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_STUDENTS")
         db.execSQL("DROP TABLE IF EXISTS $TABLE_COMMENTS")
         db.execSQL("DROP TABLE IF EXISTS $TABLE_POSTS")
         db.execSQL("DROP TABLE IF EXISTS $TABLE_USER_CLASSROOMS")
@@ -181,11 +224,12 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         return list
     }
 
-    private fun insertUser(db: SQLiteDatabase, email: String, pass: String, rol: String) {
+    private fun insertUser(db: SQLiteDatabase, email: String, pass: String, rol: String, phone: String) {
         val values = ContentValues()
         values.put(COLUMN_EMAIL, email)
         values.put(COLUMN_PASSWORD, pass)
         values.put(COLUMN_ROL, rol)
+        values.put(COLUMN_PHONE, phone)
         db.insert(TABLE_USERS, null, values)
     }
 
@@ -203,25 +247,31 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         return role
     }
 
-    fun getAllUsers(): List<Triple<String, String, String>> {
-        val userList = mutableListOf<Triple<String, String, String>>()
+    fun getAllUsers(): List<Map<String, String>> {
+        val userList = mutableListOf<Map<String, String>>()
         val db = this.readableDatabase
-        val cursor = db.rawQuery("SELECT $COLUMN_EMAIL, $COLUMN_PASSWORD, $COLUMN_ROL FROM $TABLE_USERS", null)
+        val cursor = db.rawQuery("SELECT $COLUMN_EMAIL, $COLUMN_PASSWORD, $COLUMN_ROL, $COLUMN_PHONE FROM $TABLE_USERS", null)
         if (cursor.moveToFirst()) {
             do {
-                userList.add(Triple(cursor.getString(0), cursor.getString(1), cursor.getString(2)))
+                val map = mutableMapOf<String, String>()
+                map["email"] = cursor.getString(0)
+                map["password"] = cursor.getString(1)
+                map["rol"] = cursor.getString(2)
+                map["phone"] = cursor.getString(3) ?: ""
+                userList.add(map)
             } while (cursor.moveToNext())
         }
         cursor.close()
         return userList
     }
 
-    fun addUser(email: String, pass: String, rol: String): Boolean {
+    fun addUser(email: String, pass: String, rol: String, phone: String = ""): Boolean {
         val db = this.writableDatabase
         val values = ContentValues()
         values.put(COLUMN_EMAIL, email)
         values.put(COLUMN_PASSWORD, pass)
         values.put(COLUMN_ROL, rol)
+        values.put(COLUMN_PHONE, phone)
         val result = db.insert(TABLE_USERS, null, values)
         return result != -1L
     }
@@ -279,5 +329,120 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         }
         cursor.close()
         return list
+    }
+
+    // --- Student Methods ---
+
+    fun addStudent(names: String, lastnames: String, dni: String, classroomId: Int, parentEmail: String): Boolean {
+        val db = this.writableDatabase
+        val values = ContentValues()
+        values.put(COLUMN_STUDENT_NAMES, names)
+        values.put(COLUMN_STUDENT_LASTNAMES, lastnames)
+        values.put(COLUMN_STUDENT_DNI, dni)
+        values.put(COLUMN_STUDENT_CLASSROOM_ID, classroomId)
+        values.put(COLUMN_STUDENT_PARENT_EMAIL, parentEmail)
+        val result = db.insert(TABLE_STUDENTS, null, values)
+        return result != -1L
+    }
+
+    fun getStudentsByClassroom(classroomId: Int): List<Map<String, String>> {
+        val list = mutableListOf<Map<String, String>>()
+        val db = this.readableDatabase
+        val cursor = db.rawQuery("SELECT * FROM $TABLE_STUDENTS WHERE $COLUMN_STUDENT_CLASSROOM_ID = ?", arrayOf(classroomId.toString()))
+        if (cursor.moveToFirst()) {
+            do {
+                val map = mutableMapOf<String, String>()
+                map["id"] = cursor.getInt(0).toString()
+                map["names"] = cursor.getString(1)
+                map["lastnames"] = cursor.getString(2)
+                map["dni"] = cursor.getString(3)
+                map["parent_email"] = cursor.getString(5)
+                list.add(map)
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        return list
+    }
+
+    fun updateStudent(id: Int, names: String, lastnames: String, dni: String, parentEmail: String): Boolean {
+        val db = this.writableDatabase
+        val values = ContentValues()
+        values.put(COLUMN_STUDENT_NAMES, names)
+        values.put(COLUMN_STUDENT_LASTNAMES, lastnames)
+        values.put(COLUMN_STUDENT_DNI, dni)
+        values.put(COLUMN_STUDENT_PARENT_EMAIL, parentEmail)
+        val result = db.update(TABLE_STUDENTS, values, "$COLUMN_STUDENT_ID = ?", arrayOf(id.toString()))
+        return result > 0
+    }
+
+    fun deleteStudent(id: Int): Boolean {
+        val db = this.writableDatabase
+        val result = db.delete(TABLE_STUDENTS, "$COLUMN_STUDENT_ID = ?", arrayOf(id.toString()))
+        return result > 0
+    }
+
+    fun getParents(): List<String> {
+        val list = mutableListOf<String>()
+        val db = this.readableDatabase
+        val cursor = db.rawQuery("SELECT $COLUMN_EMAIL FROM $TABLE_USERS WHERE $COLUMN_ROL = 'usuario' OR $COLUMN_ROL = 'padre'", null)
+        if (cursor.moveToFirst()) {
+            do {
+                list.add(cursor.getString(0))
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        return list
+    }
+
+    fun updateClassroom(id: Int, newName: String): Boolean {
+        val db = this.writableDatabase
+        val values = ContentValues()
+        values.put(COLUMN_CLASSROOM_NAME, newName)
+        val result = db.update(TABLE_CLASSROOMS, values, "$COLUMN_CLASSROOM_ID = ?", arrayOf(id.toString()))
+        return result > 0
+    }
+
+    // --- Grades Methods ---
+
+    fun addGrade(studentId: Int, type: String, value: String, subject: String, date: String): Boolean {
+        val db = this.writableDatabase
+        val values = ContentValues()
+        values.put(COLUMN_GRADE_STUDENT_ID, studentId)
+        values.put(COLUMN_GRADE_TYPE, type)
+        values.put(COLUMN_GRADE_VALUE, value)
+        values.put(COLUMN_GRADE_SUBJECT, subject)
+        values.put(COLUMN_GRADE_DATE, date)
+        val result = db.insert(TABLE_GRADES, null, values)
+        return result != -1L
+    }
+
+    fun getGradesByStudent(studentId: Int): List<Map<String, String>> {
+        val list = mutableListOf<Map<String, String>>()
+        val db = this.readableDatabase
+        val cursor = db.rawQuery("SELECT * FROM $TABLE_GRADES WHERE $COLUMN_GRADE_STUDENT_ID = ?", arrayOf(studentId.toString()))
+        if (cursor.moveToFirst()) {
+            do {
+                val map = mutableMapOf<String, String>()
+                map["id"] = cursor.getInt(0).toString()
+                map["type"] = cursor.getString(2)
+                map["value"] = cursor.getString(3)
+                map["subject"] = cursor.getString(4)
+                map["date"] = cursor.getString(5)
+                list.add(map)
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        return list
+    }
+
+    fun getParentPhone(parentEmail: String): String? {
+        val db = this.readableDatabase
+        val cursor = db.rawQuery("SELECT $COLUMN_PHONE FROM $TABLE_USERS WHERE $COLUMN_EMAIL = ?", arrayOf(parentEmail))
+        var phone: String? = null
+        if (cursor.moveToFirst()) {
+            phone = cursor.getString(0)
+        }
+        cursor.close()
+        return phone
     }
 }

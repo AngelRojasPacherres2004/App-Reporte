@@ -1,5 +1,6 @@
 package com.example.appreporte
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -92,6 +93,11 @@ class AdminDashboardActivity : AppCompatActivity() {
             showAddClassroomFab()
         }
 
+        binding.btnManageStudents.setOnClickListener {
+            val intent = Intent(this, GestionAlumnosSalonesActivity::class.java)
+            startActivity(intent)
+        }
+
         binding.fabAddUser.setOnClickListener {
             if (binding.llUserListContainer.visibility == View.VISIBLE) {
                 showAddUserDialog()
@@ -159,6 +165,7 @@ class AdminDashboardActivity : AppCompatActivity() {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_user, null)
         val etEmail = dialogView.findViewById<TextInputEditText>(R.id.etEmail)
         val etPassword = dialogView.findViewById<TextInputEditText>(R.id.etPassword)
+        val etPhone = dialogView.findViewById<TextInputEditText>(R.id.etPhone)
         val spinnerRol = dialogView.findViewById<AutoCompleteTextView>(R.id.spinnerRol)
 
         val roles = arrayOf("admin", "docente", "usuario")
@@ -171,9 +178,10 @@ class AdminDashboardActivity : AppCompatActivity() {
                 val email = etEmail.text.toString()
                 val pass = etPassword.text.toString()
                 val rol = spinnerRol.text.toString()
+                val phone = etPhone.text.toString()
 
                 if (email.isNotEmpty() && pass.isNotEmpty() && rol.isNotEmpty()) {
-                    val success = dbHelper.addUser(email, pass, rol)
+                    val success = dbHelper.addUser(email, pass, rol, phone)
                     if (success) {
                         Toast.makeText(this, "Usuario añadido", Toast.LENGTH_SHORT).show()
                         userAdapter.updateUsers(dbHelper.getAllUsers())
@@ -192,7 +200,7 @@ class AdminDashboardActivity : AppCompatActivity() {
         binding.bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_inicio -> true
-                R.id.nav_reportes -> true
+                R.id.nav_gestion -> true
                 R.id.nav_foro -> true
                 R.id.nav_asistente -> true
                 R.id.nav_perfil -> true

@@ -7,7 +7,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
 class UserAdapter(
-    private var users: List<Triple<String, String, String>>,
+    private var users: List<Map<String, String>>,
     private val onUserClick: (String) -> Unit
 ) : RecyclerView.Adapter<UserAdapter.UserViewHolder>() {
 
@@ -23,17 +23,20 @@ class UserAdapter(
 
     override fun onBindViewHolder(holder: UserViewHolder, position: Int) {
         val user = users[position]
-        holder.tvEmail.text = user.first
-        holder.tvRole.text = "Rol: ${user.third}"
+        val email = user["email"] ?: ""
+        val rol = user["rol"] ?: ""
+        
+        holder.tvEmail.text = email
+        holder.tvRole.text = "Rol: $rol"
         
         holder.itemView.setOnClickListener {
-            onUserClick(user.first)
+            onUserClick(email)
         }
     }
 
     override fun getItemCount() = users.size
 
-    fun updateUsers(newUsers: List<Triple<String, String, String>>) {
+    fun updateUsers(newUsers: List<Map<String, String>>) {
         users = newUsers
         notifyDataSetChanged()
     }
