@@ -31,7 +31,17 @@ class AdminDashboardActivity : AppCompatActivity() {
         setupRecyclerViews()
         setupBottomNavigation()
         setupClickListeners()
-        setupThemeToggle() // Se agrega el control del tema
+        setupThemeToggle()
+        setupAdminProfile()
+    }
+
+    private fun setupAdminProfile() {
+        binding.ivAdminProfile.setOnClickListener {
+            val userEmail = intent.getStringExtra("USER_EMAIL")
+            val intent = Intent(this, PerfilActivity::class.java)
+            intent.putExtra("USER_EMAIL", userEmail)
+            startActivity(intent)
+        }
     }
 
     private fun setupThemeToggle() {
@@ -57,9 +67,11 @@ class AdminDashboardActivity : AppCompatActivity() {
 
     private fun setupRecyclerViews() {
         // Setup User Adapter
-        userAdapter = UserAdapter(dbHelper.getAllUsers()) { userEmail ->
+        userAdapter = UserAdapter(dbHelper.getAllUsers(), { userEmail ->
             showAssignClassroomDialog(userEmail)
-        }
+        }, { userMap: Map<String, String> ->
+            showEditUserDialog(userMap)
+        })
         binding.rvUsers.layoutManager = LinearLayoutManager(this)
         binding.rvUsers.adapter = userAdapter
 
@@ -173,6 +185,7 @@ class AdminDashboardActivity : AppCompatActivity() {
         spinnerRol.setAdapter(adapter)
 
         AlertDialog.Builder(this)
+            .setTitle("Nuevo Usuario")
             .setView(dialogView)
             .setPositiveButton("Guardar") { _, _ ->
                 val email = etEmail.text.toString()
@@ -196,14 +209,60 @@ class AdminDashboardActivity : AppCompatActivity() {
             .show()
     }
 
+    private fun showEditUserDialog(user: Map<String, String>) {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_user, null)
+        val etEmail = dialogView.findViewById<TextInputEditText>(R.id.etEmail)
+        val etPassword = dialogView.findViewById<TextInputEditText>(R.id.etPassword)
+        val etPhone = dialogView.findViewById<TextInputEditText>(R.id.etPhone)
+        val spinnerRol = dialogView.findViewById<AutoCompleteTextView>(R.id.spinnerRol)
+
+        etEmail.setText(user["email"])
+        etEmail.isEnabled = false // No permitimos editar el email que es el ID
+        etPassword.setText(user["password"])
+        etPhone.setText(user["phone"])
+        
+        val roles = arrayOf("admin", "docente", "usuario")
+        val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, roles)
+        spinnerRol.setAdapter(adapter)
+        spinnerRol.setText(user["rol"], false)
+
+        AlertDialog.Builder(this)
+            .setTitle("Editar Usuario")
+            .setView(dialogView)
+            .setPositiveButton("Actualizar") { _, _ ->
+                val email = etEmail.text.toString()
+                val pass = etPassword.text.toString()
+                val rol = spinnerRol.text.toString()
+                val phone = etPhone.text.toString()
+
+                if (pass.isNotEmpty() && rol.isNotEmpty()) {
+                    val success = dbHelper.updateUser(email, pass, rol, phone)
+                    if (success) {
+                        Toast.makeText(this, "Usuario actualizado", Toast.LENGTH_SHORT).show()
+                        userAdapter.updateUsers(dbHelper.getAllUsers())
+                    } else {
+                        Toast.makeText(this, "Error al actualizar", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
     private fun setupBottomNavigation() {
+        val userEmail = intent.getStringExtra("USER_EMAIL")
         binding.bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_inicio -> true
                 R.id.nav_gestion -> true
                 R.id.nav_foro -> true
                 R.id.nav_asistente -> true
-                R.id.nav_perfil -> true
+                R.id.nav_perfil -> {
+                    val intent = Intent(this, PerfilActivity::class.java)
+                    intent.putExtra("USER_EMAIL", userEmail)
+                    startActivity(intent)
+                    true
+                }
                 else -> false
             }
         }

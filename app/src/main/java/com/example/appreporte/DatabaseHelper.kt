@@ -265,6 +265,21 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         return userList
     }
 
+    fun getUserData(email: String): Map<String, String>? {
+        val db = this.readableDatabase
+        val cursor = db.rawQuery("SELECT * FROM $TABLE_USERS WHERE $COLUMN_EMAIL = ?", arrayOf(email))
+        var user: Map<String, String>? = null
+        if (cursor.moveToFirst()) {
+            user = mapOf(
+                "email" to cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_EMAIL)),
+                "rol" to cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ROL)),
+                "phone" to (cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PHONE)) ?: "No registrado")
+            )
+        }
+        cursor.close()
+        return user
+    }
+
     fun addUser(email: String, pass: String, rol: String, phone: String = ""): Boolean {
         val db = this.writableDatabase
         val values = ContentValues()
@@ -274,6 +289,16 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         values.put(COLUMN_PHONE, phone)
         val result = db.insert(TABLE_USERS, null, values)
         return result != -1L
+    }
+
+    fun updateUser(email: String, pass: String, rol: String, phone: String): Boolean {
+        val db = this.writableDatabase
+        val values = ContentValues()
+        values.put(COLUMN_PASSWORD, pass)
+        values.put(COLUMN_ROL, rol)
+        values.put(COLUMN_PHONE, phone)
+        val result = db.update(TABLE_USERS, values, "$COLUMN_EMAIL = ?", arrayOf(email))
+        return result > 0
     }
 
     // --- Forum Methods ---
@@ -342,6 +367,12 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         values.put(COLUMN_STUDENT_CLASSROOM_ID, classroomId)
         values.put(COLUMN_STUDENT_PARENT_EMAIL, parentEmail)
         val result = db.insert(TABLE_STUDENTS, null, values)
+
+        // Vincular automáticamente al padre con el salón para que pueda verlo en el foro
+        if (result != -1L && parentEmail.isNotEmpty()) {
+            assignUserToClassroom(parentEmail, classroomId)
+        }
+
         return result != -1L
     }
 
@@ -364,7 +395,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         return list
     }
 
-    fun updateStudent(id: Int, names: String, lastnames: String, dni: String, parentEmail: String): Boolean {
+    fun updateStudent(id: Int, names: String, lastnames: String, dni: String, parentEmail: String, classroomId: Int): Boolean {
         val db = this.writableDatabase
         val values = ContentValues()
         values.put(COLUMN_STUDENT_NAMES, names)
@@ -372,6 +403,12 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         values.put(COLUMN_STUDENT_DNI, dni)
         values.put(COLUMN_STUDENT_PARENT_EMAIL, parentEmail)
         val result = db.update(TABLE_STUDENTS, values, "$COLUMN_STUDENT_ID = ?", arrayOf(id.toString()))
+
+        // Asegurar que el padre esté vinculado al salón al actualizar los datos
+        if (result > 0 && parentEmail.isNotEmpty()) {
+            assignUserToClassroom(parentEmail, classroomId)
+        }
+
         return result > 0
     }
 

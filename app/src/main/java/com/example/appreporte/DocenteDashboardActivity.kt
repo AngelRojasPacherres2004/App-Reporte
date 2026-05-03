@@ -19,6 +19,16 @@ class DocenteDashboardActivity : AppCompatActivity() {
 
         setupBottomNavigation()
         setupClickListeners()
+        setupDocenteProfile()
+    }
+
+    private fun setupDocenteProfile() {
+        binding.ivDocenteProfile.setOnClickListener {
+            val userEmail = intent.getStringExtra("USER_EMAIL")
+            val intent = Intent(this, PerfilActivity::class.java)
+            intent.putExtra("USER_EMAIL", userEmail)
+            startActivity(intent)
+        }
     }
 
     private fun setupClickListeners() {
@@ -55,7 +65,12 @@ class DocenteDashboardActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_asistente -> true
-                R.id.nav_perfil -> true
+                R.id.nav_perfil -> {
+                    val intent = Intent(this, PerfilActivity::class.java)
+                    intent.putExtra("USER_EMAIL", userEmail)
+                    startActivity(intent)
+                    true
+                }
                 else -> false
             }
         }

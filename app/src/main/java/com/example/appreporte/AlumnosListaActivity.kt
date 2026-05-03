@@ -74,7 +74,7 @@ class AlumnosListaActivity : AppCompatActivity() {
                 val success = if (alumno == null) {
                     db.addStudent(names, lastnames, dni, classroomId, parentEmail)
                 } else {
-                    db.updateStudent(alumno["id"]!!.toInt(), names, lastnames, dni, parentEmail)
+                    db.updateStudent(alumno["id"]!!.toInt(), names, lastnames, dni, parentEmail, classroomId)
                 }
 
                 if (success) {

@@ -66,9 +66,11 @@ class PadreDashboardActivity : AppCompatActivity() {
             navigateToForo()
         }
 
-        // Clic en la foto de perfil (opcional, por si quieres abrir ajustes)
+        // Clic en la foto de perfil para abrir ajustes/perfil
         binding.ivPadreProfile.setOnClickListener {
-            Toast.makeText(this, "Perfil de Padre", Toast.LENGTH_SHORT).show()
+            val intent = Intent(this, PerfilActivity::class.java)
+            intent.putExtra("USER_EMAIL", userEmail)
+            startActivity(intent)
         }
     }
 
@@ -129,7 +131,9 @@ class PadreDashboardActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_perfil -> {
-                    Toast.makeText(this, "Perfil en desarrollo", Toast.LENGTH_SHORT).show()
+                    val intent = Intent(this, PerfilActivity::class.java)
+                    intent.putExtra("USER_EMAIL", userEmail)
+                    startActivity(intent)
                     true
                 }
                 else -> false

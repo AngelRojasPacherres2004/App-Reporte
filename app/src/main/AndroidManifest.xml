@@ -79,6 +79,11 @@
             android:exported="false"
             android:label="Asignar Notas" />
 
+        <activity
+            android:name=".PerfilActivity"
+            android:exported="false"
+            android:label="Mi Perfil" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

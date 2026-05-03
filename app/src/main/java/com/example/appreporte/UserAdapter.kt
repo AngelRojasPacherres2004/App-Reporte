@@ -8,7 +8,8 @@ import androidx.recyclerview.widget.RecyclerView
 
 class UserAdapter(
     private var users: List<Map<String, String>>,
-    private val onUserClick: (String) -> Unit
+    private val onUserClick: (String) -> Unit,
+    private val onUserLongClick: (Map<String, String>) -> Unit
 ) : RecyclerView.Adapter<UserAdapter.UserViewHolder>() {
 
     class UserViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -31,6 +32,11 @@ class UserAdapter(
         
         holder.itemView.setOnClickListener {
             onUserClick(email)
+        }
+
+        holder.itemView.setOnLongClickListener {
+            onUserLongClick(user)
+            true
         }
     }
 
