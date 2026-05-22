@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.appreporte.databinding.ActivityPadreReporteBinding
+import com.google.firebase.firestore.FirebaseFirestore
 import com.itextpdf.kernel.pdf.PdfDocument
 import com.itextpdf.kernel.pdf.PdfWriter
 import com.itextpdf.layout.Document
@@ -25,22 +26,27 @@ import java.util.Locale
 class PadreReporteActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityPadreReporteBinding
-    private lateinit var db: DatabaseHelper
     private lateinit var gradesAdapter: GradesAdapter
     private var userEmail: String = ""
-    private var studentId: Int = -1
+    private var studentId: String = ""
     private var studentName: String = ""
+    private var gradesList: List<Map<String, String>> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityPadreReporteBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        db = DatabaseHelper(this)
         userEmail = intent.getStringExtra("USER_EMAIL") ?: ""
+        studentId = intent.getStringExtra("STUDENT_ID") ?: ""
 
         setupUI()
-        loadStudentData()
+        if (studentId.isNotEmpty()) {
+            loadStudentData()
+        } else {
+            binding.tvStudentName.text = "Error: No se proporcionó el ID del estudiante."
+            binding.btnDownloadReport.isEnabled = false
+        }
     }
 
     private fun setupUI() {
@@ -49,7 +55,7 @@ class PadreReporteActivity : AppCompatActivity() {
         binding.rvGradesHistory.adapter = gradesAdapter
 
         binding.btnDownloadReport.setOnClickListener {
-            if (studentId != -1) {
+            if (studentId.isNotEmpty()) {
                 generateAndSavePDF()
             } else {
                 Toast.makeText(this, "No se encontró información del alumno", Toast.LENGTH_SHORT).show()
@@ -58,24 +64,37 @@ class PadreReporteActivity : AppCompatActivity() {
     }
 
     private fun loadStudentData() {
-        val students = db.getStudentsByParent(userEmail)
-        if (students.isNotEmpty()) {
-            val student = students[0] // Asumimos un hijo por ahora
-            studentId = student["id"]?.toInt() ?: -1
-            studentName = "${student["names"]} ${student["lastnames"]}"
-            binding.tvStudentName.text = "Estudiante: $studentName"
+        FirebaseFirestore.getInstance().collection("students").document(studentId).get()
+            .addOnSuccessListener { doc ->
+                if (doc.exists()) {
+                    studentName = "${doc.getString("names")} ${doc.getString("lastnames")}"
+                    binding.tvStudentName.text = "Estudiante: $studentName"
+                    loadGrades()
+                } else {
+                    binding.tvStudentName.text = "Alumno no encontrado."
+                    binding.btnDownloadReport.isEnabled = false
+                }
+            }
+            .addOnFailureListener {
+                binding.tvStudentName.text = "Error de conexión."
+                binding.btnDownloadReport.isEnabled = false
+            }
+    }
 
-            val grades = db.getGradesByStudent(studentId)
-            gradesAdapter.updateData(grades)
-        } else {
-            binding.tvStudentName.text = "No hay alumnos ligados a esta cuenta"
-            binding.btnDownloadReport.isEnabled = false
-        }
+    private fun loadGrades() {
+        FirebaseFirestore.getInstance().collection("grades")
+            .whereEqualTo("student_id", studentId)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                gradesList = snapshot.documents.mapNotNull { doc ->
+                    doc.data?.mapValues { it.value.toString() }
+                }
+                gradesAdapter.updateData(gradesList)
+            }
     }
 
     private fun generateAndSavePDF() {
-        val grades = db.getGradesByStudent(studentId)
-        if (grades.isEmpty()) {
+        if (gradesList.isEmpty()) {
             Toast.makeText(this, "No hay notas para generar el reporte", Toast.LENGTH_SHORT).show()
             return
         }
@@ -97,7 +116,7 @@ class PadreReporteActivity : AppCompatActivity() {
             table.addHeaderCell(Paragraph("Fecha").setBold())
             table.addHeaderCell(Paragraph("Nota").setBold())
 
-            for (grade in grades) {
+            for (grade in gradesList) {
                 table.addCell(grade["subject"] ?: "")
                 table.addCell(grade["type"] ?: "")
                 table.addCell(grade["date"] ?: "")

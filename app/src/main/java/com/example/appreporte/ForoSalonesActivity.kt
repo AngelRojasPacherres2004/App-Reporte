@@ -49,10 +49,42 @@ class ForoSalonesActivity : AppCompatActivity() {
     }
 
     private fun setupBottomNavigation() {
+        val menuRes = when (userRole) {
+            "admin" -> R.menu.bottom_nav_menu_admin
+            "docente" -> R.menu.bottom_nav_menu_docente
+            else -> R.menu.bottom_nav_menu
+        }
+        binding.bottomNavigation.menu.clear()
+        binding.bottomNavigation.inflateMenu(menuRes)
+        
         binding.bottomNavigation.selectedItemId = R.id.nav_foro
         binding.bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_inicio -> {
+                    finish()
+                    true
+                }
+                R.id.nav_gestion -> {
+                    startActivity(Intent(this, AdminDashboardActivity::class.java))
+                    finish()
+                    true
+                }
+                R.id.nav_reportes -> {
+                    val intent = Intent(this, GestionReportesSalonesActivity::class.java)
+                    intent.putExtra("SCHOOL_ID", intent.getStringExtra("SCHOOL_ID"))
+                    startActivity(intent)
+                    finish()
+                    true
+                }
+                R.id.nav_asistente -> {
+                    startActivity(Intent(this, AsistenteActivity::class.java))
+                    finish()
+                    true
+                }
+                R.id.nav_perfil -> {
+                    val intent = Intent(this, PerfilActivity::class.java)
+                    intent.putExtra("USER_EMAIL", userEmail)
+                    startActivity(intent)
                     finish()
                     true
                 }

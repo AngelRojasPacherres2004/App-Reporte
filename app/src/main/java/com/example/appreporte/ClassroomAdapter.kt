@@ -8,8 +8,9 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
 class ClassroomAdapter(
-    private var classrooms: List<Pair<Int, String>>,
-    private val onDeleteClick: (Int) -> Unit
+    private var classrooms: List<Pair<String, String>>,
+    private val onDeleteClick: (String) -> Unit,
+    private val onItemClick: ((String, String) -> Unit)? = null
 ) : RecyclerView.Adapter<ClassroomAdapter.ClassroomViewHolder>() {
 
     class ClassroomViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -28,11 +29,14 @@ class ClassroomAdapter(
         holder.btnDelete.setOnClickListener {
             onDeleteClick(classroom.first)
         }
+        holder.itemView.setOnClickListener {
+            onItemClick?.invoke(classroom.first, classroom.second)
+        }
     }
 
     override fun getItemCount() = classrooms.size
 
-    fun updateClassrooms(newClassrooms: List<Pair<Int, String>>) {
+    fun updateClassrooms(newClassrooms: List<Pair<String, String>>) {
         classrooms = newClassrooms
         notifyDataSetChanged()
     }

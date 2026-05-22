@@ -30,8 +30,9 @@ class LoadingActivity : AppCompatActivity() {
                     // Al terminar la animación, ir al Dashboard correspondiente según el rol
                     val rol = intent.getStringExtra("USER_ROL")
                     val email = intent.getStringExtra("USER_EMAIL")
+                    val schoolId = intent.getStringExtra("SCHOOL_ID")
                     val targetActivity = when (rol) {
-                        "admin" -> AdminDashboardActivity::class.java
+                        "admin" -> InicioActivity::class.java
                         "docente" -> DocenteDashboardActivity::class.java
                         else -> PadreDashboardActivity::class.java
                     }
@@ -39,6 +40,7 @@ class LoadingActivity : AppCompatActivity() {
                     val intent = Intent(this@LoadingActivity, targetActivity)
                     intent.putExtra("USER_ROL", rol)
                     intent.putExtra("USER_EMAIL", email)
+                    intent.putExtra("SCHOOL_ID", schoolId)
                     startActivity(intent)
                     finish() // Cerrar la pantalla de carga
                 }

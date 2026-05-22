@@ -54,13 +54,77 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            val userRole = dbHelper.checkUser(email, password)
-            if (userRole != null) {
-                navigateToSplash(userRole, email)
-            } else {
-                binding.tvErrorMessage.visibility = View.VISIBLE
-                binding.tilPassword.error = " "
-            }
+            val auth = com.google.firebase.auth.FirebaseAuth.getInstance()
+            val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+
+            binding.btnIngresar.isEnabled = false
+
+            // Usuarios por defecto para sembrar (seeding) la BD
+            val seedUsers = listOf(
+                Triple("admin@reporte.com", "admin123", "admin"),
+                Triple("user@reporte.com", "user123", "usuario"),
+                Triple("docente@reporte.com", "docente123", "docente")
+            )
+
+            // Primero verificamos en Firestore (para usuarios creados por el Admin)
+            db.collection("users").document(email).get()
+                .addOnSuccessListener { document ->
+                    if (document.exists() && document.getString("password") == password) {
+                        binding.btnIngresar.isEnabled = true
+                        val role = document.getString("rol") ?: "usuario"
+                        val schoolId = document.getString("school_id") ?: "Colegio San José"
+                        navigateToSplash(role, email, schoolId)
+                    } else {
+                        // Si no está en Firestore o la contraseña no coincide, intentamos con Auth normal
+                        auth.signInWithEmailAndPassword(email, password)
+                            .addOnSuccessListener {
+                                db.collection("users").document(email).get()
+                                    .addOnSuccessListener { doc2 ->
+                                        binding.btnIngresar.isEnabled = true
+                                        if (doc2.exists()) {
+                                            val role = doc2.getString("rol") ?: "usuario"
+                                            var schoolId = doc2.getString("school_id")
+                                            if (schoolId == null) {
+                                                schoolId = "Colegio San José"
+                                                db.collection("users").document(email).update("school_id", schoolId)
+                                            }
+                                            navigateToSplash(role, email, schoolId)
+                                        } else {
+                                            Toast.makeText(this@MainActivity, "Rol no encontrado en Firestore", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                            }
+                            .addOnFailureListener {
+                                val seedUser = seedUsers.find { it.first == email && it.second == password }
+                                if (seedUser != null) {
+                                    auth.createUserWithEmailAndPassword(email, password)
+                                        .addOnSuccessListener {
+                                            val userMap = hashMapOf(
+                                                "email" to email,
+                                                "password" to password,
+                                                "rol" to seedUser.third,
+                                                "phone" to "",
+                                                "school_id" to "Colegio San José"
+                                            )
+                                            db.collection("users").document(email).set(userMap)
+                                                .addOnSuccessListener {
+                                                    binding.btnIngresar.isEnabled = true
+                                                    navigateToSplash(seedUser.third, email, "Colegio San José")
+                                                }
+                                        }
+                                } else {
+                                    binding.btnIngresar.isEnabled = true
+                                    binding.tvErrorMessage.visibility = View.VISIBLE
+                                    binding.tvErrorMessage.text = "Credenciales incorrectas"
+                                    binding.tilPassword.error = " "
+                                }
+                            }
+                    }
+                }
+                .addOnFailureListener {
+                    binding.btnIngresar.isEnabled = true
+                    Toast.makeText(this@MainActivity, "Error conectando a Firestore", Toast.LENGTH_SHORT).show()
+                }
         }
     }
 
@@ -106,10 +170,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun navigateToSplash(role: String, email: String) {
+    private fun navigateToSplash(role: String, email: String, schoolId: String) {
         val intent = Intent(this, LoadingActivity::class.java)
         intent.putExtra("USER_ROL", role)
         intent.putExtra("USER_EMAIL", email)
+        intent.putExtra("SCHOOL_ID", schoolId)
         startActivity(intent)
         finish()
     }

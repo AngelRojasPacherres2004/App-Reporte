@@ -30,19 +30,24 @@ import java.util.Locale
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
 class AlumnosReporteListaActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityAlumnosListaBinding
-    private lateinit var db: DatabaseHelper
-    private var classroomId: Int = -1
+    private var classroomId: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityAlumnosListaBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        db = DatabaseHelper(this)
-        classroomId = intent.getIntExtra("CLASSROOM_ID", -1)
+        classroomId = intent.getStringExtra("CLASSROOM_ID") ?: ""
         val classroomName = intent.getStringExtra("CLASSROOM_NAME") ?: "Salón"
 
         binding.tvTituloSalon.text = getString(R.string.students_of, classroomName)
@@ -52,19 +57,31 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerView() {
-        val alumnos = db.getStudentsByClassroom(classroomId)
-        val adapter = AlumnosAdapter(alumnos,
+        val adapter = AlumnosAdapter(emptyList(),
             onEdit = { _ -> /* No editar */ },
             onDelete = { _ -> /* No borrar */ },
             onItemClick = { id, name ->
                 showStudentOptionsDialog(id, name)
-            }
+            },
+            hideActions = true
         )
         binding.rvAlumnos.layoutManager = LinearLayoutManager(this)
         binding.rvAlumnos.adapter = adapter
+
+        FirebaseFirestore.getInstance().collection("students")
+            .whereEqualTo("classroom_id", classroomId)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val list = snapshot.documents.mapNotNull { doc ->
+                    val data = doc.data?.mapValues { it.value.toString() }?.toMutableMap()
+                    data?.put("id", doc.id)
+                    data
+                }
+                adapter.updateData(list)
+            }
     }
 
-    private fun showStudentOptionsDialog(studentId: Int, studentName: String) {
+    private fun showStudentOptionsDialog(studentId: String, studentName: String) {
         val options = arrayOf(getString(R.string.add_grade), getString(R.string.generate_pdf_report))
         AlertDialog.Builder(this)
             .setTitle(studentName)
@@ -77,7 +94,7 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun showGradeTypeDialog(studentId: Int, studentName: String) {
+    private fun showGradeTypeDialog(studentId: String, studentName: String) {
         val dialogBinding = DialogAddGradeBinding.inflate(layoutInflater)
         val types = arrayOf("Diaria", "Mensual", "Bimestral")
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, types)
@@ -94,11 +111,20 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
                 val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
 
                 if (value.isNotEmpty() && subject.isNotEmpty()) {
-                    if (db.addGrade(studentId, type, value, subject, date)) {
-                        Toast.makeText(this, R.string.grade_assigned_success, Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(this, R.string.grade_assigned_error, Toast.LENGTH_SHORT).show()
-                    }
+                    val gradeData = hashMapOf(
+                        "student_id" to studentId,
+                        "type" to type,
+                        "value" to value,
+                        "subject" to subject,
+                        "date" to date
+                    )
+                    FirebaseFirestore.getInstance().collection("grades").add(gradeData)
+                        .addOnSuccessListener {
+                            Toast.makeText(this, R.string.grade_assigned_success, Toast.LENGTH_SHORT).show()
+                        }
+                        .addOnFailureListener {
+                            Toast.makeText(this, R.string.grade_assigned_error, Toast.LENGTH_SHORT).show()
+                        }
                 } else {
                     Toast.makeText(this, R.string.fill_all_fields, Toast.LENGTH_SHORT).show()
                 }
@@ -107,63 +133,70 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun generateAndSendReport(studentId: Int, studentName: String) {
-        val student = db.getStudentsByClassroom(classroomId).find { it["id"] == studentId.toString() }
-        val parentEmail = student?.get("parent_email") ?: return
-        val phone = db.getParentPhone(parentEmail)
+    private fun generateAndSendReport(studentId: String, studentName: String) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                // Fetch student
+                val studentSnap = FirebaseFirestore.getInstance().collection("students").document(studentId).get().await()
+                val parentEmail = studentSnap.getString("parent_email") ?: return@launch
+                
+                // Fetch parent to get phone
+                val userSnap = FirebaseFirestore.getInstance().collection("users").whereEqualTo("email", parentEmail).get().await()
+                val phone = userSnap.documents.firstOrNull()?.getString("phone") ?: ""
 
-        if (phone.isNullOrEmpty()) {
-            Toast.makeText(this, R.string.error_no_phone, Toast.LENGTH_LONG).show()
-            return
-        }
+                if (phone.isEmpty()) {
+                    withContext(Dispatchers.Main) { Toast.makeText(this@AlumnosReporteListaActivity, R.string.error_no_phone, Toast.LENGTH_LONG).show() }
+                    return@launch
+                }
 
-        val grades = db.getGradesByStudent(studentId)
-        val pdfFile = File(cacheDir, "Reporte_${studentName.replace(" ", "_")}.pdf")
-        
-        try {
-            val writer = PdfWriter(FileOutputStream(pdfFile))
-            val pdf = PdfDocument(writer)
-            val document = Document(pdf)
+                // Fetch grades
+                val gradesSnap = FirebaseFirestore.getInstance().collection("grades").whereEqualTo("student_id", studentId).get().await()
+                val grades = gradesSnap.documents.mapNotNull { doc ->
+                    doc.data?.mapValues { it.value.toString() }
+                }
 
-            document.add(Paragraph("Reporte Académico").setBold().setFontSize(18f))
-            document.add(Paragraph("Estudiante: $studentName"))
-            document.add(Paragraph("Fecha: ${SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())}"))
-            document.add(Paragraph("\n"))
+                val pdfFile = File(cacheDir, "Reporte_${studentName.replace(" ", "_")}.pdf")
+                
+                val writer = PdfWriter(FileOutputStream(pdfFile))
+                val pdf = PdfDocument(writer)
+                val document = Document(pdf)
 
-            val table = Table(UnitValue.createPercentArray(floatArrayOf(3f, 2f, 3f, 2f))).useAllAvailableWidth()
-            table.addHeaderCell("Materia")
-            table.addHeaderCell("Tipo")
-            table.addHeaderCell("Fecha")
-            table.addHeaderCell("Nota")
+                document.add(Paragraph("Reporte Académico").setBold().setFontSize(18f))
+                document.add(Paragraph("Estudiante: $studentName"))
+                document.add(Paragraph("Fecha: ${SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())}"))
+                document.add(Paragraph("\n"))
 
-            for (grade in grades) {
-                table.addCell(grade["subject"] ?: "")
-                table.addCell(grade["type"] ?: "")
-                table.addCell(grade["date"] ?: "")
-                table.addCell(grade["value"] ?: "")
+                val table = Table(UnitValue.createPercentArray(floatArrayOf(3f, 2f, 3f, 2f))).useAllAvailableWidth()
+                table.addHeaderCell("Materia")
+                table.addHeaderCell("Tipo")
+                table.addHeaderCell("Fecha")
+                table.addHeaderCell("Nota")
+
+                for (grade in grades) {
+                    table.addCell(grade["subject"] ?: "")
+                    table.addCell(grade["type"] ?: "")
+                    table.addCell(grade["date"] ?: "")
+                    table.addCell(grade["value"] ?: "")
+                }
+
+                document.add(table)
+                document.close()
+
+                val zipFile = File(cacheDir, "Reporte_${studentName.replace(" ", "_")}.zip")
+                ZipOutputStream(FileOutputStream(zipFile)).use { zos ->
+                    val entry = ZipEntry(pdfFile.name)
+                    zos.putNextEntry(entry)
+                    pdfFile.inputStream().use { it.copyTo(zos) }
+                    zos.closeEntry()
+                }
+
+                saveToDownloads(zipFile)
+                withContext(Dispatchers.Main) { sendToWhatsApp(zipFile, phone, studentName) }
+                
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) { Toast.makeText(this@AlumnosReporteListaActivity, R.string.error_pdf, Toast.LENGTH_SHORT).show() }
             }
-
-            document.add(table)
-            document.close()
-
-            // Comprimir en ZIP para asegurar integridad del archivo en el envío
-            val zipFile = File(cacheDir, "Reporte_${studentName.replace(" ", "_")}.zip")
-            ZipOutputStream(FileOutputStream(zipFile)).use { zos ->
-                val entry = ZipEntry(pdfFile.name)
-                zos.putNextEntry(entry)
-                pdfFile.inputStream().use { it.copyTo(zos) }
-                zos.closeEntry()
-            }
-
-            // Guardar una copia en Descargas
-            saveToDownloads(zipFile)
-
-            // Envío directo
-            sendToWhatsApp(zipFile, phone, studentName)
-
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Toast.makeText(this, R.string.error_pdf, Toast.LENGTH_SHORT).show()
         }
     }
 

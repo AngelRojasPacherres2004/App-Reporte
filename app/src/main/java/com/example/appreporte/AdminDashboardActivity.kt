@@ -13,6 +13,8 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.appreporte.databinding.ActivityDashboardAdminBinding
 import com.google.android.material.textfield.TextInputEditText
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FieldValue
 
 class AdminDashboardActivity : AppCompatActivity() {
 
@@ -20,12 +22,14 @@ class AdminDashboardActivity : AppCompatActivity() {
     private lateinit var dbHelper: DatabaseHelper
     private lateinit var userAdapter: UserAdapter
     private lateinit var classroomAdapter: ClassroomAdapter
+    private var currentSchoolId: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityDashboardAdminBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        currentSchoolId = intent.getStringExtra("SCHOOL_ID") ?: "Colegio San José"
         dbHelper = DatabaseHelper(this)
 
         setupRecyclerViews()
@@ -67,60 +71,94 @@ class AdminDashboardActivity : AppCompatActivity() {
 
     private fun setupRecyclerViews() {
         // Setup User Adapter
-        userAdapter = UserAdapter(dbHelper.getAllUsers(), { userEmail ->
+        userAdapter = UserAdapter(emptyList(), { userEmail ->
             showAssignClassroomDialog(userEmail)
         }, { userMap: Map<String, String> ->
             showEditUserDialog(userMap)
         })
         binding.rvUsers.layoutManager = LinearLayoutManager(this)
         binding.rvUsers.adapter = userAdapter
+        loadUsers()
 
         // Setup Classroom Adapter
-        classroomAdapter = ClassroomAdapter(dbHelper.getAllClassrooms()) { classroomId ->
-            if (dbHelper.deleteClassroom(classroomId)) {
-                Toast.makeText(this, "Salón eliminado", Toast.LENGTH_SHORT).show()
-                classroomAdapter.updateClassrooms(dbHelper.getAllClassrooms())
-            }
-        }
+        classroomAdapter = ClassroomAdapter(emptyList(), onDeleteClick = { classroomId ->
+            val db = FirebaseFirestore.getInstance()
+            db.collection("classrooms").document(classroomId).delete()
+                .addOnSuccessListener {
+                    Toast.makeText(this, "Salón eliminado", Toast.LENGTH_SHORT).show()
+                    loadClassrooms()
+                }
+        })
         binding.rvClassrooms.layoutManager = LinearLayoutManager(this)
         binding.rvClassrooms.adapter = classroomAdapter
+        loadClassrooms()
     }
 
     private fun setupClickListeners() {
-        binding.btnManageUsers.setOnClickListener {
+        binding.btnViewUsers.setOnClickListener {
             binding.llUserListContainer.visibility = View.VISIBLE
             binding.llClassroomListContainer.visibility = View.GONE
-            binding.fabAddUser.visibility = View.VISIBLE
-            binding.btnManageUsers.visibility = View.GONE
-            binding.btnManageClassrooms.visibility = View.VISIBLE
+            // Scroll down a bit
+            binding.rvUsers.parent.requestChildFocus(binding.rvUsers, binding.rvUsers)
         }
 
-        binding.btnManageClassrooms.setOnClickListener {
+        binding.btnAddUserDirect.setOnClickListener {
+            showAddUserDialog()
+        }
+
+        binding.btnViewClassrooms.setOnClickListener {
             binding.llClassroomListContainer.visibility = View.VISIBLE
             binding.llUserListContainer.visibility = View.GONE
-            binding.fabAddUser.visibility = View.GONE
-            binding.btnManageUsers.visibility = View.VISIBLE
-            binding.btnManageClassrooms.visibility = View.GONE
-
-            showAddClassroomFab()
+            binding.rvClassrooms.parent.requestChildFocus(binding.rvClassrooms, binding.rvClassrooms)
         }
 
-        binding.btnManageStudents.setOnClickListener {
+        binding.btnAddClassroomDirect.setOnClickListener {
+            showAddClassroomDialog()
+        }
+
+        binding.btnViewStudents.setOnClickListener {
             val intent = Intent(this, GestionAlumnosSalonesActivity::class.java)
             startActivity(intent)
         }
 
-        binding.fabAddUser.setOnClickListener {
-            if (binding.llUserListContainer.visibility == View.VISIBLE) {
-                showAddUserDialog()
-            } else {
-                showAddClassroomDialog()
+        binding.btnAddStudentDirect.setOnClickListener {
+            val intent = Intent(this, GestionAlumnosSalonesActivity::class.java)
+            intent.putExtra("OPEN_ADD_DIALOG", true)
+            startActivity(intent)
+        }
+
+        val bottomNav = findViewById<com.google.android.material.bottomnavigation.BottomNavigationView>(R.id.bottomNavigation)
+        bottomNav.selectedItemId = R.id.nav_gestion
+        bottomNav.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_inicio -> {
+                    startActivity(Intent(this, InicioActivity::class.java))
+                    overridePendingTransition(0, 0)
+                    finish()
+                    true
+                }
+                R.id.nav_gestion -> true
+                R.id.nav_foro -> {
+                    startActivity(Intent(this, ForoActivity::class.java))
+                    overridePendingTransition(0, 0)
+                    finish()
+                    true
+                }
+                R.id.nav_asistente -> {
+                    startActivity(Intent(this, AsistenteActivity::class.java))
+                    overridePendingTransition(0, 0)
+                    finish()
+                    true
+                }
+                R.id.nav_perfil -> {
+                    startActivity(Intent(this, PerfilActivity::class.java))
+                    overridePendingTransition(0, 0)
+                    finish()
+                    true
+                }
+                else -> false
             }
         }
-    }
-
-    private fun showAddClassroomFab() {
-        binding.fabAddUser.visibility = View.VISIBLE
     }
 
     private fun showAddClassroomDialog() {
@@ -141,10 +179,12 @@ class AdminDashboardActivity : AppCompatActivity() {
             .setPositiveButton("Añadir") { _, _ ->
                 val name = input.text.toString()
                 if (name.isNotEmpty()) {
-                    if (dbHelper.addClassroom(name)) {
-                        Toast.makeText(this, "Salón añadido", Toast.LENGTH_SHORT).show()
-                        classroomAdapter.updateClassrooms(dbHelper.getAllClassrooms())
-                    }
+                    val map = hashMapOf("name" to name, "school_id" to currentSchoolId)
+                    FirebaseFirestore.getInstance().collection("classrooms").add(map)
+                        .addOnSuccessListener {
+                            Toast.makeText(this, "Salón añadido", Toast.LENGTH_SHORT).show()
+                            loadClassrooms()
+                        }
                 }
             }
             .setNegativeButton("Cancelar", null)
@@ -152,25 +192,33 @@ class AdminDashboardActivity : AppCompatActivity() {
     }
 
     private fun showAssignClassroomDialog(userEmail: String) {
-        val classrooms = dbHelper.getAllClassrooms()
-        val names = classrooms.map { it.second }.toTypedArray()
-        val assignedIds = dbHelper.getUserClassrooms(userEmail)
-        val checkedItems = BooleanArray(names.size) { index ->
-            assignedIds.contains(classrooms[index].first)
-        }
+        val db = FirebaseFirestore.getInstance()
+        db.collection("classrooms")
+            .whereEqualTo("school_id", currentSchoolId)
+            .get().addOnSuccessListener { classroomsSnap ->
+            val classroomsList = classroomsSnap.documents.map { Pair(it.id, it.getString("name") ?: "") }
+            val names = classroomsList.map { it.second }.toTypedArray()
 
-        AlertDialog.Builder(this)
-            .setTitle("Asignar Salones a $userEmail")
-            .setMultiChoiceItems(names, checkedItems) { _, which, isChecked ->
-                val classroomId = classrooms[which].first
-                if (isChecked) {
-                    dbHelper.assignUserToClassroom(userEmail, classroomId)
-                } else {
-                    dbHelper.removeUserFromClassroom(userEmail, classroomId)
+            db.collection("users").document(userEmail).get().addOnSuccessListener { userSnap ->
+                val assignedIds = userSnap.get("classrooms") as? List<String> ?: emptyList()
+                val checkedItems = BooleanArray(names.size) { index ->
+                    assignedIds.contains(classroomsList[index].first)
                 }
+
+                AlertDialog.Builder(this)
+                    .setTitle("Asignar Salones a $userEmail")
+                    .setMultiChoiceItems(names, checkedItems) { _, which, isChecked ->
+                        val classroomId = classroomsList[which].first
+                        if (isChecked) {
+                            db.collection("users").document(userEmail).update("classrooms", FieldValue.arrayUnion(classroomId))
+                        } else {
+                            db.collection("users").document(userEmail).update("classrooms", FieldValue.arrayRemove(classroomId))
+                        }
+                    }
+                    .setPositiveButton("Cerrar", null)
+                    .show()
             }
-            .setPositiveButton("Cerrar", null)
-            .show()
+        }
     }
 
     private fun showAddUserDialog() {
@@ -194,13 +242,21 @@ class AdminDashboardActivity : AppCompatActivity() {
                 val phone = etPhone.text.toString()
 
                 if (email.isNotEmpty() && pass.isNotEmpty() && rol.isNotEmpty()) {
-                    val success = dbHelper.addUser(email, pass, rol, phone)
-                    if (success) {
-                        Toast.makeText(this, "Usuario añadido", Toast.LENGTH_SHORT).show()
-                        userAdapter.updateUsers(dbHelper.getAllUsers())
-                    } else {
-                        Toast.makeText(this, "Error al añadir usuario", Toast.LENGTH_SHORT).show()
-                    }
+                    val userMap = hashMapOf(
+                        "email" to email,
+                        "password" to pass,
+                        "rol" to rol,
+                        "phone" to phone,
+                        "school_id" to currentSchoolId
+                    )
+                    FirebaseFirestore.getInstance().collection("users").document(email).set(userMap)
+                        .addOnSuccessListener {
+                            Toast.makeText(this, "Usuario añadido", Toast.LENGTH_SHORT).show()
+                            loadUsers()
+                        }
+                        .addOnFailureListener {
+                            Toast.makeText(this, "Error al añadir usuario", Toast.LENGTH_SHORT).show()
+                        }
                 } else {
                     Toast.makeText(this, "Completa todos los campos", Toast.LENGTH_SHORT).show()
                 }
@@ -236,13 +292,15 @@ class AdminDashboardActivity : AppCompatActivity() {
                 val phone = etPhone.text.toString()
 
                 if (pass.isNotEmpty() && rol.isNotEmpty()) {
-                    val success = dbHelper.updateUser(email, pass, rol, phone)
-                    if (success) {
-                        Toast.makeText(this, "Usuario actualizado", Toast.LENGTH_SHORT).show()
-                        userAdapter.updateUsers(dbHelper.getAllUsers())
-                    } else {
-                        Toast.makeText(this, "Error al actualizar", Toast.LENGTH_SHORT).show()
-                    }
+                    val updateMap = mapOf("password" to pass, "rol" to rol, "phone" to phone)
+                    FirebaseFirestore.getInstance().collection("users").document(email).update(updateMap)
+                        .addOnSuccessListener {
+                            Toast.makeText(this, "Usuario actualizado", Toast.LENGTH_SHORT).show()
+                            loadUsers()
+                        }
+                        .addOnFailureListener {
+                            Toast.makeText(this, "Error al actualizar", Toast.LENGTH_SHORT).show()
+                        }
                 }
             }
             .setNegativeButton("Cancelar", null)
@@ -266,5 +324,27 @@ class AdminDashboardActivity : AppCompatActivity() {
                 else -> false
             }
         }
+    }
+
+    private fun loadUsers() {
+        FirebaseFirestore.getInstance().collection("users")
+            .whereEqualTo("school_id", currentSchoolId)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val list = snapshot.documents.mapNotNull { doc ->
+                    doc.data?.mapValues { it.value.toString() }
+                }
+                userAdapter.updateUsers(list)
+            }
+    }
+
+    private fun loadClassrooms() {
+        FirebaseFirestore.getInstance().collection("classrooms")
+            .whereEqualTo("school_id", currentSchoolId)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val list = snapshot.documents.map { Pair(it.id, it.getString("name") ?: "") }
+                classroomAdapter.updateClassrooms(list)
+            }
     }
 }

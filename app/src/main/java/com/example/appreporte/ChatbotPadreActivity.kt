@@ -10,7 +10,7 @@ import com.example.appreporte.databinding.ActivityChatbotPadreBinding
 class ChatbotPadreActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityChatbotPadreBinding
-    private val messages = mutableListOf<ChatMessage>()
+    private val messages = mutableListOf<UIMessage>()
     private lateinit var adapter: ChatAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,13 +57,13 @@ class ChatbotPadreActivity : AppCompatActivity() {
     }
 
     private fun addUserMessage(text: String) {
-        messages.add(ChatMessage(text, true))
+        messages.add(UIMessage("Tú", text, true))
         adapter.notifyItemInserted(messages.size - 1)
         binding.rvChat.scrollToPosition(messages.size - 1)
     }
 
     private fun addBotMessage(text: String) {
-        messages.add(ChatMessage(text, false))
+        messages.add(UIMessage("EduConnect IA", text, false))
         adapter.notifyItemInserted(messages.size - 1)
         binding.rvChat.scrollToPosition(messages.size - 1)
     }

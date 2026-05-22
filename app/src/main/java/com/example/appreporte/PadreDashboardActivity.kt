@@ -2,49 +2,83 @@ package com.example.appreporte
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.appreporte.databinding.ActivityDashboardPadreBinding
 import com.google.android.material.bottomnavigation.BottomNavigationItemView
 import com.google.android.material.bottomnavigation.BottomNavigationMenuView
+import com.google.firebase.firestore.FirebaseFirestore
 
 class PadreDashboardActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityDashboardPadreBinding
-    private lateinit var dbHelper: DatabaseHelper
     private var userEmail: String = ""
     private var userRole: String = "usuario"
+    
+    private lateinit var hijosAdapter: HijosAdapter
+    private var selectedStudentId: String = ""
+    private var selectedClassroomId: String = ""
+    private var selectedClassroomName: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityDashboardPadreBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        dbHelper = DatabaseHelper(this)
         userRole = intent.getStringExtra("USER_ROL") ?: "usuario"
         userEmail = intent.getStringExtra("USER_EMAIL") ?: ""
 
         setupUI()
         setupBottomNavigation()
         setupClickListeners()
-        setupThemeToggle() // Activamos el control del modo oscuro
+        setupThemeToggle()
+        loadHijos()
     }
 
     private fun setupUI() {
-        // Configuramos los títulos del encabezado dinámicamente
-        binding.tvHeaderTitle.text = "EduConnect"
-        binding.tvHeaderSubtitle.text = "Padre"
+        binding.rvHijos.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        hijosAdapter = HijosAdapter(emptyList()) { hijo ->
+            selectedStudentId = hijo["id"] ?: ""
+            selectedClassroomId = hijo["classroom_id"] ?: ""
+            binding.tvSeleccionaHijoMsg.visibility = View.GONE
+            binding.llHijoContent.visibility = View.VISIBLE
+            
+            // Resolve classroom name for the selected child
+            FirebaseFirestore.getInstance().collection("classrooms").document(selectedClassroomId).get()
+                .addOnSuccessListener { doc ->
+                    selectedClassroomName = doc.getString("name") ?: "Salón"
+                }
+        }
+        binding.rvHijos.adapter = hijosAdapter
+        
+        binding.tvSeleccionaHijoMsg.visibility = View.VISIBLE
+        binding.llHijoContent.visibility = View.GONE
+    }
 
-        // El saludo de la Welcome Card ya está en el XML, pero lo reforzamos aquí si es necesario
+    private fun loadHijos() {
+        FirebaseFirestore.getInstance().collection("students")
+            .whereEqualTo("parent_email", userEmail)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val list = snapshot.documents.mapNotNull { doc ->
+                    val data = doc.data?.mapValues { it.value.toString() }?.toMutableMap()
+                    data?.put("id", doc.id)
+                    data
+                }
+                if (list.isNotEmpty()) {
+                    hijosAdapter.updateData(list)
+                } else {
+                    binding.tvSeleccionaHijoMsg.text = "No se encontraron hijos registrados con su correo."
+                }
+            }
     }
 
     private fun setupThemeToggle() {
-        // Detectar si el sistema ya está en modo noche
         val isNightMode = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
-
-        // Cambiar el icono inicial (Luna para claro, Sol para oscuro)
         if (isNightMode) {
             binding.ivThemeToggle.setImageResource(R.drawable.ic_sun)
         } else {
@@ -61,36 +95,32 @@ class PadreDashboardActivity : AppCompatActivity() {
     }
 
     private fun setupClickListeners() {
-        // Asegúrate que el ID en el XML sea btnVerForo
         binding.btnVerForo.setOnClickListener {
-            navigateToForo()
+            if (selectedClassroomId.isNotEmpty()) {
+                val intent = Intent(this, ForoDetalleActivity::class.java)
+                intent.putExtra("SALON_NAME", selectedClassroomName)
+                intent.putExtra("CLASSROOM_ID", selectedClassroomId)
+                intent.putExtra("USER_ROL", userRole)
+                intent.putExtra("USER_EMAIL", userEmail)
+                startActivity(intent)
+            } else {
+                Toast.makeText(this, "Seleccione un hijo primero", Toast.LENGTH_SHORT).show()
+            }
         }
 
         binding.btnVerReportes.setOnClickListener {
-            val intent = Intent(this, PadreReporteActivity::class.java)
-            intent.putExtra("USER_EMAIL", userEmail)
-            startActivity(intent)
+            if (selectedStudentId.isNotEmpty()) {
+                val intent = Intent(this, PadreReporteActivity::class.java)
+                intent.putExtra("USER_EMAIL", userEmail)
+                intent.putExtra("STUDENT_ID", selectedStudentId)
+                startActivity(intent)
+            } else {
+                Toast.makeText(this, "Seleccione un hijo primero", Toast.LENGTH_SHORT).show()
+            }
         }
 
-        // Clic en la foto de perfil para abrir ajustes/perfil
         binding.ivPadreProfile.setOnClickListener {
             val intent = Intent(this, PerfilActivity::class.java)
-            intent.putExtra("USER_EMAIL", userEmail)
-            startActivity(intent)
-        }
-    }
-
-    private fun navigateToForo() {
-        val classrooms = dbHelper.getUserClassroomsWithNames(userEmail)
-        if (classrooms.size == 1) {
-            val intent = Intent(this, ForoDetalleActivity::class.java)
-            intent.putExtra("SALON_NAME", classrooms[0].second)
-            intent.putExtra("USER_ROL", userRole)
-            intent.putExtra("USER_EMAIL", userEmail)
-            startActivity(intent)
-        } else {
-            val intent = Intent(this, ForoSalonesActivity::class.java)
-            intent.putExtra("USER_ROL", userRole)
             intent.putExtra("USER_EMAIL", userEmail)
             startActivity(intent)
         }
@@ -99,17 +129,13 @@ class PadreDashboardActivity : AppCompatActivity() {
     private fun setupBottomNavigation() {
         binding.bottomNavigation.selectedItemId = R.id.nav_inicio
 
-        // Logica para aumentar ligeramente el tamano del icono del chatbot
         val menuView = binding.bottomNavigation.getChildAt(0) as BottomNavigationMenuView
         val assistantItem = menuView.findViewById<BottomNavigationItemView>(R.id.nav_asistente)
-
         val iconView = assistantItem?.findViewById<ImageView>(com.google.android.material.R.id.navigation_bar_item_icon_view)
 
         iconView?.post {
             val params = iconView.layoutParams
             val density = resources.displayMetrics.density
-
-            // Incremento moderado a 40dp para compensar margenes transparentes de la imagen
             val sizeInPx = (40 * density).toInt()
 
             params.width = sizeInPx
@@ -122,20 +148,16 @@ class PadreDashboardActivity : AppCompatActivity() {
             when (item.itemId) {
                 R.id.nav_inicio -> true
                 R.id.nav_foro -> {
-                    navigateToForo()
+                    Toast.makeText(this, "Seleccione un hijo y use el botón Ver Foro", Toast.LENGTH_SHORT).show()
                     true
                 }
-                // --- AQUÍ ESTÁ LA INTEGRACIÓN DEL CHATBOT ---
                 R.id.nav_asistente -> {
                     val intent = Intent(this, ChatbotPadreActivity::class.java)
                     startActivity(intent)
                     true
                 }
-                // ----------------------------------------------
                 R.id.nav_reportes -> {
-                    val intent = Intent(this, PadreReporteActivity::class.java)
-                    intent.putExtra("USER_EMAIL", userEmail)
-                    startActivity(intent)
+                    Toast.makeText(this, "Seleccione un hijo y use el botón Ver Notas", Toast.LENGTH_SHORT).show()
                     true
                 }
                 R.id.nav_perfil -> {

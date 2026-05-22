@@ -16,6 +16,7 @@ class DocenteDashboardActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         userRole = intent.getStringExtra("USER_ROL") ?: "docente"
+        val schoolId = intent.getStringExtra("SCHOOL_ID") ?: "Colegio San José"
 
         setupBottomNavigation()
         setupClickListeners()
@@ -38,11 +39,13 @@ class DocenteDashboardActivity : AppCompatActivity() {
             val intent = Intent(this, ForoSalonesActivity::class.java)
             intent.putExtra("USER_ROL", userRole)
             intent.putExtra("USER_EMAIL", userEmail)
+            intent.putExtra("SCHOOL_ID", intent.getStringExtra("SCHOOL_ID"))
             startActivity(intent)
         }
 
         binding.btnAssignGradesDocente.setOnClickListener {
             val intent = Intent(this, GestionReportesSalonesActivity::class.java)
+            intent.putExtra("SCHOOL_ID", intent.getStringExtra("SCHOOL_ID"))
             startActivity(intent)
         }
 
@@ -60,6 +63,7 @@ class DocenteDashboardActivity : AppCompatActivity() {
                 R.id.nav_inicio -> true
                 R.id.nav_reportes -> {
                     val intent = Intent(this, GestionReportesSalonesActivity::class.java)
+                    intent.putExtra("SCHOOL_ID", intent.getStringExtra("SCHOOL_ID"))
                     startActivity(intent)
                     true
                 }
@@ -67,6 +71,7 @@ class DocenteDashboardActivity : AppCompatActivity() {
                     val intent = Intent(this, ForoSalonesActivity::class.java)
                     intent.putExtra("USER_ROL", userRole)
                     intent.putExtra("USER_EMAIL", userEmail)
+                    intent.putExtra("SCHOOL_ID", intent.getStringExtra("SCHOOL_ID"))
                     startActivity(intent)
                     true
                 }

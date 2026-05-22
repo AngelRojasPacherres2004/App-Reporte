@@ -92,6 +92,8 @@
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:paddingBottom="80dp"
+        android:clipToPadding="false"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <LinearLayout
@@ -100,59 +102,28 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- Welcome Card -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
+            <!-- Welcome card was moved to InicioActivity -->
+            <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="@color/surface"
-                app:cardCornerRadius="24dp"
-                app:strokeWidth="0dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="24dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Bienvenido de"
-                        android:textColor="@color/on_surface"
-                        android:textSize="28sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="nuevo, Admin."
-                        android:textColor="@color/primary"
-                        android:textSize="28sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:text="Aquí tienes un vistazo rápido a la actividad de la institución hoy. 5 asuntos pendientes requieren tu atención inmediata."
-                        android:textColor="@color/on_surface"
-                        android:textSize="14sp" />
-
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+                android:text="Gestión de Institución"
+                android:textColor="@color/on_surface"
+                android:textSize="24sp"
+                android:textStyle="bold" />
 
             <!-- User Management Card -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
-                app:cardBackgroundColor="@color/primary"
+                app:cardBackgroundColor="@android:color/transparent"
                 app:cardCornerRadius="24dp"
                 app:strokeWidth="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:background="@drawable/bg_gradient_blue"
                     android:orientation="vertical"
                     android:padding="24dp">
 
@@ -172,20 +143,37 @@
                         android:textColor="#E0E0E0"
                         android:textSize="14sp" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnManageUsers"
-                        style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                    <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="56dp"
+                        android:layout_height="wrap_content"
                         android:layout_marginTop="20dp"
-                        android:backgroundTint="@color/white"
-                        android:text="Entrar a Gestión"
-                        android:textAllCaps="false"
-                        android:textColor="@color/primary"
-                        app:cornerRadius="16dp"
-                        app:icon="@android:drawable/ic_menu_add"
-                        app:iconGravity="textStart"
-                        app:iconTint="@color/primary" />
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnViewUsers"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="56dp"
+                            android:layout_marginEnd="8dp"
+                            android:layout_weight="1"
+                            android:text="Ver Lista"
+                            android:textAllCaps="false"
+                            android:textColor="@color/white"
+                            app:cornerRadius="16dp"
+                            app:strokeColor="@color/white" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnAddUserDirect"
+                            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="56dp"
+                            android:layout_weight="1"
+                            android:backgroundTint="@color/white"
+                            android:text="Añadir Nuevo"
+                            android:textAllCaps="false"
+                            android:textColor="@color/primary"
+                            app:cornerRadius="16dp" />
+                    </LinearLayout>
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -195,13 +183,14 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                app:cardBackgroundColor="@color/support_green"
+                app:cardBackgroundColor="@android:color/transparent"
                 app:cardCornerRadius="24dp"
                 app:strokeWidth="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:background="@drawable/bg_gradient_green"
                     android:orientation="vertical"
                     android:padding="24dp">
 
@@ -221,20 +210,37 @@
                         android:textColor="#E0E0E0"
                         android:textSize="14sp" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnManageClassrooms"
-                        style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                    <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="56dp"
+                        android:layout_height="wrap_content"
                         android:layout_marginTop="20dp"
-                        android:backgroundTint="@color/white"
-                        android:text="Administrar Salones"
-                        android:textAllCaps="false"
-                        android:textColor="@color/support_green"
-                        app:cornerRadius="16dp"
-                        app:icon="@android:drawable/ic_input_add"
-                        app:iconGravity="textStart"
-                        app:iconTint="@color/support_green" />
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnViewClassrooms"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="56dp"
+                            android:layout_marginEnd="8dp"
+                            android:layout_weight="1"
+                            android:text="Ver Lista"
+                            android:textAllCaps="false"
+                            android:textColor="@color/white"
+                            app:cornerRadius="16dp"
+                            app:strokeColor="@color/white" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnAddClassroomDirect"
+                            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="56dp"
+                            android:layout_weight="1"
+                            android:backgroundTint="@color/white"
+                            android:text="Añadir Nuevo"
+                            android:textAllCaps="false"
+                            android:textColor="@color/support_green"
+                            app:cornerRadius="16dp" />
+                    </LinearLayout>
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -244,13 +250,14 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                app:cardBackgroundColor="#673AB7"
+                app:cardBackgroundColor="@android:color/transparent"
                 app:cardCornerRadius="24dp"
                 app:strokeWidth="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:background="@drawable/bg_gradient_purple"
                     android:orientation="vertical"
                     android:padding="24dp">
 
@@ -270,20 +277,37 @@
                         android:textColor="#E0E0E0"
                         android:textSize="14sp" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnManageStudents"
-                        style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                    <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="56dp"
+                        android:layout_height="wrap_content"
                         android:layout_marginTop="20dp"
-                        android:backgroundTint="@color/white"
-                        android:text="Administrar Alumnos"
-                        android:textAllCaps="false"
-                        android:textColor="#673AB7"
-                        app:cornerRadius="16dp"
-                        app:icon="@android:drawable/ic_menu_add"
-                        app:iconGravity="textStart"
-                        app:iconTint="#673AB7" />
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnViewStudents"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="56dp"
+                            android:layout_marginEnd="8dp"
+                            android:layout_weight="1"
+                            android:text="Ver Lista"
+                            android:textAllCaps="false"
+                            android:textColor="@color/white"
+                            app:cornerRadius="16dp"
+                            app:strokeColor="@color/white" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnAddStudentDirect"
+                            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="56dp"
+                            android:layout_weight="1"
+                            android:backgroundTint="@color/white"
+                            android:text="Añadir Nuevo"
+                            android:textAllCaps="false"
+                            android:textColor="#673AB7"
+                            app:cornerRadius="16dp" />
+                    </LinearLayout>
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -334,121 +358,7 @@
                     android:nestedScrollingEnabled="false" />
             </LinearLayout>
 
-            <!-- Featured Staff Section -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                app:cardBackgroundColor="@color/surface"
-                app:cardCornerRadius="24dp"
-                app:strokeWidth="0dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="20dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Personal Destacado"
-                        android:textColor="@color/on_surface"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
-
-                    <!-- Staff Item 1 -->
-                    <RelativeLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="20dp">
-                        <com.google.android.material.imageview.ShapeableImageView
-                            android:id="@+id/ivStaff1"
-                            android:layout_width="44dp"
-                            android:layout_height="44dp"
-                            android:scaleType="centerCrop"
-                            android:src="@drawable/admin_avatar"
-                            app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_centerVertical="true"
-                            android:layout_marginStart="12dp"
-                            android:layout_toEndOf="@id/ivStaff1"
-                            android:orientation="vertical">
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Dr. Linda Chen"
-                                android:textColor="@color/on_surface"
-                                android:textStyle="bold" />
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Mathematics Dept"
-                                android:textColor="@color/on_surface_variant"
-                                android:textSize="12sp" />
-                        </LinearLayout>
-                        <ImageView
-                            android:layout_width="8dp"
-                            android:layout_height="8dp"
-                            android:layout_alignParentEnd="true"
-                            android:layout_centerVertical="true"
-                            android:src="@drawable/bg_dot_green" />
-                    </RelativeLayout>
-
-                    <!-- Staff Item 2 -->
-                    <RelativeLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp">
-                        <com.google.android.material.imageview.ShapeableImageView
-                            android:id="@+id/ivStaff2"
-                            android:layout_width="44dp"
-                            android:layout_height="44dp"
-                            android:scaleType="centerCrop"
-                            android:src="@drawable/admin_avatar"
-                            app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_centerVertical="true"
-                            android:layout_marginStart="12dp"
-                            android:layout_toEndOf="@id/ivStaff2"
-                            android:orientation="vertical">
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Marcus Thorne"
-                                android:textColor="@color/on_surface"
-                                android:textStyle="bold" />
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="IT Support Specialist"
-                                android:textColor="@color/on_surface_variant"
-                                android:textSize="12sp" />
-                        </LinearLayout>
-                        <ImageView
-                            android:layout_width="8dp"
-                            android:layout_height="8dp"
-                            android:layout_alignParentEnd="true"
-                            android:layout_centerVertical="true"
-                            android:src="@drawable/bg_dot_gray" />
-                    </RelativeLayout>
-
-                    <com.google.android.material.button.MaterialButton
-                        style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="56dp"
-                        android:layout_marginTop="24dp"
-                        android:backgroundTint="@color/white"
-                        android:text="Ver Todo el Personal"
-                        android:textAllCaps="false"
-                        android:textColor="@color/on_surface"
-                        app:cornerRadius="16dp" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+            <!-- Featured Staff moved to InicioActivity -->
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
@@ -464,16 +374,6 @@
         app:itemTextColor="@color/on_surface"
         app:menu="@menu/bottom_nav_menu_admin" />
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabAddUser"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_marginEnd="24dp"
-        android:layout_marginBottom="80dp"
-        android:src="@android:drawable/ic_input_add"
-        android:visibility="gone"
-        app:backgroundTint="@color/primary"
-        app:tint="@color/white" />
+    <!-- Floating action button removed -->
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

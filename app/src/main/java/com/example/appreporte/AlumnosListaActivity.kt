@@ -7,27 +7,28 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.appreporte.databinding.ActivityAlumnosListaBinding
-import com.example.appreporte.databinding.DialogAddAlumnoBinding
+import com.google.firebase.firestore.FirebaseFirestore
 
 class AlumnosListaActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityAlumnosListaBinding
-    private lateinit var db: DatabaseHelper
     private lateinit var adapter: AlumnosAdapter
-    private var classroomId: Int = -1
+    private var classroomId: String = ""
+    private var parentEmails: List<String> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityAlumnosListaBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        db = DatabaseHelper(this)
-        classroomId = intent.getIntExtra("CLASSROOM_ID", -1)
+        classroomId = intent.getStringExtra("CLASSROOM_ID") ?: ""
         val classroomName = intent.getStringExtra("CLASSROOM_NAME") ?: "Salón"
 
         binding.tvTituloSalon.text = "Alumnos: $classroomName"
 
         setupRecyclerView()
+        loadParents()
+        loadStudents()
 
         binding.fabAddAlumno.setOnClickListener {
             showAlumnoDialog(null)
@@ -35,8 +36,7 @@ class AlumnosListaActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerView() {
-        val alumnos = db.getStudentsByClassroom(classroomId)
-        adapter = AlumnosAdapter(alumnos, 
+        adapter = AlumnosAdapter(emptyList(), 
             onEdit = { alumno -> showAlumnoDialog(alumno) },
             onDelete = { id -> confirmDelete(id) },
             onItemClick = null
@@ -45,13 +45,35 @@ class AlumnosListaActivity : AppCompatActivity() {
         binding.rvAlumnos.adapter = adapter
     }
 
+    private fun loadParents() {
+        FirebaseFirestore.getInstance().collection("users")
+            .whereIn("rol", listOf("padre", "usuario"))
+            .get()
+            .addOnSuccessListener { snapshot ->
+                parentEmails = snapshot.documents.mapNotNull { it.getString("email") }
+            }
+    }
+
+    private fun loadStudents() {
+        FirebaseFirestore.getInstance().collection("students")
+            .whereEqualTo("classroom_id", classroomId)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val list = snapshot.documents.mapNotNull { doc ->
+                    val data = doc.data?.mapValues { it.value.toString() }?.toMutableMap()
+                    data?.put("id", doc.id)
+                    data
+                }
+                adapter.updateData(list)
+            }
+    }
+
     private fun showAlumnoDialog(alumno: Map<String, String>?) {
-        val dialogBinding = DialogAddAlumnoBinding.inflate(layoutInflater)
+        val dialogBinding = com.example.appreporte.databinding.DialogAddAlumnoBinding.inflate(layoutInflater)
         val builder = AlertDialog.Builder(this)
         builder.setView(dialogBinding.root)
 
-        val padres = db.getParents()
-        val spinnerAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, padres)
+        val spinnerAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, parentEmails)
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         dialogBinding.spinnerPadres.adapter = spinnerAdapter
 
@@ -59,7 +81,7 @@ class AlumnosListaActivity : AppCompatActivity() {
             dialogBinding.etNombresAlumno.setText(alumno["names"])
             dialogBinding.etApellidosAlumno.setText(alumno["lastnames"])
             dialogBinding.etDniAlumno.setText(alumno["dni"])
-            val parentPos = padres.indexOf(alumno["parent_email"])
+            val parentPos = parentEmails.indexOf(alumno["parent_email"])
             if (parentPos != -1) dialogBinding.spinnerPadres.setSelection(parentPos)
         }
 
@@ -71,17 +93,29 @@ class AlumnosListaActivity : AppCompatActivity() {
             val parentEmail = dialogBinding.spinnerPadres.selectedItem?.toString() ?: ""
 
             if (names.isNotEmpty() && lastnames.isNotEmpty() && dni.isNotEmpty()) {
-                val success = if (alumno == null) {
-                    db.addStudent(names, lastnames, dni, classroomId, parentEmail)
-                } else {
-                    db.updateStudent(alumno["id"]!!.toInt(), names, lastnames, dni, parentEmail, classroomId)
-                }
+                val data = mapOf(
+                    "names" to names,
+                    "lastnames" to lastnames,
+                    "dni" to dni,
+                    "parent_email" to parentEmail,
+                    "classroom_id" to classroomId
+                )
 
-                if (success) {
-                    refreshList()
-                    Toast.makeText(this, "Guardado correctamente", Toast.LENGTH_SHORT).show()
+                if (alumno == null) {
+                    FirebaseFirestore.getInstance().collection("students")
+                        .add(data)
+                        .addOnSuccessListener {
+                            loadStudents()
+                            Toast.makeText(this, "Guardado correctamente", Toast.LENGTH_SHORT).show()
+                        }
                 } else {
-                    Toast.makeText(this, "Error al guardar (DNI duplicado?)", Toast.LENGTH_SHORT).show()
+                    FirebaseFirestore.getInstance().collection("students")
+                        .document(alumno["id"]!!)
+                        .set(data)
+                        .addOnSuccessListener {
+                            loadStudents()
+                            Toast.makeText(this, "Actualizado correctamente", Toast.LENGTH_SHORT).show()
+                        }
                 }
             } else {
                 Toast.makeText(this, "Completa todos los campos", Toast.LENGTH_SHORT).show()
@@ -91,21 +125,19 @@ class AlumnosListaActivity : AppCompatActivity() {
         builder.show()
     }
 
-    private fun confirmDelete(id: Int) {
+    private fun confirmDelete(id: String) {
         AlertDialog.Builder(this)
             .setTitle("Eliminar Alumno")
             .setMessage("¿Estás seguro de eliminar este alumno?")
             .setPositiveButton("Eliminar") { _, _ ->
-                if (db.deleteStudent(id)) {
-                    refreshList()
-                    Toast.makeText(this, "Eliminado", Toast.LENGTH_SHORT).show()
-                }
+                FirebaseFirestore.getInstance().collection("students").document(id)
+                    .delete()
+                    .addOnSuccessListener {
+                        loadStudents()
+                        Toast.makeText(this, "Eliminado", Toast.LENGTH_SHORT).show()
+                    }
             }
             .setNegativeButton("Cancelar", null)
             .show()
-    }
-
-    private fun refreshList() {
-        adapter.updateData(db.getStudentsByClassroom(classroomId))
     }
 }
