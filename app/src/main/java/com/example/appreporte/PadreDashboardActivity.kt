@@ -153,6 +153,7 @@ class PadreDashboardActivity : AppCompatActivity() {
                 }
                 R.id.nav_asistente -> {
                     val intent = Intent(this, ChatbotPadreActivity::class.java)
+                    intent.putExtra("USER_EMAIL", userEmail)
                     startActivity(intent)
                     true
                 }

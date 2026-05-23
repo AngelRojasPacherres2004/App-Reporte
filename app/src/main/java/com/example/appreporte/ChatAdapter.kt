@@ -28,7 +28,11 @@ class ChatAdapter(private val messages: List<UIMessage>) : RecyclerView.Adapter<
     override fun onBindViewHolder(holder: ChatViewHolder, position: Int) {
         val msg = messages[position]
         holder.tvSenderName.text = msg.sender
-        holder.tvMessageContent.text = msg.content
+        
+        // Formateo simple para que los **textos** se vean en negrita
+        val parsedContent = msg.content.replace(Regex("\\*\\*(.*?)\\*\\*"), "<b>$1</b>")
+        holder.tvMessageContent.text = androidx.core.text.HtmlCompat.fromHtml(parsedContent, androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY)
+
 
         if (msg.isMe) {
             holder.rootLayout.gravity = Gravity.END
