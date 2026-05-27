@@ -13,6 +13,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.appreporte.databinding.ActivityPostDetalleBinding
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 
 data class Comment(val author: String, val content: String, val time: String)
 
@@ -21,8 +23,8 @@ class PostDetalleActivity : AppCompatActivity() {
     private lateinit var binding: ActivityPostDetalleBinding
     private val comments = mutableListOf<Comment>()
     private lateinit var adapter: CommentAdapter
-    private lateinit var dbHelper: DatabaseHelper
-    private var postId: Int = -1
+    private val firestore = FirebaseFirestore.getInstance()
+    private var postId: String = ""
     private var userEmail: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -30,14 +32,12 @@ class PostDetalleActivity : AppCompatActivity() {
         binding = ActivityPostDetalleBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        dbHelper = DatabaseHelper(this)
-
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         binding.toolbar.setNavigationOnClickListener { finish() }
 
         // Obtener datos del post desde el Intent
-        postId = intent.getIntExtra("POST_ID", -1)
+        postId = intent.getStringExtra("POST_ID") ?: ""
         val author = intent.getStringExtra("POST_AUTHOR") ?: "Autor"
         val title = intent.getStringExtra("POST_TITLE") ?: "Título"
         val content = intent.getStringExtra("POST_CONTENT") ?: "Contenido"
@@ -76,10 +76,17 @@ class PostDetalleActivity : AppCompatActivity() {
         builder.setPositiveButton("Enviar") { _, _ ->
             val content = input.text.toString()
             if (content.isNotEmpty()) {
-                if (dbHelper.addComplaint(postId, userEmail, content)) {
-                    Toast.makeText(this, "Queja enviada correctamente", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(this, "Error al enviar queja", Toast.LENGTH_SHORT).show()
+                val complaintMap = hashMapOf(
+                    "postId" to postId,
+                    "parentEmail" to userEmail,
+                    "content" to content,
+                    "status" to "en proceso",
+                    "timestamp" to System.currentTimeMillis()
+                )
+                firestore.collection("complaints").add(complaintMap).addOnSuccessListener {
+                    Toast.makeText(this@PostDetalleActivity, "Queja enviada correctamente", Toast.LENGTH_SHORT).show()
+                }.addOnFailureListener {
+                    Toast.makeText(this@PostDetalleActivity, "Error al enviar queja", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -88,14 +95,22 @@ class PostDetalleActivity : AppCompatActivity() {
     }
 
     private fun loadComments() {
-        comments.clear()
-        if (postId != -1) {
-            val dbComments = dbHelper.getCommentsByPost(postId)
-            for (c in dbComments) {
-                comments.add(Comment(c.first, c.second, c.third))
-            }
+        if (postId.isNotEmpty()) {
+            firestore.collection("comments")
+                .whereEqualTo("postId", postId)
+                .orderBy("timestamp", Query.Direction.ASCENDING)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) return@addSnapshotListener
+                    comments.clear()
+                    snapshot?.documents?.forEach { doc ->
+                        val author = doc.getString("author") ?: ""
+                        val content = doc.getString("content") ?: ""
+                        val time = doc.getString("time") ?: ""
+                        comments.add(Comment(author, content, time))
+                    }
+                    adapter.notifyDataSetChanged()
+                }
         }
-        adapter.notifyDataSetChanged()
     }
 
     private fun setupRecyclerView() {
@@ -107,15 +122,17 @@ class PostDetalleActivity : AppCompatActivity() {
     private fun setupCommentInput() {
         binding.btnSendComment.setOnClickListener {
             val text = binding.etComment.text?.toString() ?: ""
-            if (text.isNotEmpty() && postId != -1) {
+            if (text.isNotEmpty() && postId.isNotEmpty()) {
                 val time = "AHORA"
-                if (dbHelper.addComment(postId, userEmail, text, time)) {
-                    comments.add(Comment(userEmail, text, time))
-                    adapter.notifyItemInserted(comments.size - 1)
-                    binding.rvComments.scrollToPosition(comments.size - 1)
-                    binding.etComment.text?.clear()
-                    Toast.makeText(this, "Comentario enviado", Toast.LENGTH_SHORT).show()
-                }
+                val commentMap = hashMapOf(
+                    "postId" to postId,
+                    "author" to userEmail,
+                    "content" to text,
+                    "time" to time,
+                    "timestamp" to System.currentTimeMillis()
+                )
+                firestore.collection("comments").add(commentMap)
+                binding.etComment.text?.clear()
             }
         }
     }

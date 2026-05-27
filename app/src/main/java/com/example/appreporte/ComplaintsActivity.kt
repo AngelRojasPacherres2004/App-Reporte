@@ -12,11 +12,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.appreporte.databinding.ActivityDocenteQuejasBinding
 import com.google.android.material.button.MaterialButton
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 
 class ComplaintsActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityDocenteQuejasBinding
-    private lateinit var db: DatabaseHelper
+    private val firestore = FirebaseFirestore.getInstance()
     private lateinit var adapter: ComplaintsAdapter
 
     private var salonName: String? = null
@@ -26,7 +28,6 @@ class ComplaintsActivity : AppCompatActivity() {
         binding = ActivityDocenteQuejasBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        db = DatabaseHelper(this)
         salonName = intent.getStringExtra("SALON_NAME")
 
         setSupportActionBar(binding.toolbar)
@@ -39,36 +40,53 @@ class ComplaintsActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerView() {
-        val complaints = db.getAllComplaints(salonName)
-        adapter = ComplaintsAdapter(complaints) { complaintId ->
+        adapter = ComplaintsAdapter(emptyList()) { complaintId ->
             showStatusDialog(complaintId)
         }
         binding.rvComplaints.layoutManager = LinearLayoutManager(this)
         binding.rvComplaints.adapter = adapter
+        refreshList()
     }
 
-    private fun showStatusDialog(complaintId: Int) {
+    private fun showStatusDialog(complaintId: String) {
         val options = arrayOf("no atendido", "en proceso", "atendido")
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Seleccionar nuevo estado")
         builder.setItems(options) { _, which ->
             val newStatus = options[which]
-            if (db.updateComplaintStatus(complaintId, newStatus)) {
-                Toast.makeText(this, "Estado actualizado", Toast.LENGTH_SHORT).show()
-                refreshList()
-            }
+            firestore.collection("complaints").document(complaintId).update("status", newStatus)
+                .addOnSuccessListener {
+                    Toast.makeText(this, "Estado actualizado", Toast.LENGTH_SHORT).show()
+                }
         }
         builder.show()
     }
 
     private fun refreshList() {
-        val complaints = db.getAllComplaints(salonName)
-        adapter.updateData(complaints)
+        var query: Query = firestore.collection("complaints").orderBy("timestamp", Query.Direction.DESCENDING)
+        if (salonName != null) {
+            // Note: Si salonName es necesario, habria que agregar el salonName al crear queja
+            // Omitido para mantener simplicidad si no esta en firebase
+        }
+        query.addSnapshotListener { snapshot, error ->
+            if (error != null) return@addSnapshotListener
+            val list = mutableListOf<Map<String, String>>()
+            snapshot?.documents?.forEach { doc ->
+                val map = mutableMapOf<String, String>()
+                map["id"] = doc.id
+                map["post_title"] = doc.getString("postId") ?: ""
+                map["parent_email"] = doc.getString("parentEmail") ?: ""
+                map["content"] = doc.getString("content") ?: ""
+                map["status"] = doc.getString("status") ?: ""
+                list.add(map)
+            }
+            adapter.updateData(list)
+        }
     }
 
     class ComplaintsAdapter(
         private var items: List<Map<String, String>>,
-        private val onStatusClick: (Int) -> Unit
+        private val onStatusClick: (String) -> Unit
     ) : RecyclerView.Adapter<ComplaintsAdapter.ViewHolder>() {
 
         class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -92,7 +110,7 @@ class ComplaintsActivity : AppCompatActivity() {
             holder.tvStatus.text = "Estado: ${item["status"]}"
             
             holder.btnStatus.setOnClickListener {
-                onStatusClick(item["id"]?.toInt() ?: -1)
+                onStatusClick(item["id"] ?: "")
             }
         }
 

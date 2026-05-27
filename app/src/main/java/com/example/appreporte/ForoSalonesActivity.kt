@@ -10,41 +10,164 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.appreporte.databinding.ActivityForoSalonesBinding
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+import com.google.firebase.firestore.FirebaseFirestore
 
 class ForoSalonesActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityForoSalonesBinding
-    private lateinit var dbHelper: DatabaseHelper
     private var userRole: String = "usuario"
     private var userEmail: String = ""
+    private var schoolId: String = ""
+    private val firestore = FirebaseFirestore.getInstance()
+    private val salones = mutableListOf<Map<String, String>>()
+    private lateinit var adapter: SalonesAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityForoSalonesBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        dbHelper = DatabaseHelper(this)
         userRole = intent.getStringExtra("USER_ROL") ?: "usuario"
         userEmail = intent.getStringExtra("USER_EMAIL") ?: ""
+        schoolId = intent.getStringExtra("SCHOOL_ID") ?: ""
 
         setupRecyclerView()
         setupBottomNavigation()
+        setupFab()
+        loadForums()
     }
 
     private fun setupRecyclerView() {
-        val salones = if (userRole == "admin") {
-            dbHelper.getAllClassrooms().map { it.second }
-        } else {
-            dbHelper.getUserClassroomsWithNames(userEmail).map { it.second }
-        }
-
-        binding.rvSalones.layoutManager = LinearLayoutManager(this)
-        binding.rvSalones.adapter = SalonesAdapter(salones) { salon ->
+        adapter = SalonesAdapter(salones, { salon ->
             val intent = Intent(this, ForoDetalleActivity::class.java)
-            intent.putExtra("SALON_NAME", salon)
+            intent.putExtra("SALON_NAME", salon["name"])
             intent.putExtra("USER_ROL", userRole)
             intent.putExtra("USER_EMAIL", userEmail)
             startActivity(intent)
+        }, { salon ->
+            if (userRole == "docente" || userRole == "admin") {
+                showForumActionDialog(salon)
+            }
+        })
+        binding.rvSalones.layoutManager = LinearLayoutManager(this)
+        binding.rvSalones.adapter = adapter
+    }
+
+    private fun loadForums() {
+        // Load classrooms as forums
+        val query = if (schoolId.isNotEmpty())
+            firestore.collection("classrooms").whereEqualTo("school_id", schoolId)
+        else
+            firestore.collection("classrooms")
+
+        query.get().addOnSuccessListener { classSnap ->
+            salones.clear()
+            classSnap.documents.forEach { doc ->
+                val name = doc.getString("name") ?: ""
+                salones.add(mapOf("id" to doc.id, "name" to name, "type" to "classroom"))
+            }
+            // Also load forum posts
+            firestore.collection("forums")
+                .whereEqualTo("schoolId", schoolId)
+                .get()
+                .addOnSuccessListener { forumSnap ->
+                    forumSnap.documents.forEach { doc ->
+                        val name = doc.getString("name") ?: ""
+                        if (!salones.any { it["name"] == name }) {
+                            salones.add(mapOf("id" to doc.id, "name" to name, "type" to "forum"))
+                        }
+                    }
+                    if (salones.isEmpty()) {
+                        salones.add(mapOf("id" to "general", "name" to "General", "type" to "forum"))
+                    }
+                    adapter.notifyDataSetChanged()
+                }
+                .addOnFailureListener {
+                    if (salones.isEmpty()) {
+                        salones.add(mapOf("id" to "general", "name" to "General", "type" to "forum"))
+                    }
+                    adapter.notifyDataSetChanged()
+                }
+        }.addOnFailureListener {
+            salones.add(mapOf("id" to "general", "name" to "General", "type" to "forum"))
+            adapter.notifyDataSetChanged()
+        }
+    }
+
+    private fun showForumActionDialog(salon: Map<String, String>) {
+        val forumId = salon["id"] ?: return
+        if (forumId == "general") return // Don't edit default
+        val currentName = salon["name"] ?: ""
+
+        val options = arrayOf("Modificar", "Eliminar")
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(currentName)
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> showEditForumDialog(forumId, currentName)
+                    1 -> confirmDeleteForum(forumId, currentName)
+                }
+            }
+            .show()
+    }
+
+    private fun showEditForumDialog(forumId: String, currentName: String) {
+        val input = com.google.android.material.textfield.TextInputEditText(this)
+        input.setText(currentName)
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Modificar Foro")
+            .setView(input)
+            .setPositiveButton("Guardar") { _, _ ->
+                val newName = input.text?.toString() ?: ""
+                if (newName.isNotEmpty()) {
+                    firestore.collection("forums").document(forumId).update("name", newName)
+                        .addOnSuccessListener {
+                            android.widget.Toast.makeText(this, "Foro actualizado", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun confirmDeleteForum(forumId: String, name: String) {
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Eliminar Foro")
+            .setMessage("¿Seguro que deseas eliminar el foro '$name'?")
+            .setPositiveButton("Eliminar") { _, _ ->
+                firestore.collection("forums").document(forumId).delete()
+                    .addOnSuccessListener {
+                        android.widget.Toast.makeText(this, "Foro eliminado", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun setupFab() {
+        if (userRole == "docente" || userRole == "admin") {
+            binding.fabAddForum.visibility = View.VISIBLE
+            binding.fabAddForum.setOnClickListener {
+                val input = com.google.android.material.textfield.TextInputEditText(this)
+                input.hint = "Nombre del Nuevo Foro"
+                androidx.appcompat.app.AlertDialog.Builder(this)
+                    .setTitle("Crear Nuevo Foro")
+                    .setView(input)
+                    .setPositiveButton("Crear") { _, _ ->
+                        val name = input.text?.toString() ?: ""
+                        if (name.isNotEmpty()) {
+                            val map = hashMapOf(
+                                "name" to name,
+                                "schoolId" to schoolId,
+                                "createdBy" to userEmail
+                            )
+                            firestore.collection("forums").add(map)
+                        }
+                    }
+                    .setNegativeButton("Cancelar", null)
+                    .show()
+            }
         }
     }
 
@@ -82,9 +205,11 @@ class ForoSalonesActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_perfil -> {
-                    val intent = Intent(this, PerfilActivity::class.java)
-                    intent.putExtra("USER_EMAIL", userEmail)
-                    startActivity(intent)
+                    val perfilIntent = Intent(this, PerfilActivity::class.java)
+                    perfilIntent.putExtra("USER_EMAIL", userEmail)
+                    perfilIntent.putExtra("USER_ROL", userRole)
+                    perfilIntent.putExtra("SCHOOL_ID", schoolId)
+                    startActivity(perfilIntent)
                     finish()
                     true
                 }
@@ -94,8 +219,11 @@ class ForoSalonesActivity : AppCompatActivity() {
         }
     }
 
-    class SalonesAdapter(private val salones: List<String>, private val onClick: (String) -> Unit) :
-        RecyclerView.Adapter<SalonesAdapter.ViewHolder>() {
+    class SalonesAdapter(
+        private val salones: List<Map<String, String>>, 
+        private val onClick: (Map<String, String>) -> Unit,
+        private val onLongClick: (Map<String, String>) -> Unit
+    ) : RecyclerView.Adapter<SalonesAdapter.ViewHolder>() {
 
         class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
             val tvName: TextView = view.findViewById(android.R.id.text1)
@@ -107,8 +235,12 @@ class ForoSalonesActivity : AppCompatActivity() {
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            holder.tvName.text = salones[position]
+            holder.tvName.text = salones[position]["name"]
             holder.itemView.setOnClickListener { onClick(salones[position]) }
+            holder.itemView.setOnLongClickListener { 
+                onLongClick(salones[position])
+                true
+            }
         }
 
         override fun getItemCount() = salones.size

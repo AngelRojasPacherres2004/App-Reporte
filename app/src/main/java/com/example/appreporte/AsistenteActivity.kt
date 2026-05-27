@@ -69,7 +69,11 @@ class AsistenteActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_perfil -> {
-                    startActivity(Intent(this, PerfilActivity::class.java))
+                    val perfilIntent = Intent(this, PerfilActivity::class.java)
+                    perfilIntent.putExtra("USER_EMAIL", intent.getStringExtra("USER_EMAIL") ?: "")
+                    perfilIntent.putExtra("USER_ROL", intent.getStringExtra("USER_ROL") ?: "admin")
+                    perfilIntent.putExtra("SCHOOL_ID", intent.getStringExtra("SCHOOL_ID") ?: "")
+                    startActivity(perfilIntent)
                     overridePendingTransition(0, 0)
                     finish()
                     true

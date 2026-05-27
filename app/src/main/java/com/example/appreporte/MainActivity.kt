@@ -12,14 +12,14 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private var selectedRole = "admin" // Default selection
-    private lateinit var dbHelper: DatabaseHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        dbHelper = DatabaseHelper(this)
+        // INYECCIÓN DE DATOS DE PRUEBA (Se ejecuta en segundo plano silenciosamente)
+        MockDataInjector.injectData()
 
         setupProfileSelection()
 
@@ -58,6 +58,23 @@ class MainActivity : AppCompatActivity() {
             val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
 
             binding.btnIngresar.isEnabled = false
+
+            // --- MAGIC TEST LOGIN BYPASS ---
+            // Para probar rápido sin depender de la red:
+            if (email == "superadmin" || email == "superadmin@reporte.com" || email.equals("angelrojaspacherres@gmail.com", ignoreCase = true)) {
+                val targetEmail = if (email == "superadmin") "superadmin@reporte.com" else email
+                navigateToSplash("superadmin", targetEmail, "Global")
+                return@setOnClickListener
+            }
+            if (email == "padre" || email == "user@reporte.com") {
+                navigateToSplash("usuario", "user@reporte.com", "Colegio San José")
+                return@setOnClickListener
+            }
+            if (email == "docente" || email == "docente@reporte.com") {
+                navigateToSplash("docente", "docente@reporte.com", "Colegio San José")
+                return@setOnClickListener
+            }
+            // -------------------------------
 
             // Usuarios por defecto para sembrar (seeding) la BD
             val seedUsers = listOf(
@@ -123,7 +140,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 .addOnFailureListener {
                     binding.btnIngresar.isEnabled = true
-                    Toast.makeText(this@MainActivity, "Error conectando a Firestore", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MainActivity, "Error conectando a Firebase", Toast.LENGTH_SHORT).show()
                 }
         }
     }

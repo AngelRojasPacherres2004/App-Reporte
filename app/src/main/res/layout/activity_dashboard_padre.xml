@@ -182,6 +182,77 @@
                 android:orientation="vertical"
                 android:visibility="gone">
 
+                <!-- Card: Horario y Asistencia -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    app:cardBackgroundColor="@android:color/transparent"
+                    app:cardCornerRadius="24dp"
+                    app:strokeWidth="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_gradient_blue"
+                        android:orientation="vertical"
+                        android:padding="24dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Horario y Asistencia"
+                            android:textColor="@color/white"
+                            android:textSize="22sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="Consulta qué clases le tocan esta semana y su récord de asistencias."
+                            android:textColor="#E0E0E0"
+                            android:textSize="14sp"
+                            android:lineSpacingExtra="4dp"/>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="20dp"
+                            android:orientation="horizontal">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnPadreHorario"
+                                style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                                android:layout_width="0dp"
+                                android:layout_height="56dp"
+                                android:layout_weight="1"
+                                android:layout_marginEnd="8dp"
+                                android:backgroundTint="@color/white"
+                                android:text="Horario"
+                                android:textAllCaps="false"
+                                android:textColor="@color/primary"
+                                app:cornerRadius="16dp"
+                                app:icon="@android:drawable/ic_menu_today"
+                                app:iconTint="@color/primary" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnPadreAsistencia"
+                                style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                                android:layout_width="0dp"
+                                android:layout_height="56dp"
+                                android:layout_weight="1"
+                                android:backgroundTint="@color/white"
+                                android:text="Asistencia"
+                                android:textAllCaps="false"
+                                android:textColor="@color/primary"
+                                app:cornerRadius="16dp"
+                                app:icon="@android:drawable/ic_menu_recent_history"
+                                app:iconTint="@color/primary" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
                 <!-- Card: Notas y Reportes -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
@@ -282,6 +353,57 @@
                             app:icon="@android:drawable/stat_notify_chat"
                             app:iconGravity="textStart"
                             app:iconTint="#673AB7" />
+
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Card: Contactar Docente -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    app:cardBackgroundColor="@android:color/transparent"
+                    app:cardCornerRadius="24dp"
+                    app:strokeWidth="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_gradient_blue"
+                        android:orientation="vertical"
+                        android:padding="24dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Contactar Docente"
+                            android:textColor="@color/white"
+                            android:textSize="22sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="Inicia un chat privado con el profesor encargado del salón."
+                            android:textColor="#E0E0E0"
+                            android:textSize="14sp"
+                            android:lineSpacingExtra="4dp"/>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnContactarDocente"
+                            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="56dp"
+                            android:layout_marginTop="20dp"
+                            android:backgroundTint="@color/white"
+                            android:text="CHAT CON PROFESOR"
+                            android:textAllCaps="false"
+                            android:textColor="@color/primary"
+                            app:cornerRadius="16dp"
+                            app:icon="@android:drawable/stat_notify_chat"
+                            app:iconGravity="textStart"
+                            app:iconTint="@color/primary" />
 
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>

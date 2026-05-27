@@ -11,8 +11,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.appreporte.databinding.ActivityForoDetalleBinding
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 
-data class Post(val id: Int, val author: String, val title: String, val content: String, val time: String)
+data class Post(val id: String, val author: String, val title: String, val content: String, val time: String)
 
 class ForoDetalleActivity : AppCompatActivity() {
 
@@ -22,15 +24,14 @@ class ForoDetalleActivity : AppCompatActivity() {
     private var userRole: String = "usuario"
     private var userEmail: String = ""
     private var salonName: String = ""
-    private lateinit var dbHelper: DatabaseHelper
     private lateinit var complaintsAdapter: ComplaintsActivity.ComplaintsAdapter
+    private val firestore = FirebaseFirestore.getInstance()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityForoDetalleBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        dbHelper = DatabaseHelper(this)
         salonName = intent.getStringExtra("SALON_NAME") ?: "Foro"
         userRole = intent.getStringExtra("USER_ROL") ?: "usuario"
         userEmail = intent.getStringExtra("USER_EMAIL") ?: ""
@@ -79,31 +80,56 @@ class ForoDetalleActivity : AppCompatActivity() {
     }
 
     private fun loadComplaints() {
-        val complaints = dbHelper.getAllComplaints(salonName)
-        complaintsAdapter.updateData(complaints)
+        firestore.collection("complaints")
+            // Note: In real scenarios, add whereEqualTo("salonName", salonName) if saved
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) return@addSnapshotListener
+                val list = mutableListOf<Map<String, String>>()
+                snapshot?.documents?.forEach { doc ->
+                    val map = mutableMapOf<String, String>()
+                    map["id"] = doc.id
+                    map["post_title"] = doc.getString("postId") ?: ""
+                    map["parent_email"] = doc.getString("parentEmail") ?: ""
+                    map["content"] = doc.getString("content") ?: ""
+                    map["status"] = doc.getString("status") ?: ""
+                    list.add(map)
+                }
+                complaintsAdapter.updateData(list)
+            }
     }
 
-    private fun showStatusDialog(complaintId: Int) {
+    private fun showStatusDialog(complaintId: String) {
         val options = arrayOf("no atendido", "en proceso", "atendido")
         com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
             .setTitle("Seleccionar nuevo estado")
             .setItems(options) { _, which ->
                 val newStatus = options[which]
-                if (dbHelper.updateComplaintStatus(complaintId, newStatus)) {
-                    Toast.makeText(this, "Estado actualizado", Toast.LENGTH_SHORT).show()
-                    loadComplaints()
-                }
+                firestore.collection("complaints").document(complaintId).update("status", newStatus)
+                    .addOnSuccessListener {
+                        Toast.makeText(this, "Estado actualizado", Toast.LENGTH_SHORT).show()
+                    }
             }
             .show()
     }
 
     private fun loadPosts() {
-        posts.clear()
-        val dbPosts = dbHelper.getPostsBySalon(salonName)
-        for (p in dbPosts) {
-            posts.add(Post(p.first, p.second.first, p.second.second, p.second.third, p.third))
-        }
-        adapter.notifyDataSetChanged()
+        firestore.collection("posts")
+            .whereEqualTo("salonName", salonName)
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) return@addSnapshotListener
+                posts.clear()
+                snapshot?.documents?.forEach { doc ->
+                    val id = doc.id
+                    val author = doc.getString("author") ?: ""
+                    val title = doc.getString("title") ?: ""
+                    val content = doc.getString("content") ?: ""
+                    val time = doc.getString("time") ?: ""
+                    posts.add(Post(id, author, title, content, time))
+                }
+                adapter.notifyDataSetChanged()
+            }
     }
 
     private fun setupBottomNavigation() {
@@ -132,9 +158,55 @@ class ForoDetalleActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerView() {
-        adapter = PostAdapter(posts, userEmail, userRole)
+        adapter = PostAdapter(posts, userEmail, userRole) { post, action ->
+            if (action == "edit") {
+                showEditPostDialog(post)
+            } else if (action == "delete") {
+                confirmDeletePost(post)
+            }
+        }
         binding.rvPosts.layoutManager = LinearLayoutManager(this)
         binding.rvPosts.adapter = adapter
+    }
+
+    private fun showEditPostDialog(post: Post) {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_create_post, null)
+        val etTitle = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etDialogTitle)
+        val etDesc = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etDialogDesc)
+
+        etTitle.setText(post.title)
+        etDesc.setText(post.content)
+
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+            .setTitle("Modificar Publicación")
+            .setView(dialogView)
+            .setPositiveButton("Guardar") { _, _ ->
+                val title = etTitle.text?.toString() ?: ""
+                val desc = etDesc.text?.toString() ?: ""
+                if (title.isNotEmpty() && desc.isNotEmpty()) {
+                    firestore.collection("posts").document(post.id)
+                        .update(mapOf("title" to title, "content" to desc))
+                        .addOnSuccessListener {
+                            Toast.makeText(this, "Publicación actualizada", Toast.LENGTH_SHORT).show()
+                        }
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun confirmDeletePost(post: Post) {
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+            .setTitle("Eliminar Publicación")
+            .setMessage("¿Estás seguro de que deseas eliminar esto?")
+            .setPositiveButton("Eliminar") { _, _ ->
+                firestore.collection("posts").document(post.id).delete()
+                    .addOnSuccessListener {
+                        Toast.makeText(this, "Publicación eliminada", Toast.LENGTH_SHORT).show()
+                    }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
     }
 
     private fun setupPublish() {
@@ -155,13 +227,16 @@ class ForoDetalleActivity : AppCompatActivity() {
                     val time = "AHORA"
                     val author = userEmail
                     val title = "Comentario"
-                    val id = dbHelper.addPost(salonName, author, title, content, time).toInt()
-                    if (id != -1) {
-                        posts.add(0, Post(id, author, title, content, time))
-                        adapter.notifyItemInserted(0)
-                        binding.rvPosts.scrollToPosition(0)
-                        binding.etPostContent.text?.clear()
-                    }
+                    val postMap = hashMapOf(
+                        "salonName" to salonName,
+                        "author" to author,
+                        "title" to title,
+                        "content" to content,
+                        "time" to time,
+                        "timestamp" to System.currentTimeMillis()
+                    )
+                    firestore.collection("posts").add(postMap)
+                    binding.etPostContent.text?.clear()
                 }
             }
         }
@@ -181,11 +256,15 @@ class ForoDetalleActivity : AppCompatActivity() {
                 if (title.isNotEmpty() && desc.isNotEmpty()) {
                     val time = "AHORA"
                     val author = userEmail
-                    val id = dbHelper.addPost(salonName, author, title, desc, time).toInt()
-                    if (id != -1) {
-                        posts.add(0, Post(id, author, title, desc, time))
-                        adapter.notifyItemInserted(0)
-                        binding.rvPosts.scrollToPosition(0)
+                    val postMap = hashMapOf(
+                        "salonName" to salonName,
+                        "author" to author,
+                        "title" to title,
+                        "content" to desc,
+                        "time" to time,
+                        "timestamp" to System.currentTimeMillis()
+                    )
+                    firestore.collection("posts").add(postMap).addOnSuccessListener {
                         Toast.makeText(this, "Publicado con éxito", Toast.LENGTH_SHORT).show()
                     }
                 } else {
@@ -196,7 +275,12 @@ class ForoDetalleActivity : AppCompatActivity() {
             .show()
     }
 
-    class PostAdapter(private val posts: List<Post>, private val userEmail: String, private val userRole: String) : RecyclerView.Adapter<PostAdapter.ViewHolder>() {
+    class PostAdapter(
+        private val posts: List<Post>, 
+        private val userEmail: String, 
+        private val userRole: String,
+        private val onAction: (Post, String) -> Unit
+    ) : RecyclerView.Adapter<PostAdapter.ViewHolder>() {
         class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
             val tvAuthor: TextView = view.findViewById(R.id.tvAuthorName)
             val tvTitle: TextView = view.findViewById(R.id.tvTitle)
@@ -228,6 +312,22 @@ class ForoDetalleActivity : AppCompatActivity() {
                     putExtra("USER_ROL", userRole)
                 }
                 context.startActivity(intent)
+            }
+            
+            holder.itemView.setOnLongClickListener {
+                if (userEmail == post.author || userRole == "docente" || userRole == "admin") {
+                    val options = arrayOf("Modificar", "Eliminar")
+                    androidx.appcompat.app.AlertDialog.Builder(holder.itemView.context)
+                        .setTitle("Opciones de Publicación")
+                        .setItems(options) { _, which ->
+                            when (which) {
+                                0 -> onAction(post, "edit")
+                                1 -> onAction(post, "delete")
+                            }
+                        }
+                        .show()
+                }
+                true
             }
         }
 

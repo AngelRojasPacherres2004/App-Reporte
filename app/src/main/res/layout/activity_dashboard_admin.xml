@@ -103,13 +103,29 @@
             android:padding="16dp">
 
             <!-- Welcome card was moved to InicioActivity -->
-            <TextView
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Gestión de Institución"
-                android:textColor="@color/on_surface"
-                android:textSize="24sp"
-                android:textStyle="bold" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Gestión de Institución"
+                    android:textColor="@color/on_surface"
+                    android:textSize="24sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnContactarSoporte"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Soporte"
+                    app:icon="@android:drawable/ic_dialog_email" />
+            </LinearLayout>
 
             <!-- User Management Card -->
             <com.google.android.material.card.MaterialCardView

@@ -2,32 +2,30 @@ package com.example.appreporte
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.example.appreporte.databinding.ActivityInicioBinding
 import com.google.firebase.firestore.FirebaseFirestore
 
 class InicioActivity : AppCompatActivity() {
 
     private var currentSchoolId: String = ""
     private lateinit var staffAdapter: StaffAdapter
+    private lateinit var binding: ActivityInicioBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_inicio)
+        binding = ActivityInicioBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         currentSchoolId = intent.getStringExtra("SCHOOL_ID") ?: "Colegio San José"
 
-        val rvFeaturedStaff = findViewById<RecyclerView>(R.id.rvFeaturedStaff)
         staffAdapter = StaffAdapter(emptyList())
-        rvFeaturedStaff.layoutManager = LinearLayoutManager(this)
-        rvFeaturedStaff.adapter = staffAdapter
+        binding.rvFeaturedStaff.layoutManager = LinearLayoutManager(this)
+        binding.rvFeaturedStaff.adapter = staffAdapter
 
-        val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavigation)
-        bottomNav.selectedItemId = R.id.nav_inicio
-        bottomNav.setOnItemSelectedListener { item ->
+        binding.bottomNavigation.selectedItemId = R.id.nav_inicio
+        binding.bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_gestion -> {
                     val intent = Intent(this, AdminDashboardActivity::class.java)
@@ -38,7 +36,11 @@ class InicioActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_foro -> {
-                    startActivity(Intent(this, ForoActivity::class.java))
+                    val userEmail = intent.getStringExtra("USER_EMAIL") ?: ""
+                    val chatIntent = Intent(this, DirectChatActivity::class.java)
+                    chatIntent.putExtra("CURRENT_EMAIL", userEmail)
+                    chatIntent.putExtra("TARGET_EMAIL", "superadmin@reporte.com")
+                    startActivity(chatIntent)
                     overridePendingTransition(0, 0)
                     finish()
                     true
@@ -50,7 +52,11 @@ class InicioActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_perfil -> {
-                    startActivity(Intent(this, PerfilActivity::class.java))
+                    val perfilIntent = Intent(this, PerfilActivity::class.java)
+                    perfilIntent.putExtra("USER_EMAIL", intent.getStringExtra("USER_EMAIL") ?: "")
+                    perfilIntent.putExtra("USER_ROL", "admin")
+                    perfilIntent.putExtra("SCHOOL_ID", currentSchoolId)
+                    startActivity(perfilIntent)
                     overridePendingTransition(0, 0)
                     finish()
                     true
@@ -72,13 +78,13 @@ class InicioActivity : AppCompatActivity() {
         // Count users
         db.collection("users").whereEqualTo("school_id", currentSchoolId).get()
             .addOnSuccessListener { snap ->
-                findViewById<TextView>(R.id.tvTotalUsers).text = snap.size().toString()
+                binding.tvTotalUsers.text = snap.size().toString()
             }
 
         // Count classrooms
         db.collection("classrooms").whereEqualTo("school_id", currentSchoolId).get()
             .addOnSuccessListener { snap ->
-                findViewById<TextView>(R.id.tvTotalClassrooms).text = snap.size().toString()
+                binding.tvTotalClassrooms.text = snap.size().toString()
             }
     }
 

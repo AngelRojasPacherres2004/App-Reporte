@@ -1,80 +1,114 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background">
 
-    <!-- Top App Bar -->
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/background"
-        app:elevation="0dp">
+        android:background="@color/surface"
+        app:elevation="4dp">
 
         <androidx.appcompat.widget.Toolbar
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize">
-            <TextView
+            
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:text="Asistente EduConnect"
-                android:textColor="@color/primary"
-                android:textSize="20sp"
-                android:textStyle="bold" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:src="@drawable/ic_robot"
+                    android:background="@drawable/bg_circle_blue"
+                    android:padding="4dp"
+                    app:tint="@color/white"
+                    android:layout_marginEnd="12dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Asistente EduConnect"
+                    android:textColor="@color/primary"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
         </androidx.appcompat.widget.Toolbar>
     </com.google.android.material.appbar.AppBarLayout>
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvBotMessages"
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@id/llInputAreaBot"
-        android:layout_below="@id/appBarLayout"
-        android:padding="16dp"
-        android:clipToPadding="false" />
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"
+        android:layout_marginBottom="56dp">
 
-    <LinearLayout
-        android:id="@+id/llInputAreaBot"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_above="@id/bottomNavigation"
-        android:background="@color/surface"
-        android:elevation="8dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:padding="12dp">
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvBotMessages"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_above="@id/llInputAreaBot"
+            android:padding="16dp"
+            android:clipToPadding="false" />
 
-        <EditText
-            android:id="@+id/etMessageBot"
-            android:layout_width="0dp"
+        <LinearLayout
+            android:id="@+id/llInputAreaBot"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="@null"
-            android:hint="Pregúntale algo a la IA..."
-            android:padding="12dp"
-            android:textColor="@color/on_surface" />
+            android:layout_alignParentBottom="true"
+            android:background="@color/background"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="12dp">
 
-        <ImageButton
-            android:id="@+id/btnSendBot"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_marginStart="8dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_send"
-            app:tint="@color/primary" />
-    </LinearLayout>
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                app:cardBackgroundColor="@color/surface"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/outline">
+
+                <EditText
+                    android:id="@+id/etMessageBot"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@null"
+                    android:hint="Pregúntale algo a la IA..."
+                    android:paddingHorizontal="20dp"
+                    android:paddingVertical="14dp"
+                    android:textColor="@color/on_surface"
+                    android:textSize="16sp" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <ImageButton
+                android:id="@+id/btnSendBot"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="12dp"
+                android:background="@drawable/bg_circle_blue"
+                android:src="@android:drawable/ic_menu_send"
+                app:tint="@color/white"
+                android:padding="12dp" />
+        </LinearLayout>
+    </RelativeLayout>
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigation"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
+        android:layout_gravity="bottom"
         app:backgroundTint="@color/background"
         app:itemIconTint="@color/on_surface"
         app:itemTextColor="@color/on_surface"
         app:menu="@menu/bottom_nav_menu_admin" />
 
-</RelativeLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

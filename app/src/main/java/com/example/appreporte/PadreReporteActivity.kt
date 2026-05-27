@@ -12,6 +12,10 @@ import com.example.appreporte.databinding.ActivityPadreReporteBinding
 import com.google.firebase.firestore.FirebaseFirestore
 import com.itextpdf.kernel.pdf.PdfDocument
 import com.itextpdf.kernel.pdf.PdfWriter
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.itextpdf.layout.Document
 import com.itextpdf.layout.element.Paragraph
 import com.itextpdf.layout.element.Table
@@ -99,38 +103,42 @@ class PadreReporteActivity : AppCompatActivity() {
             return
         }
 
-        val pdfFile = File(cacheDir, "Reporte_${studentName.replace(" ", "_")}.pdf")
-        try {
-            val writer = PdfWriter(FileOutputStream(pdfFile))
-            val pdf = PdfDocument(writer)
-            val document = Document(pdf)
+        lifecycleScope.launch(Dispatchers.IO) {
+            val pdfFile = File(cacheDir, "Reporte_${studentName.replace(" ", "_")}.pdf")
+            try {
+                val writer = PdfWriter(FileOutputStream(pdfFile))
+                val pdf = PdfDocument(writer)
+                val document = Document(pdf)
 
-            document.add(Paragraph("Reporte Académico").setBold().setFontSize(18f))
-            document.add(Paragraph("Estudiante: $studentName"))
-            document.add(Paragraph("Fecha: ${SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())}"))
-            document.add(Paragraph("\n"))
+                document.add(Paragraph("Reporte Académico").setBold().setFontSize(18f))
+                document.add(Paragraph("Estudiante: $studentName"))
+                document.add(Paragraph("Fecha: ${SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())}"))
+                document.add(Paragraph("\n"))
 
-            val table = Table(UnitValue.createPercentArray(floatArrayOf(3f, 2f, 3f, 2f))).useAllAvailableWidth()
-            table.addHeaderCell(Paragraph("Materia").setBold())
-            table.addHeaderCell(Paragraph("Tipo").setBold())
-            table.addHeaderCell(Paragraph("Fecha").setBold())
-            table.addHeaderCell(Paragraph("Nota").setBold())
+                val table = Table(UnitValue.createPercentArray(floatArrayOf(3f, 2f, 3f, 2f))).useAllAvailableWidth()
+                table.addHeaderCell(Paragraph("Materia").setBold())
+                table.addHeaderCell(Paragraph("Tipo").setBold())
+                table.addHeaderCell(Paragraph("Fecha").setBold())
+                table.addHeaderCell(Paragraph("Nota").setBold())
 
-            for (grade in gradesList) {
-                table.addCell(grade["subject"] ?: "")
-                table.addCell(grade["type"] ?: "")
-                table.addCell(grade["date"] ?: "")
-                table.addCell(grade["value"] ?: "")
+                for (grade in gradesList) {
+                    table.addCell(grade["subject"] ?: "")
+                    table.addCell(grade["type"] ?: "")
+                    table.addCell(grade["date"] ?: "")
+                    table.addCell(grade["value"] ?: "")
+                }
+
+                document.add(table)
+                document.close()
+
+                saveToDownloads(pdfFile)
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@PadreReporteActivity, "Error al generar PDF", Toast.LENGTH_SHORT).show()
+                }
             }
-
-            document.add(table)
-            document.close()
-
-            saveToDownloads(pdfFile)
-
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Toast.makeText(this, "Error al generar PDF", Toast.LENGTH_SHORT).show()
         }
     }
 

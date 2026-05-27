@@ -26,6 +26,16 @@
         <activity
             android:name=".LoadingActivity"
             android:exported="false" />
+            
+        <activity
+            android:name=".SuperAdminDashboardActivity"
+            android:exported="false"
+            android:label="Panel Súper Administrador" />
+
+        <activity
+            android:name=".DirectChatActivity"
+            android:exported="false"
+            android:label="Chat" />
 
         <activity
             android:name=".PadreDashboardActivity"
@@ -105,6 +115,26 @@
             android:name=".ComplaintsActivity"
             android:exported="false"
             android:label="Gestión de Quejas" />
+
+        <activity
+            android:name=".DocenteHorarioActivity"
+            android:exported="false"
+            android:label="Mi Horario" />
+
+        <activity
+            android:name=".DocenteAsistenciaActivity"
+            android:exported="false"
+            android:label="Tomar Asistencia" />
+
+        <activity
+            android:name=".PadreHorarioActivity"
+            android:exported="false"
+            android:label="Horario del Alumno" />
+
+        <activity
+            android:name=".PadreAsistenciaActivity"
+            android:exported="false"
+            android:label="Historial de Asistencia" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

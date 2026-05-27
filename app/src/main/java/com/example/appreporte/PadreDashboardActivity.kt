@@ -108,6 +108,27 @@ class PadreDashboardActivity : AppCompatActivity() {
             }
         }
 
+        binding.root.findViewById<android.view.View>(R.id.btnPadreHorario)?.setOnClickListener {
+            if (selectedStudentId.isNotEmpty()) {
+                val intent = Intent(this, PadreHorarioActivity::class.java)
+                intent.putExtra("STUDENT_ID", selectedStudentId)
+                intent.putExtra("CLASSROOM_ID", selectedClassroomId)
+                startActivity(intent)
+            } else {
+                Toast.makeText(this, "Seleccione un hijo primero", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        binding.root.findViewById<android.view.View>(R.id.btnPadreAsistencia)?.setOnClickListener {
+            if (selectedStudentId.isNotEmpty()) {
+                val intent = Intent(this, PadreAsistenciaActivity::class.java)
+                intent.putExtra("STUDENT_ID", selectedStudentId)
+                startActivity(intent)
+            } else {
+                Toast.makeText(this, "Seleccione un hijo primero", Toast.LENGTH_SHORT).show()
+            }
+        }
+
         binding.btnVerReportes.setOnClickListener {
             if (selectedStudentId.isNotEmpty()) {
                 val intent = Intent(this, PadreReporteActivity::class.java)
@@ -123,6 +144,32 @@ class PadreDashboardActivity : AppCompatActivity() {
             val intent = Intent(this, PerfilActivity::class.java)
             intent.putExtra("USER_EMAIL", userEmail)
             startActivity(intent)
+        }
+
+        binding.root.findViewById<android.view.View>(R.id.btnContactarDocente)?.setOnClickListener {
+            if (selectedClassroomId.isNotEmpty()) {
+                // Find teacher for this classroom
+                FirebaseFirestore.getInstance().collection("users")
+                    .whereEqualTo("rol", "docente")
+                    .whereArrayContains("classrooms", selectedClassroomId)
+                    .get()
+                    .addOnSuccessListener { snapshot ->
+                        if (!snapshot.isEmpty) {
+                            val teacherEmail = snapshot.documents[0].id
+                            val intent = Intent(this, DirectChatActivity::class.java)
+                            intent.putExtra("CURRENT_EMAIL", userEmail)
+                            intent.putExtra("TARGET_EMAIL", teacherEmail)
+                            startActivity(intent)
+                        } else {
+                            Toast.makeText(this, "No hay docente asignado a este salón", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    .addOnFailureListener {
+                        Toast.makeText(this, "Error buscando docente", Toast.LENGTH_SHORT).show()
+                    }
+            } else {
+                Toast.makeText(this, "Seleccione un hijo primero", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 

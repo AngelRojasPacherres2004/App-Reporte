@@ -32,6 +32,7 @@ class LoadingActivity : AppCompatActivity() {
                     val email = intent.getStringExtra("USER_EMAIL")
                     val schoolId = intent.getStringExtra("SCHOOL_ID")
                     val targetActivity = when (rol) {
+                        "superadmin" -> SuperAdminDashboardActivity::class.java
                         "admin" -> InicioActivity::class.java
                         "docente" -> DocenteDashboardActivity::class.java
                         else -> PadreDashboardActivity::class.java
