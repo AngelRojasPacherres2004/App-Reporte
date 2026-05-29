@@ -118,17 +118,27 @@ class ForoDetalleActivity : AppCompatActivity() {
             .whereEqualTo("salonName", salonName)
             .orderBy("timestamp", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
-                if (error != null) return@addSnapshotListener
-                posts.clear()
-                snapshot?.documents?.forEach { doc ->
-                    val id = doc.id
-                    val author = doc.getString("author") ?: ""
-                    val title = doc.getString("title") ?: ""
-                    val content = doc.getString("content") ?: ""
-                    val time = doc.getString("time") ?: ""
-                    posts.add(Post(id, author, title, content, time))
+                if (error != null) {
+                    android.util.Log.e("FirestoreError", "Error en foro: ${error.message}")
+                    return@addSnapshotListener
                 }
-                adapter.notifyDataSetChanged()
+                
+                if (snapshot != null) {
+                    posts.clear()
+                    snapshot.documents.forEach { doc ->
+                        val id = doc.id
+                        val author = doc.getString("author") ?: ""
+                        val title = doc.getString("title") ?: ""
+                        val content = doc.getString("content") ?: ""
+                        val time = doc.getString("time") ?: ""
+                        posts.add(Post(id, author, title, content, time))
+                    }
+                    adapter.notifyDataSetChanged()
+                    // Si hay nuevos posts, volver arriba para ver el más reciente
+                    if (posts.isNotEmpty()) {
+                        binding.rvPosts.scrollToPosition(0)
+                    }
+                }
             }
     }
 
@@ -235,8 +245,11 @@ class ForoDetalleActivity : AppCompatActivity() {
                         "time" to time,
                         "timestamp" to System.currentTimeMillis()
                     )
+                    binding.etPostContent.text?.clear() // Limpiar antes para rapidez
                     firestore.collection("posts").add(postMap)
-                    binding.etPostContent.text?.clear()
+                        .addOnFailureListener {
+                            Toast.makeText(this, "Error al publicar", Toast.LENGTH_SHORT).show()
+                        }
                 }
             }
         }

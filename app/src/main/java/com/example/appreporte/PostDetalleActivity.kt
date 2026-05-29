@@ -1,6 +1,5 @@
 package com.example.appreporte
 
-import android.content.DialogInterface
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -14,9 +13,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.appreporte.databinding.ActivityPostDetalleBinding
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
 
-data class Comment(val author: String, val content: String, val time: String)
+data class Comment(
+    val author: String = "",
+    val content: String = "",
+    val time: String = "",
+    val timestamp: Long = 0L
+)
 
 class PostDetalleActivity : AppCompatActivity() {
 
@@ -36,7 +39,6 @@ class PostDetalleActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         binding.toolbar.setNavigationOnClickListener { finish() }
 
-        // Obtener datos del post desde el Intent
         postId = intent.getStringExtra("POST_ID") ?: ""
         val author = intent.getStringExtra("POST_AUTHOR") ?: "Autor"
         val title = intent.getStringExtra("POST_TITLE") ?: "Título"
@@ -45,14 +47,12 @@ class PostDetalleActivity : AppCompatActivity() {
         userEmail = intent.getStringExtra("USER_EMAIL") ?: "Usuario"
         val userRol = intent.getStringExtra("USER_ROL") ?: ""
 
-        // Mostrar datos del post en la vista incluida
         binding.includedPost.tvAuthorName.text = author
         binding.includedPost.tvTitle.text = title
         binding.includedPost.tvContent.text = content
         binding.includedPost.tvTime.text = time
-        binding.includedPost.tvCommentsCount.visibility = View.GONE // No necesitamos mostrar el conteo aquí
+        binding.includedPost.tvCommentsCount.visibility = View.GONE
 
-        // Si es padre, mostrar botón de queja
         if (userRol == "usuario") {
             binding.btnQueja.visibility = View.VISIBLE
             binding.btnQueja.setOnClickListener {
@@ -74,19 +74,17 @@ class PostDetalleActivity : AppCompatActivity() {
         builder.setView(input)
 
         builder.setPositiveButton("Enviar") { _, _ ->
-            val content = input.text.toString()
-            if (content.isNotEmpty()) {
+            val contentText = input.text.toString().trim()
+            if (contentText.isNotEmpty()) {
                 val complaintMap = hashMapOf(
                     "postId" to postId,
                     "parentEmail" to userEmail,
-                    "content" to content,
+                    "content" to contentText,
                     "status" to "en proceso",
                     "timestamp" to System.currentTimeMillis()
                 )
                 firestore.collection("complaints").add(complaintMap).addOnSuccessListener {
-                    Toast.makeText(this@PostDetalleActivity, "Queja enviada correctamente", Toast.LENGTH_SHORT).show()
-                }.addOnFailureListener {
-                    Toast.makeText(this@PostDetalleActivity, "Error al enviar queja", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Queja enviada correctamente", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -98,17 +96,28 @@ class PostDetalleActivity : AppCompatActivity() {
         if (postId.isNotEmpty()) {
             firestore.collection("comments")
                 .whereEqualTo("postId", postId)
-                .orderBy("timestamp", Query.Direction.ASCENDING)
                 .addSnapshotListener { snapshot, error ->
                     if (error != null) return@addSnapshotListener
-                    comments.clear()
-                    snapshot?.documents?.forEach { doc ->
-                        val author = doc.getString("author") ?: ""
-                        val content = doc.getString("content") ?: ""
-                        val time = doc.getString("time") ?: ""
-                        comments.add(Comment(author, content, time))
+                    
+                    if (snapshot != null) {
+                        val newComments = snapshot.documents.mapNotNull { doc ->
+                            val authorStr = doc.getString("author") ?: ""
+                            val contentStr = doc.getString("content") ?: ""
+                            val timeStr = doc.getString("time") ?: ""
+                            val ts = doc.getLong("timestamp") ?: 0L
+                            Comment(authorStr, contentStr, timeStr, ts)
+                        }.sortedBy { it.timestamp }
+
+                        comments.clear()
+                        comments.addAll(newComments)
+                        adapter.notifyDataSetChanged()
+                        
+                        if (comments.isNotEmpty()) {
+                            binding.rvComments.postDelayed({
+                                binding.rvComments.smoothScrollToPosition(comments.size - 1)
+                            }, 100)
+                        }
                     }
-                    adapter.notifyDataSetChanged()
                 }
         }
     }
@@ -121,18 +130,21 @@ class PostDetalleActivity : AppCompatActivity() {
 
     private fun setupCommentInput() {
         binding.btnSendComment.setOnClickListener {
-            val text = binding.etComment.text?.toString() ?: ""
+            val text = binding.etComment.text?.toString()?.trim() ?: ""
             if (text.isNotEmpty() && postId.isNotEmpty()) {
-                val time = "AHORA"
                 val commentMap = hashMapOf(
                     "postId" to postId,
                     "author" to userEmail,
                     "content" to text,
-                    "time" to time,
+                    "time" to "AHORA",
                     "timestamp" to System.currentTimeMillis()
                 )
-                firestore.collection("comments").add(commentMap)
                 binding.etComment.text?.clear()
+                
+                firestore.collection("comments").add(commentMap)
+                    .addOnFailureListener {
+                        Toast.makeText(this, "Error al enviar", Toast.LENGTH_SHORT).show()
+                    }
             }
         }
     }

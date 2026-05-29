@@ -62,17 +62,22 @@ class PadreDashboardActivity : AppCompatActivity() {
     private fun loadHijos() {
         FirebaseFirestore.getInstance().collection("students")
             .whereEqualTo("parent_email", userEmail)
-            .get()
-            .addOnSuccessListener { snapshot ->
-                val list = snapshot.documents.mapNotNull { doc ->
-                    val data = doc.data?.mapValues { it.value.toString() }?.toMutableMap()
-                    data?.put("id", doc.id)
-                    data
-                }
-                if (list.isNotEmpty()) {
-                    hijosAdapter.updateData(list)
-                } else {
-                    binding.tvSeleccionaHijoMsg.text = "No se encontraron hijos registrados con su correo."
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) return@addSnapshotListener
+                
+                if (snapshot != null) {
+                    val list = snapshot.documents.mapNotNull { doc ->
+                        val data = doc.data?.mapValues { it.value.toString() }?.toMutableMap()
+                        data?.put("id", doc.id)
+                        data
+                    }
+                    if (list.isNotEmpty()) {
+                        hijosAdapter.updateData(list)
+                        binding.tvSeleccionaHijoMsg.visibility = View.GONE
+                    } else {
+                        binding.tvSeleccionaHijoMsg.text = "No se encontraron hijos registrados con su correo."
+                        binding.tvSeleccionaHijoMsg.visibility = View.VISIBLE
+                    }
                 }
             }
     }

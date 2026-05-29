@@ -1,81 +1,191 @@
 package com.example.appreporte
 
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.appreporte.databinding.ActivityChatbotPadreBinding
 import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.launch
-import com.google.ai.client.generativeai.GenerativeModel
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.*
 
 class ChatbotPadreActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityChatbotPadreBinding
     private val messages = mutableListOf<UIMessage>()
     private lateinit var adapter: ChatAdapter
-    private var contextData: String = "Cargando datos de los hijos..."
+    private var contextData: String = ""
+    private val firestore = FirebaseFirestore.getInstance()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityChatbotPadreBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Configurar RecyclerView
         adapter = ChatAdapter(messages)
         binding.rvChat.layoutManager = LinearLayoutManager(this)
         binding.rvChat.adapter = adapter
 
         val userEmail = intent.getStringExtra("USER_EMAIL") ?: ""
-        loadContextData(userEmail)
+        
+        // Configuración inicial de UI
+        binding.btnSend.isEnabled = false
+        binding.etMessage.hint = "Cargando datos..."
+        
+        loadFullContext(userEmail)
 
-        // Mensaje inicial del Bot
-        addBotMessage("¡Hola! Soy tu asistente de EduConnect. ¿En qué puedo ayudarte hoy?")
+        addBotMessage("¡Hola! Soy tu asistente de EduConnect. Estoy analizando la información de tus hijos para responder tus dudas.")
 
-        // --- BOTÓN PARA VOLVER AL HOME ---
-        binding.btnBack.setOnClickListener {
-            finish() // Cierra esta actividad y regresa al Dashboard del Padre
-        }
+        binding.btnBack.setOnClickListener { finish() }
 
         binding.btnSend.setOnClickListener {
             val text = binding.etMessage.text.toString().trim()
             if (text.isNotEmpty()) {
                 addUserMessage(text)
                 binding.etMessage.text.clear()
-
-                // Simular que el bot está "pensando"
-                Handler(Looper.getMainLooper()).postDelayed({
-                    processResponse(text)
-                }, 1000)
+                processLocalQuery(text)
             }
         }
     }
 
-    private fun processResponse(userInput: String) {
-        val apiKey = BuildConfig.GEMINI_API_KEY
-        if (apiKey.isEmpty()) {
-            addBotMessage("Por favor, configura tu API Key de Gemini en local.properties.")
+    private fun loadFullContext(userEmail: String) {
+        if (userEmail.isEmpty()) {
+            contextData = "Error: Usuario no identificado."
             return
         }
 
-        val generativeModel = GenerativeModel(
-            modelName = "gemini-flash-latest",
-            apiKey = apiKey
-        )
+        val sb = StringBuilder()
+        firestore.collection("students").whereEqualTo("parent_email", userEmail).get()
+            .addOnSuccessListener { students ->
+                if (students.isEmpty) {
+                    contextData = "Sin alumnos registrados."
+                    enableChat()
+                    return@addOnSuccessListener
+                }
 
+                var processed = 0
+                for (doc in students) {
+                    val name = "${doc.getString("names")} ${doc.getString("lastnames")}"
+                    val studentId = doc.id
+                    sb.append("- Alumno: $name\n")
+
+                    // Cargar Notas
+                    firestore.collection("grades").whereEqualTo("student_id", studentId).get()
+                        .addOnSuccessListener { grades ->
+                            sb.append("  Notas: ")
+                            if (grades.isEmpty) sb.append("Sin notas. ")
+                            else grades.forEach { g -> sb.append("[${g.getString("subject")}: ${g.getString("value")}] ") }
+                            sb.append("\n")
+
+                            // Cargar Reportes
+                            firestore.collection("complaints").whereEqualTo("parentEmail", userEmail).get()
+                                .addOnSuccessListener { complaints ->
+                                    if (!complaints.isEmpty) {
+                                        sb.append("  Reportes: ")
+                                        complaints.forEach { c -> sb.append("* ${c.getString("content")} (${c.getString("status")}) ") }
+                                        sb.append("\n")
+                                    }
+                                    
+                                    processed++
+                                    if (processed == students.size()) {
+                                        contextData = sb.toString()
+                                        enableChat()
+                                    }
+                                }
+                        }
+                }
+            }
+            .addOnFailureListener { enableChat() }
+    }
+
+    private fun enableChat() {
+        binding.btnSend.isEnabled = true
+        binding.etMessage.hint = "Pregúntame sobre notas o reportes..."
+    }
+
+    private fun processLocalQuery(userInput: String) {
         lifecycleScope.launch {
-            try {
-                val prompt = "Eres EduConnect IA, un asistente amable para una app escolar. El usuario dice: '$userInput'.\n\n$contextData\n\nResponde la consulta del usuario de forma amigable, clara y corta."
-                val response = generativeModel.generateContent(prompt)
-                val reply = response.text ?: "Lo siento, no pude generar una respuesta."
-                addBotMessage(reply)
-            } catch (e: Exception) {
-                addBotMessage("Hubo un error de conexión con la IA.")
-                e.printStackTrace()
+            val query = userInput.lowercase().trim()
+            delay(600) // Simulación de pensamiento
+
+            val response = when {
+                // Prioridad 1: Notas y Calificaciones (incluyendo posibles errores de dedo como "totas")
+                query.contains("nota") || query.contains("tota") || query.contains("califica") || 
+                query.contains("promedio") || query.contains("curso") || query.contains("materia") -> {
+                    val data = extract("Notas")
+                    if (data.isNotEmpty() && !data.contains("Sin notas", true)) {
+                        "He revisado los registros de **notas** para tus hijos:\n\n$data"
+                    } else {
+                        "He buscado en el sistema y actualmente **no hay notas publicadas** todavía. Te recomiendo consultar con el docente en unos días."
+                    }
+                }
+                
+                // Prioridad 2: Reportes y Asistencia/Conducta
+                query.contains("reporte") || query.contains("queja") || query.contains("conducta") || 
+                query.contains("comportamiento") || query.contains("incidencia") -> {
+                    val data = extract("Reportes")
+                    if (data.isNotEmpty() && !data.contains("Sin reportes", true)) {
+                        "He encontrado los siguientes **reportes**:\n\n$data"
+                    } else {
+                        "¡Buenas noticias! **No hay reportes ni incidencias** registradas. Tus hijos están teniendo un excelente comportamiento."
+                    }
+                }
+                
+                // Prioridad 3: Información sobre los hijos (nombres, quiénes son)
+                query.contains("hijo") || query.contains("alumno") || query.contains("quien") || 
+                query.contains("nombre") || query.contains("llaman") -> {
+                    val data = extract("Alumno")
+                    if (data.isNotEmpty()) {
+                        "Tienes registrado(s) a:\n$data\n\n¿Deseas saber sus notas o ver si tienen algún reporte?"
+                    } else {
+                        "No logro encontrar el nombre de tus hijos en mi base de datos actual. Por favor, contacta a soporte."
+                    }
+                }
+                
+                // Saludos
+                query.contains("hola") || query.contains("buen") || query.contains("tal") -> {
+                    "¡Hola! Soy tu asistente de EduConnect. Puedo darte información sobre **notas**, **reportes de conducta** o recordarte los datos de tus **hijos**. ¿En qué te ayudo?"
+                }
+                
+                // Despedidas
+                query.contains("gracias") || query.contains("adios") || query.contains("chau") -> {
+                    "¡De nada! Estoy aquí para ayudarte. Que tengas un excelente día."
+                }
+
+                else -> "Entiendo que me preguntas por '$userInput', pero mi conocimiento actual se limita a **notas**, **reportes** y datos de tus **hijos**. ¿Te gustaría que revise alguno de esos temas?"
+            }
+            addBotMessage(response)
+        }
+    }
+
+    private fun extract(type: String): String {
+        val lines = contextData.split("\n")
+        val result = StringBuilder()
+        
+        lines.forEach { line ->
+            val trimmed = line.trim()
+            when (type) {
+                "Notas" -> {
+                    if (trimmed.contains("[") && trimmed.contains("]")) {
+                        result.append("• ").append(trimmed.replace("Notas:", "").trim()).append("\n")
+                    }
+                }
+                "Reportes" -> {
+                    if (trimmed.startsWith("*") || (trimmed.contains("Reporte") && !trimmed.contains("Sin reportes"))) {
+                        result.append(trimmed).append("\n")
+                    }
+                }
+                "Alumno" -> {
+                    if (trimmed.startsWith("- Alumno:")) {
+                        result.append("• ").append(trimmed.replace("- Alumno:", "").trim()).append("\n")
+                    }
+                }
             }
         }
+        return result.toString().trim()
     }
 
     private fun addUserMessage(text: String) {
@@ -88,68 +198,5 @@ class ChatbotPadreActivity : AppCompatActivity() {
         messages.add(UIMessage("EduConnect IA", text, false))
         adapter.notifyItemInserted(messages.size - 1)
         binding.rvChat.scrollToPosition(messages.size - 1)
-    }
-
-    private fun loadContextData(userEmail: String) {
-        if (userEmail.isEmpty()) {
-            contextData = "No se pudo identificar al usuario."
-            return
-        }
-        val db = FirebaseFirestore.getInstance()
-        db.collection("students").whereEqualTo("parent_email", userEmail).get()
-            .addOnSuccessListener { studentsSnap ->
-                val sb = StringBuilder("Información secreta de contexto (No la muestres toda, solo usa lo que responda a la pregunta del usuario):\n")
-                sb.append("Horario general de clases para mañana: Matemáticas (8:00 AM), Comunicación (10:00 AM) y Ciencias (12:00 PM).\n")
-                
-                if (studentsSnap.isEmpty) {
-                    contextData = sb.append("El usuario no tiene hijos registrados en el sistema.").toString()
-                    return@addOnSuccessListener
-                }
-
-                var pendingStudents = studentsSnap.size()
-                for (studentDoc in studentsSnap) {
-                    val studentName = "${studentDoc.getString("names")} ${studentDoc.getString("lastnames")}"
-                    sb.append("\nHijo/a: $studentName. ")
-                    
-                    db.collection("grades").whereEqualTo("student_id", studentDoc.id).get()
-                        .addOnSuccessListener { gradesSnap ->
-                            sb.append("Notas: ")
-                            if (gradesSnap.isEmpty) {
-                                sb.append("Aún no tiene notas registradas. ")
-                            } else {
-                                val badSubjects = mutableListOf<String>()
-                                for (gradeDoc in gradesSnap) {
-                                    val subject = gradeDoc.getString("subject") ?: ""
-                                    val value = gradeDoc.getString("value") ?: ""
-                                    val type = gradeDoc.getString("type") ?: ""
-                                    sb.append("[$subject - $type: $value] ")
-                                    
-                                    val numValue = value.toIntOrNull()
-                                    if (numValue != null && numValue < 11) {
-                                        badSubjects.add(subject)
-                                    }
-                                }
-                                if (badSubjects.isNotEmpty()) {
-                                    sb.append("Atención: $studentName está desaprobado(a) o mal en: ${badSubjects.joinToString(", ")}. Recomiéndale hablar con el profesor.")
-                                } else {
-                                    sb.append("¡Le va bien en todos los cursos!")
-                                }
-                            }
-                            pendingStudents--
-                            if (pendingStudents == 0) {
-                                contextData = sb.toString()
-                            }
-                        }
-                        .addOnFailureListener {
-                            pendingStudents--
-                            if (pendingStudents == 0) {
-                                contextData = sb.toString()
-                            }
-                        }
-                }
-            }
-            .addOnFailureListener {
-                contextData = "No se pudo obtener la información de la base de datos."
-            }
     }
 }

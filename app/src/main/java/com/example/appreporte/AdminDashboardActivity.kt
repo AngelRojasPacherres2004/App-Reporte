@@ -35,6 +35,22 @@ class AdminDashboardActivity : AppCompatActivity() {
         setupClickListeners()
         setupThemeToggle()
         setupAdminProfile()
+        setupBackPress()
+    }
+
+    private fun setupBackPress() {
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                AlertDialog.Builder(this@AdminDashboardActivity)
+                    .setTitle("Salir")
+                    .setMessage("¿Estás seguro de que deseas salir de la aplicación?")
+                    .setPositiveButton("Sí") { _, _ ->
+                        finishAffinity()
+                    }
+                    .setNegativeButton("No", null)
+                    .show()
+            }
+        })
     }
 
     private fun setupAdminProfile() {
@@ -431,23 +447,27 @@ class AdminDashboardActivity : AppCompatActivity() {
     private fun loadUsers() {
         FirebaseFirestore.getInstance().collection("users")
             .whereEqualTo("school_id", currentSchoolId)
-            .get()
-            .addOnSuccessListener { snapshot ->
-                val list = snapshot.documents.mapNotNull { doc ->
-                    doc.data?.mapValues { it.value.toString() }
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) return@addSnapshotListener
+                if (snapshot != null) {
+                    val list = snapshot.documents.mapNotNull { doc ->
+                        doc.data?.mapValues { it.value.toString() }
+                    }
+                    userAdapter.updateUsers(list)
                 }
-                userAdapter.updateUsers(list)
             }
     }
 
     private fun loadClassrooms() {
         FirebaseFirestore.getInstance().collection("classrooms")
             .whereEqualTo("school_id", currentSchoolId)
-            .get()
-            .addOnSuccessListener { snapshot ->
-                val list = snapshot.documents.map { Pair(it.id, it.getString("name") ?: "") }
-                    .sortedBy { it.second.lowercase() }
-                classroomAdapter.updateClassrooms(list)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) return@addSnapshotListener
+                if (snapshot != null) {
+                    val list = snapshot.documents.map { Pair(it.id, it.getString("name") ?: "") }
+                        .sortedBy { it.second.lowercase() }
+                    classroomAdapter.updateClassrooms(list)
+                }
             }
     }
 

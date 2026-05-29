@@ -3,6 +3,7 @@ package com.example.appreporte
 import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.appreporte.databinding.ActivityInicioBinding
 import com.google.firebase.firestore.FirebaseFirestore
@@ -23,6 +24,8 @@ class InicioActivity : AppCompatActivity() {
         staffAdapter = StaffAdapter(emptyList())
         binding.rvFeaturedStaff.layoutManager = LinearLayoutManager(this)
         binding.rvFeaturedStaff.adapter = staffAdapter
+
+        setupBackPress()
 
         binding.bottomNavigation.selectedItemId = R.id.nav_inicio
         binding.bottomNavigation.setOnItemSelectedListener { item ->
@@ -64,6 +67,21 @@ class InicioActivity : AppCompatActivity() {
                 else -> true
             }
         }
+    }
+
+    private fun setupBackPress() {
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                AlertDialog.Builder(this@InicioActivity)
+                    .setTitle("Salir")
+                    .setMessage("¿Estás seguro de que deseas salir de la aplicación?")
+                    .setPositiveButton("Sí") { _, _ ->
+                        finishAffinity() // Cierra todas las actividades y sale
+                    }
+                    .setNegativeButton("No", null)
+                    .show()
+            }
+        })
     }
 
     override fun onResume() {

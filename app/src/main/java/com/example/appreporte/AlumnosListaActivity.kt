@@ -57,14 +57,16 @@ class AlumnosListaActivity : AppCompatActivity() {
     private fun loadStudents() {
         FirebaseFirestore.getInstance().collection("students")
             .whereEqualTo("classroom_id", classroomId)
-            .get()
-            .addOnSuccessListener { snapshot ->
-                val list = snapshot.documents.mapNotNull { doc ->
-                    val data = doc.data?.mapValues { it.value.toString() }?.toMutableMap()
-                    data?.put("id", doc.id)
-                    data
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) return@addSnapshotListener
+                if (snapshot != null) {
+                    val list = snapshot.documents.mapNotNull { doc ->
+                        val data = doc.data?.mapValues { it.value.toString() }?.toMutableMap()
+                        data?.put("id", doc.id)
+                        data
+                    }
+                    adapter.updateData(list)
                 }
-                adapter.updateData(list)
             }
     }
 
@@ -93,12 +95,15 @@ class AlumnosListaActivity : AppCompatActivity() {
             val parentEmail = dialogBinding.spinnerPadres.selectedItem?.toString() ?: ""
 
             if (names.isNotEmpty() && lastnames.isNotEmpty() && dni.isNotEmpty()) {
-                val data = mapOf(
+                val data = hashMapOf(
                     "names" to names,
                     "lastnames" to lastnames,
                     "dni" to dni,
                     "parent_email" to parentEmail,
-                    "classroom_id" to classroomId
+                    "classroom_id" to classroomId,
+                    "classroom_name" to (intent.getStringExtra("CLASSROOM_NAME") ?: "Salón"),
+                    "school_id" to (intent.getStringExtra("SCHOOL_ID") ?: "Colegio San José"),
+                    "created_at" to com.google.firebase.Timestamp.now()
                 )
 
                 if (alumno == null) {
@@ -106,15 +111,15 @@ class AlumnosListaActivity : AppCompatActivity() {
                         .add(data)
                         .addOnSuccessListener {
                             loadStudents()
-                            Toast.makeText(this, "Guardado correctamente", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this, "Alumno asignado al padre $parentEmail", Toast.LENGTH_SHORT).show()
                         }
                 } else {
                     FirebaseFirestore.getInstance().collection("students")
                         .document(alumno["id"]!!)
-                        .set(data)
+                        .update(data as Map<String, Any>)
                         .addOnSuccessListener {
                             loadStudents()
-                            Toast.makeText(this, "Actualizado correctamente", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this, "Datos actualizados", Toast.LENGTH_SHORT).show()
                         }
                 }
             } else {
