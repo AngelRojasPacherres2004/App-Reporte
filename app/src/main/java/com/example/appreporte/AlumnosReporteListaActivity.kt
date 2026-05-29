@@ -182,16 +182,8 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
                 document.add(table)
                 document.close()
 
-                val zipFile = File(cacheDir, "Reporte_${studentName.replace(" ", "_")}.zip")
-                ZipOutputStream(FileOutputStream(zipFile)).use { zos ->
-                    val entry = ZipEntry(pdfFile.name)
-                    zos.putNextEntry(entry)
-                    pdfFile.inputStream().use { it.copyTo(zos) }
-                    zos.closeEntry()
-                }
-
-                saveToDownloads(zipFile)
-                withContext(Dispatchers.Main) { sendToWhatsApp(zipFile, phone, studentName) }
+                saveToDownloads(pdfFile)
+                withContext(Dispatchers.Main) { sendToWhatsApp(pdfFile, phone, studentName) }
                 
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -208,7 +200,7 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
         val finalPhone = if (digitsOnly.startsWith("51")) digitsOnly else "51$digitsOnly"
 
         val intent = Intent(Intent.ACTION_SEND)
-        intent.type = "application/zip"
+        intent.type = "application/pdf"
         intent.putExtra(Intent.EXTRA_STREAM, uri)
         intent.putExtra(Intent.EXTRA_TEXT, "Hola, adjunto el reporte académico de $studentName.")
         // JID específico para abrir la conversación directamente
@@ -226,7 +218,7 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
             } catch (e2: Exception) {
                 // Selector normal si nada falla
                 val chooser = Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
-                    type = "application/zip"
+                    type = "application/pdf"
                     putExtra(Intent.EXTRA_STREAM, uri)
                 }, getString(R.string.share_report))
                 startActivity(chooser)
@@ -241,7 +233,7 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val contentValues = ContentValues().apply {
                 put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-                put(MediaStore.MediaColumns.MIME_TYPE, "application/zip")
+                put(MediaStore.MediaColumns.MIME_TYPE, "application/pdf")
                 put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
             }
             val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
@@ -251,7 +243,9 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
                         inputStream.copyTo(outputStream)
                     }
                 }
-                Toast.makeText(this, "Reporte guardado en Descargas", Toast.LENGTH_SHORT).show()
+                runOnUiThread {
+                    Toast.makeText(this, "Reporte guardado en Descargas", Toast.LENGTH_SHORT).show()
+                }
             }
         } else {
             val targetFile = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
@@ -261,7 +255,9 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
                         inputStream.copyTo(outputStream)
                     }
                 }
-                Toast.makeText(this, "Reporte guardado en Descargas", Toast.LENGTH_SHORT).show()
+                runOnUiThread {
+                    Toast.makeText(this, "Reporte guardado en Descargas", Toast.LENGTH_SHORT).show()
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }

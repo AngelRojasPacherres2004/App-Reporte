@@ -111,7 +111,7 @@ object MockDataInjector {
                 "password" to "user123",
                 "rol" to "usuario",
                 "school_id" to "Colegio San José",
-                "phone" to ""
+                "phone" to "+51999999999"
             )
         )
 
@@ -160,7 +160,9 @@ object MockDataInjector {
         val salonJose = "Colegio_San_José_1er_Grado_A_-_Primaria"
 
         val student = hashMapOf(
-            "name" to "Juanito Perez",
+            "names" to "Juanito",
+            "lastnames" to "Perez",
+            "dni" to "12345678",
             "parent_email" to "user@reporte.com",
             "classroom_id" to salonJose,
             "school_id" to "Colegio San José"

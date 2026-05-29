@@ -159,7 +159,9 @@ class PadreReporteActivity : AppCompatActivity() {
                         inputStream.copyTo(outputStream)
                     }
                 }
-                Toast.makeText(this, "Reporte guardado en Descargas", Toast.LENGTH_SHORT).show()
+                runOnUiThread {
+                    Toast.makeText(this, "Reporte guardado en Descargas", Toast.LENGTH_SHORT).show()
+                }
             }
         } else {
             val targetFile = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
@@ -169,7 +171,9 @@ class PadreReporteActivity : AppCompatActivity() {
                         inputStream.copyTo(outputStream)
                     }
                 }
-                Toast.makeText(this, "Reporte guardado en Descargas", Toast.LENGTH_SHORT).show()
+                runOnUiThread {
+                    Toast.makeText(this, "Reporte guardado en Descargas", Toast.LENGTH_SHORT).show()
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
