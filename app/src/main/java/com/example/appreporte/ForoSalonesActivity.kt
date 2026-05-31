@@ -34,7 +34,6 @@ class ForoSalonesActivity : AppCompatActivity() {
 
         setupRecyclerView()
         setupBottomNavigation()
-        setupFab()
         loadForums()
     }
 
@@ -145,31 +144,7 @@ class ForoSalonesActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun setupFab() {
-        if (userRole == "docente" || userRole == "admin") {
-            binding.fabAddForum.visibility = View.VISIBLE
-            binding.fabAddForum.setOnClickListener {
-                val input = com.google.android.material.textfield.TextInputEditText(this)
-                input.hint = "Nombre del Nuevo Foro"
-                androidx.appcompat.app.AlertDialog.Builder(this)
-                    .setTitle("Crear Nuevo Foro")
-                    .setView(input)
-                    .setPositiveButton("Crear") { _, _ ->
-                        val name = input.text?.toString() ?: ""
-                        if (name.isNotEmpty()) {
-                            val map = hashMapOf(
-                                "name" to name,
-                                "schoolId" to schoolId,
-                                "createdBy" to userEmail
-                            )
-                            firestore.collection("forums").add(map)
-                        }
-                    }
-                    .setNegativeButton("Cancelar", null)
-                    .show()
-            }
-        }
-    }
+
 
     private fun setupBottomNavigation() {
         val menuRes = when (userRole) {

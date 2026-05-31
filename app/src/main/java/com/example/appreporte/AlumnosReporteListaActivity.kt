@@ -108,14 +108,16 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
                 val type = dialogBinding.spinnerGradeType.selectedItem.toString().lowercase()
                 val value = dialogBinding.etGradeValue.text.toString()
                 val subject = dialogBinding.etSubject.text.toString()
+                val period = dialogBinding.etPeriod.text.toString()
                 val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
 
-                if (value.isNotEmpty() && subject.isNotEmpty()) {
+                if (value.isNotEmpty() && subject.isNotEmpty() && period.isNotEmpty()) {
                     val gradeData = hashMapOf(
                         "student_id" to studentId,
                         "type" to type,
                         "value" to value,
                         "subject" to subject,
+                        "period" to period,
                         "date" to date
                     )
                     FirebaseFirestore.getInstance().collection("grades").add(gradeData)
@@ -166,15 +168,17 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
                 document.add(Paragraph("Fecha: ${SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())}"))
                 document.add(Paragraph("\n"))
 
-                val table = Table(UnitValue.createPercentArray(floatArrayOf(3f, 2f, 3f, 2f))).useAllAvailableWidth()
+                val table = Table(UnitValue.createPercentArray(floatArrayOf(3f, 2f, 2f, 3f, 1f))).useAllAvailableWidth()
                 table.addHeaderCell("Materia")
                 table.addHeaderCell("Tipo")
+                table.addHeaderCell("Periodo")
                 table.addHeaderCell("Fecha")
                 table.addHeaderCell("Nota")
 
                 for (grade in grades) {
                     table.addCell(grade["subject"] ?: "")
                     table.addCell(grade["type"] ?: "")
+                    table.addCell(grade["period"] ?: "-")
                     table.addCell(grade["date"] ?: "")
                     table.addCell(grade["value"] ?: "")
                 }
@@ -182,12 +186,28 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
                 document.add(table)
                 document.close()
 
-                saveToDownloads(pdfFile)
-                withContext(Dispatchers.Main) { sendToWhatsApp(pdfFile, phone, studentName) }
+                val zipFile = File(cacheDir, "Reporte_${studentName.replace(" ", "_")}.zip")
+                zipFiles(listOf(pdfFile), zipFile)
+
+                saveToDownloads(pdfFile) // Opcional: seguir guardando el PDF en descargas
+                withContext(Dispatchers.Main) { sendToWhatsApp(zipFile, phone, studentName) }
                 
             } catch (e: Exception) {
                 e.printStackTrace()
                 withContext(Dispatchers.Main) { Toast.makeText(this@AlumnosReporteListaActivity, R.string.error_pdf, Toast.LENGTH_SHORT).show() }
+            }
+        }
+    }
+
+    private fun zipFiles(files: List<File>, zipFile: File) {
+        ZipOutputStream(FileOutputStream(zipFile)).use { zipOut ->
+            for (file in files) {
+                FileInputStream(file).use { fis ->
+                    val zipEntry = ZipEntry(file.name)
+                    zipOut.putNextEntry(zipEntry)
+                    fis.copyTo(zipOut)
+                    zipOut.closeEntry()
+                }
             }
         }
     }
@@ -199,8 +219,9 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
         val digitsOnly = phone.replace("\\D".toRegex(), "")
         val finalPhone = if (digitsOnly.startsWith("51")) digitsOnly else "51$digitsOnly"
 
+        val isZip = file.extension.lowercase() == "zip"
         val intent = Intent(Intent.ACTION_SEND)
-        intent.type = "application/pdf"
+        intent.type = if (isZip) "application/zip" else "application/pdf"
         intent.putExtra(Intent.EXTRA_STREAM, uri)
         intent.putExtra(Intent.EXTRA_TEXT, "Hola, adjunto el reporte académico de $studentName.")
         // JID específico para abrir la conversación directamente
