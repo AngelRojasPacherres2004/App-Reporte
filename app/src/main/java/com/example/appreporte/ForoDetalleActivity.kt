@@ -279,6 +279,8 @@ class ForoDetalleActivity : AppCompatActivity() {
                     )
                     firestore.collection("posts").add(postMap).addOnSuccessListener {
                         Toast.makeText(this, "Publicado con éxito", Toast.LENGTH_SHORT).show()
+                        // CA1: Activar notificaciones para nuevas publicaciones del docente
+                        triggerPostNotification(title, desc)
                     }
                 } else {
                     Toast.makeText(this, "Por favor complete todos los campos", Toast.LENGTH_SHORT).show()
@@ -286,6 +288,39 @@ class ForoDetalleActivity : AppCompatActivity() {
             }
             .setNegativeButton("Cancelar", null)
             .show()
+    }
+
+    private fun triggerPostNotification(title: String, content: String) {
+        // Buscar todos los alumnos de este salón para notificar a sus padres
+        firestore.collection("students")
+            .whereEqualTo("classroom_id", salonName) // Ojo: Verificar si es classroom_id o name
+            .get()
+            .addOnSuccessListener { snapshot ->
+                snapshot.documents.forEach { doc ->
+                    val studentName = doc.getString("names") ?: "Su hijo(a)"
+                    val parentEmail = doc.getString("parent_email") ?: ""
+                    
+                    if (parentEmail.isNotEmpty()) {
+                        firestore.collection("users").document(parentEmail).get()
+                            .addOnSuccessListener { userSnap ->
+                                val phone = userSnap.getString("phone") ?: ""
+                                if (phone.isNotEmpty()) {
+                                    val data = androidx.work.Data.Builder()
+                                        .putString("student_name", studentName)
+                                        .putString("message", "Nueva publicación en el foro: $title")
+                                        .putString("phone", phone)
+                                        .build()
+
+                                    val workRequest = androidx.work.OneTimeWorkRequestBuilder<WhatsAppNotificationWorker>()
+                                        .setInputData(data)
+                                        .build()
+
+                                    androidx.work.WorkManager.getInstance(applicationContext).enqueue(workRequest)
+                                }
+                            }
+                    }
+                }
+            }
     }
 
     class PostAdapter(

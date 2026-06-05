@@ -79,7 +79,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="Administrador"
+                android:text="@string/admin"
                 android:textColor="@color/primary"
                 app:chipBackgroundColor="@color/card_blue_light"
                 app:chipStrokeWidth="0dp" />

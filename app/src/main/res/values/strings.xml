@@ -3,7 +3,7 @@
     <string name="brand_name">EduConnect</string>
     <string name="access_portal">Acceso al Portal Educativo</string>
     <string name="select_profile">SELECCIONE SU PERFIL</string>
-    <string name="admin">Administrador</string>
+    <string name="admin">Administrativo</string>
     <string name="user">Usuario</string>
     <string name="parent">Padre</string>
     <string name="user_or_email">Usuario o Correo</string>
@@ -51,10 +51,10 @@
     <string name="nav_forums">FOROS</string>
     <string name="nav_reports">REPORTES</string>
     <string name="nav_history">HISTORIAL</string>
-    <string name="welcome_admin">¡Hola, Administrador!</string>
+    <string name="welcome_admin">¡Hola, Administrativo!</string>
     <string name="welcome_admin_desc">Gestione el progreso de los estudiantes y supervise las actividades escolares.</string>
     <string name="welcome_parent">¡Hola, Padre de Familia!</string>
-    <string name="welcome_parent_desc">Hoy es un gran día para seguir el progreso de su hijo. Tienes nuevas actualizaciones.</string>
+    <string name="welcome_parent_desc">Hoy es un gran día para seguir el progreso de su hijo. Revisa las nuevas actualizaciones.</string>
     <string name="teacher">Docente</string>
     <string name="welcome_teacher">¡Hola, Docente!</string>
     <string name="welcome_teacher_desc">Registre el progreso de sus alumnos y gestione sus clases de hoy.</string>
@@ -92,6 +92,7 @@
     <string name="grade_assigned_error">Error al asignar nota</string>
     <string name="fill_all_fields">Por favor complete todos los campos</string>
     <string name="add_grade">Asignar Nota</string>
+    <string name="edit_grade">Editar Nota</string>
     <string name="generate_pdf_report">Generar Reporte PDF</string>
     <string name="sending_report">Preparando reporte...</string>
     <string name="error_no_phone">El padre no tiene un número registrado</string>

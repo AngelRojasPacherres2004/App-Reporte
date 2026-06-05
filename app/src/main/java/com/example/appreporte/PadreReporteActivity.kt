@@ -26,6 +26,12 @@ import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.github.mikephil.charting.charts.BarChart
+import com.github.mikephil.charting.charts.LineChart
+import com.github.mikephil.charting.components.XAxis
+import com.github.mikephil.charting.data.*
+import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
+import android.graphics.Color
 
 class PadreReporteActivity : AppCompatActivity() {
 
@@ -58,6 +64,9 @@ class PadreReporteActivity : AppCompatActivity() {
         gradesAdapter = GradesAdapter(emptyList())
         binding.rvGradesHistory.adapter = gradesAdapter
 
+        setupEvolutionChart()
+        setupBarChart()
+
         binding.btnDownloadReport.setOnClickListener {
             if (studentId.isNotEmpty()) {
                 generateAndSavePDF()
@@ -88,13 +97,194 @@ class PadreReporteActivity : AppCompatActivity() {
     private fun loadGrades() {
         FirebaseFirestore.getInstance().collection("grades")
             .whereEqualTo("student_id", studentId)
-            .get()
-            .addOnSuccessListener { snapshot ->
-                gradesList = snapshot.documents.mapNotNull { doc ->
-                    doc.data?.mapValues { it.value.toString() }
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Toast.makeText(this, "Error al cargar notas: ${error.message}", Toast.LENGTH_SHORT).show()
+                    return@addSnapshotListener
                 }
-                gradesAdapter.updateData(gradesList)
+
+                if (snapshot != null) {
+                    gradesList = snapshot.documents.mapNotNull { doc ->
+                        doc.data?.mapValues { it.value.toString() }
+                    }
+                    gradesAdapter.updateData(gradesList)
+                    updateCharts(gradesList)
+                }
             }
+    }
+
+    private fun setupEvolutionChart() {
+        val isNightMode = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        val textColor = if (isNightMode) Color.WHITE else Color.BLACK
+        val gridColor = if (isNightMode) Color.parseColor("#40FFFFFF") else Color.parseColor("#E0E0E0")
+
+        binding.lineChartEvolution.apply {
+            description.isEnabled = false
+            setTouchEnabled(true)
+            isDragEnabled = true
+            setScaleEnabled(true)
+            setPinchZoom(true)
+            
+            legend.apply {
+                this.textColor = textColor
+                this.textSize = 13f
+                this.typeface = android.graphics.Typeface.DEFAULT_BOLD
+            }
+            
+            xAxis.apply {
+                position = XAxis.XAxisPosition.BOTTOM
+                setDrawGridLines(false)
+                this.textColor = textColor
+                this.textSize = 12f
+                this.typeface = android.graphics.Typeface.DEFAULT_BOLD
+            }
+            
+            axisRight.isEnabled = false
+            
+            axisLeft.apply {
+                setDrawGridLines(true)
+                this.textColor = textColor
+                this.textSize = 12f
+                this.typeface = android.graphics.Typeface.DEFAULT_BOLD
+                this.gridColor = gridColor
+            }
+            
+            animateX(1000)
+        }
+    }
+
+    private fun setupBarChart() {
+        val isNightMode = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        val textColor = if (isNightMode) Color.WHITE else Color.BLACK
+        val gridColor = if (isNightMode) Color.parseColor("#40FFFFFF") else Color.parseColor("#E0E0E0")
+
+        binding.barChartAverages.apply {
+            description.isEnabled = false
+            setDrawBarShadow(false)
+            setDrawValueAboveBar(true)
+            setMaxVisibleValueCount(60)
+            setPinchZoom(false)
+            setDrawGridBackground(false)
+            
+            legend.apply {
+                this.textColor = textColor
+                this.textSize = 13f
+                this.typeface = android.graphics.Typeface.DEFAULT_BOLD
+            }
+            
+            xAxis.apply {
+                position = XAxis.XAxisPosition.BOTTOM
+                setDrawGridLines(false)
+                granularity = 1f
+                this.textColor = textColor
+                this.textSize = 12f
+                this.typeface = android.graphics.Typeface.DEFAULT_BOLD
+            }
+            
+            axisRight.isEnabled = false
+            
+            axisLeft.apply {
+                this.textColor = textColor
+                this.textSize = 12f
+                this.typeface = android.graphics.Typeface.DEFAULT_BOLD
+                this.gridColor = gridColor
+            }
+            
+            animateY(1000)
+        }
+    }
+
+    private fun updateCharts(grades: List<Map<String, String>>) {
+        if (grades.isEmpty()) {
+            binding.lineChartEvolution.clear()
+            binding.barChartAverages.clear()
+            return
+        }
+
+        val isNightMode = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        val textColor = if (isNightMode) Color.WHITE else Color.BLACK
+
+        // 1. Evolution Chart (Line Chart)
+        val evolutionEntries = ArrayList<Entry>()
+        val sortedGrades = grades.filter { it["value"]?.toDoubleOrNull() != null }
+            .sortedBy { it["date"] ?: "" }
+        
+        val dateLabels = ArrayList<String>()
+        sortedGrades.forEachIndexed { index, grade ->
+            val value = grade["value"]?.toFloat() ?: 0f
+            evolutionEntries.add(Entry(index.toFloat(), value))
+            val fullDate = grade["date"] ?: ""
+            val displayDate = if (fullDate.length >= 10) fullDate.substring(5) else fullDate
+            dateLabels.add(displayDate)
+        }
+
+        val lineDataSet = LineDataSet(evolutionEntries, "Evolución de Notas").apply {
+            color = Color.parseColor("#64B5F6") // Brighter blue
+            setCircleColor(Color.parseColor("#64B5F6"))
+            lineWidth = 3.5f // Thicker line
+            circleRadius = 7f // Larger circles
+            setDrawCircleHole(true)
+            circleHoleColor = if (isNightMode) Color.parseColor("#121212") else Color.WHITE
+            valueTextSize = 14f // Larger value text
+            valueTextColor = textColor
+            valueTypeface = android.graphics.Typeface.DEFAULT_BOLD
+            setDrawFilled(true)
+            fillColor = Color.parseColor("#64B5F6")
+            fillAlpha = 80 // More visible fill
+            mode = LineDataSet.Mode.CUBIC_BEZIER
+        }
+        
+        binding.lineChartEvolution.apply {
+            data = LineData(lineDataSet)
+            xAxis.valueFormatter = IndexAxisValueFormatter(dateLabels)
+            xAxis.labelCount = if (dateLabels.size > 5) 5 else dateLabels.size
+            xAxis.granularity = 1f
+            invalidate()
+        }
+
+        // 2. Averages Chart (Bar Chart)
+        val subjectGrades = grades.groupBy { it["subject"] ?: "Desconocido" }
+        val barEntries = ArrayList<BarEntry>()
+        val subjects = ArrayList<String>()
+
+        subjectGrades.entries.forEachIndexed { index, entry ->
+            val avg = entry.value.mapNotNull { it["value"]?.toDoubleOrNull() }.average()
+            if (!avg.isNaN()) {
+                barEntries.add(BarEntry(index.toFloat(), avg.toFloat()))
+                subjects.add(entry.key)
+            }
+        }
+
+        val barDataSet = BarDataSet(barEntries, "Promedio por Materia").apply {
+            colors = if (isNightMode) {
+                listOf(
+                    Color.parseColor("#BBDEFB"), // Very Light Blue
+                    Color.parseColor("#C8E6C9"), // Very Light Green
+                    Color.parseColor("#E1BEE7"), // Very Light Purple
+                    Color.parseColor("#FFE0B2"), // Very Light Orange
+                    Color.parseColor("#F8BBD0")  // Very Light Pink
+                )
+            } else {
+                listOf(
+                    Color.parseColor("#4CAF50"),
+                    Color.parseColor("#2196F3"),
+                    Color.parseColor("#9C27B0"),
+                    Color.parseColor("#FF9800"),
+                    Color.parseColor("#E91E63")
+                )
+            }
+            valueTextSize = 14f // Larger value text
+            valueTextColor = textColor
+            valueTypeface = android.graphics.Typeface.DEFAULT_BOLD
+        }
+
+        binding.barChartAverages.apply {
+            data = BarData(barDataSet)
+            xAxis.valueFormatter = IndexAxisValueFormatter(subjects)
+            xAxis.labelCount = subjects.size
+            xAxis.granularity = 1f
+            invalidate()
+        }
     }
 
     private fun generateAndSavePDF() {

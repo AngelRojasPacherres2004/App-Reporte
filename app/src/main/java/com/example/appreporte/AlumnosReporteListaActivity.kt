@@ -36,6 +36,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import android.util.Log
+import androidx.work.Data
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 
 class AlumnosReporteListaActivity : AppCompatActivity() {
 
@@ -82,15 +86,89 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
     }
 
     private fun showStudentOptionsDialog(studentId: String, studentName: String) {
-        val options = arrayOf(getString(R.string.add_grade), getString(R.string.generate_pdf_report))
+        val options = arrayOf(
+            getString(R.string.add_grade),
+            getString(R.string.edit_grade),
+            getString(R.string.generate_pdf_report)
+        )
         AlertDialog.Builder(this)
             .setTitle(studentName)
             .setItems(options) { _, which ->
                 when (which) {
                     0 -> showGradeTypeDialog(studentId, studentName)
-                    1 -> generateAndSendReport(studentId, studentName)
+                    1 -> showEditGradesSelectionDialog(studentId, studentName)
+                    2 -> generateAndSendReport(studentId, studentName)
                 }
             }
+            .show()
+    }
+
+    private fun showEditGradesSelectionDialog(studentId: String, studentName: String) {
+        FirebaseFirestore.getInstance().collection("grades")
+            .whereEqualTo("student_id", studentId)
+            .get()
+            .addOnSuccessListener { documents ->
+                if (documents.isEmpty) {
+                    Toast.makeText(this, "No hay notas para editar", Toast.LENGTH_SHORT).show()
+                    return@addOnSuccessListener
+                }
+
+                val gradesList = documents.map { it to it.data }
+                val options = gradesList.map { (_, data) ->
+                    "${data["subject"]} - ${data["type"]?.toString()?.uppercase()}: ${data["value"]} (${data["date"]})"
+                }.toTypedArray()
+
+                AlertDialog.Builder(this)
+                    .setTitle("Seleccione nota para editar")
+                    .setItems(options) { _, which ->
+                        val (doc, data) = gradesList[which]
+                        showEditGradeDialog(doc.id, data, studentName)
+                    }
+                    .show()
+            }
+    }
+
+    private fun showEditGradeDialog(gradeId: String, currentData: Map<String, Any?>, studentName: String) {
+        val dialogBinding = DialogAddGradeBinding.inflate(layoutInflater)
+        val types = arrayOf("Diaria", "Mensual", "Bimestral")
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, types)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        dialogBinding.spinnerGradeType.adapter = adapter
+
+        // Pre-fill fields
+        val currentType = currentData["type"]?.toString()?.replaceFirstChar { it.uppercase() } ?: "Diaria"
+        val typeIndex = types.indexOf(currentType).let { if (it == -1) 0 else it }
+        dialogBinding.spinnerGradeType.setSelection(typeIndex)
+        dialogBinding.etSubject.setText(currentData["subject"]?.toString() ?: "")
+        dialogBinding.etGradeValue.setText(currentData["value"]?.toString() ?: "")
+
+        AlertDialog.Builder(this)
+            .setTitle("Editar Nota - $studentName")
+            .setView(dialogBinding.root)
+            .setPositiveButton(R.string.save) { _, _ ->
+                val type = dialogBinding.spinnerGradeType.selectedItem.toString().lowercase()
+                val value = dialogBinding.etGradeValue.text.toString()
+                val subject = dialogBinding.etSubject.text.toString()
+
+                if (value.isNotEmpty() && subject.isNotEmpty()) {
+                    val updateData = hashMapOf(
+                        "type" to type,
+                        "value" to value,
+                        "subject" to subject
+                    )
+                    FirebaseFirestore.getInstance().collection("grades").document(gradeId)
+                        .update(updateData as Map<String, Any>)
+                        .addOnSuccessListener {
+                            Toast.makeText(this, "Nota actualizada correctamente", Toast.LENGTH_SHORT).show()
+                        }
+                        .addOnFailureListener {
+                            Toast.makeText(this, "Error al actualizar nota", Toast.LENGTH_SHORT).show()
+                        }
+                } else {
+                    Toast.makeText(this, R.string.fill_all_fields, Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton(R.string.cancel, null)
             .show()
     }
 
@@ -121,6 +199,8 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
                     FirebaseFirestore.getInstance().collection("grades").add(gradeData)
                         .addOnSuccessListener {
                             Toast.makeText(this, R.string.grade_assigned_success, Toast.LENGTH_SHORT).show()
+                            // CA1: Simulación de activación del sistema de notificaciones automáticas
+                            simulateNotificationTrigger(studentId, studentName, subject, value)
                         }
                         .addOnFailureListener {
                             Toast.makeText(this, R.string.grade_assigned_error, Toast.LENGTH_SHORT).show()
@@ -222,6 +302,41 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
                     putExtra(Intent.EXTRA_STREAM, uri)
                 }, getString(R.string.share_report))
                 startActivity(chooser)
+            }
+        }
+    }
+
+    private fun simulateNotificationTrigger(studentId: String, studentName: String, subject: String, value: String) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                // Fetch student to get parent email
+                val studentSnap = FirebaseFirestore.getInstance().collection("students").document(studentId).get().await()
+                val parentEmail = studentSnap.getString("parent_email") ?: return@launch
+
+                // Fetch parent to get phone
+                val userSnap = FirebaseFirestore.getInstance().collection("users").whereEqualTo("email", parentEmail).get().await()
+                val phone = userSnap.documents.firstOrNull()?.getString("phone") ?: ""
+
+                if (phone.isNotEmpty()) {
+                    // CA1, CA3, CA4: Encolar el envío automático por WhatsApp usando WorkManager
+                    val data = Data.Builder()
+                        .putString("student_name", studentName)
+                        .putString("message", "Nueva nota en $subject: $value")
+                        .putString("phone", phone)
+                        .build()
+
+                    val workRequest = OneTimeWorkRequestBuilder<WhatsAppNotificationWorker>()
+                        .setInputData(data)
+                        .build()
+
+                    WorkManager.getInstance(applicationContext).enqueue(workRequest)
+                    
+                    withContext(Dispatchers.Main) {
+                        Log.d("NotificationTrigger", "Notificación automática encolada para $studentName")
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }

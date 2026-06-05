@@ -85,11 +85,34 @@ class PostDetalleActivity : AppCompatActivity() {
                 )
                 firestore.collection("complaints").add(complaintMap).addOnSuccessListener {
                     Toast.makeText(this, "Queja enviada correctamente", Toast.LENGTH_SHORT).show()
+                    // CA1: Activar notificación para queja recibida (al administrador/colegio)
+                    triggerComplaintNotification(contentText)
                 }
             }
         }
         builder.setNegativeButton("Cancelar", null)
         builder.show()
+    }
+
+    private fun triggerComplaintNotification(content: String) {
+        // En un caso real buscaríamos al admin del colegio, aquí usamos el admin@reporte.com demo
+        firestore.collection("users").document("admin@reporte.com").get()
+            .addOnSuccessListener { userSnap ->
+                val phone = userSnap.getString("phone") ?: ""
+                if (phone.isNotEmpty()) {
+                    val data = androidx.work.Data.Builder()
+                        .putString("student_name", "ADMINISTRADOR")
+                        .putString("message", "Nueva queja recibida de $userEmail: $content")
+                        .putString("phone", phone)
+                        .build()
+
+                    val workRequest = androidx.work.OneTimeWorkRequestBuilder<WhatsAppNotificationWorker>()
+                        .setInputData(data)
+                        .build()
+
+                    androidx.work.WorkManager.getInstance(applicationContext).enqueue(workRequest)
+                }
+            }
     }
 
     private fun loadComments() {

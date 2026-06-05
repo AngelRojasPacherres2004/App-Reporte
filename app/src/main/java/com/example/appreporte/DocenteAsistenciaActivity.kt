@@ -108,9 +108,42 @@ class DocenteAsistenciaActivity : AppCompatActivity() {
         
         batch.commit().addOnSuccessListener {
             Toast.makeText(this, "Asistencia guardada exitosamente", Toast.LENGTH_SHORT).show()
+            // CA1: Activar notificaciones para inasistencias
+            triggerAttendanceNotifications()
             finish()
         }.addOnFailureListener {
             Toast.makeText(this, "Error al guardar asistencia", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun triggerAttendanceNotifications() {
+        if (!::adapter.isInitialized) return
+        val results = adapter.attendanceResults
+        
+        results.filter { it.value != "Presente" }.forEach { (studentId, status) ->
+            val student = adapter.getStudentData(studentId)
+            val studentName = student["name"]?.toString() ?: "Su hijo(a)"
+            val parentEmail = student["parent_email"]?.toString() ?: ""
+            
+            if (parentEmail.isNotEmpty()) {
+                db.collection("users").whereEqualTo("email", parentEmail).get()
+                    .addOnSuccessListener { userSnap ->
+                        val phone = userSnap.documents.firstOrNull()?.getString("phone") ?: ""
+                        if (phone.isNotEmpty()) {
+                            val data = androidx.work.Data.Builder()
+                                .putString("student_name", studentName)
+                                .putString("message", "Aviso de asistencia: El alumno registra $status hoy $currentDateStr.")
+                                .putString("phone", phone)
+                                .build()
+
+                            val workRequest = androidx.work.OneTimeWorkRequestBuilder<WhatsAppNotificationWorker>()
+                                .setInputData(data)
+                                .build()
+
+                            androidx.work.WorkManager.getInstance(applicationContext).enqueue(workRequest)
+                        }
+                    }
+            }
         }
     }
 }

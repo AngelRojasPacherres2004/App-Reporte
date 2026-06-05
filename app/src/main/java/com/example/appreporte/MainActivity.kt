@@ -188,6 +188,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun navigateToSplash(role: String, email: String, schoolId: String) {
+        // CA5: Guardar el token de FCM al iniciar sesión para asegurar recepción de notificaciones
+        com.google.firebase.messaging.FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                val token = task.result
+                com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                    .collection("users").document(email)
+                    .update("fcmToken", token)
+            }
+        }
+
         val intent = Intent(this, LoadingActivity::class.java)
         intent.putExtra("USER_ROL", role)
         intent.putExtra("USER_EMAIL", email)
