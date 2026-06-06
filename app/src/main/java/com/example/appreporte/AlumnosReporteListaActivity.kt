@@ -109,7 +109,7 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
             .get()
             .addOnSuccessListener { documents ->
                 if (documents.isEmpty) {
-                    Toast.makeText(this, "No hay notas para editar", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "No hay notas registradas para este alumno", Toast.LENGTH_SHORT).show()
                     return@addOnSuccessListener
                 }
 
@@ -124,7 +124,11 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
                         val (doc, data) = gradesList[which]
                         showEditGradeDialog(doc.id, data, studentName)
                     }
+                    .setNegativeButton(R.string.cancel, null)
                     .show()
+            }
+            .addOnFailureListener {
+                Toast.makeText(this, "Error al obtener notas", Toast.LENGTH_SHORT).show()
             }
     }
 
@@ -135,9 +139,9 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         dialogBinding.spinnerGradeType.adapter = adapter
 
-        // Pre-fill fields
-        val currentType = currentData["type"]?.toString()?.replaceFirstChar { it.uppercase() } ?: "Diaria"
-        val typeIndex = types.indexOf(currentType).let { if (it == -1) 0 else it }
+        // Pre-cargar datos actuales
+        val currentType = currentData["type"]?.toString()?.lowercase() ?: "diaria"
+        val typeIndex = types.indexOfFirst { it.lowercase() == currentType }.let { if (it == -1) 0 else it }
         dialogBinding.spinnerGradeType.setSelection(typeIndex)
         dialogBinding.etSubject.setText(currentData["subject"]?.toString() ?: "")
         dialogBinding.etGradeValue.setText(currentData["value"]?.toString() ?: "")
@@ -155,14 +159,17 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
                         "type" to type,
                         "value" to value,
                         "subject" to subject
+                        // Mantenemos la fecha original a menos que quieras actualizarla también
                     )
+                    
                     FirebaseFirestore.getInstance().collection("grades").document(gradeId)
                         .update(updateData as Map<String, Any>)
                         .addOnSuccessListener {
-                            Toast.makeText(this, "Nota actualizada correctamente", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this, "¡Nota actualizada con éxito!", Toast.LENGTH_SHORT).show()
+                            // Aquí se podrían disparar notificaciones de actualización si fuera necesario
                         }
                         .addOnFailureListener {
-                            Toast.makeText(this, "Error al actualizar nota", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this, "Error al actualizar la nota", Toast.LENGTH_SHORT).show()
                         }
                 } else {
                     Toast.makeText(this, R.string.fill_all_fields, Toast.LENGTH_SHORT).show()

@@ -7,13 +7,13 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.appreporte.databinding.ActivityAlumnosListaBinding
-import com.google.firebase.firestore.FirebaseFirestore
 
 class AlumnosListaActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityAlumnosListaBinding
     private lateinit var adapter: AlumnosAdapter
-    private var classroomId: String = ""
+    private lateinit var dbHelper: DatabaseHelper
+    private var classroomId: Int = -1
     private var parentEmails: List<String> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -21,7 +21,8 @@ class AlumnosListaActivity : AppCompatActivity() {
         binding = ActivityAlumnosListaBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        classroomId = intent.getStringExtra("CLASSROOM_ID") ?: ""
+        dbHelper = DatabaseHelper(this)
+        classroomId = intent.getIntExtra("CLASSROOM_ID", -1)
         val classroomName = intent.getStringExtra("CLASSROOM_NAME") ?: "Salón"
 
         binding.tvTituloSalon.text = "Alumnos: $classroomName"
@@ -38,7 +39,7 @@ class AlumnosListaActivity : AppCompatActivity() {
     private fun setupRecyclerView() {
         adapter = AlumnosAdapter(emptyList(), 
             onEdit = { alumno -> showAlumnoDialog(alumno) },
-            onDelete = { id -> confirmDelete(id) },
+            onDelete = { id -> confirmDelete(id.toInt()) },
             onItemClick = null
         )
         binding.rvAlumnos.layoutManager = LinearLayoutManager(this)
@@ -46,28 +47,28 @@ class AlumnosListaActivity : AppCompatActivity() {
     }
 
     private fun loadParents() {
-        FirebaseFirestore.getInstance().collection("users")
-            .whereIn("rol", listOf("padre", "usuario"))
-            .get()
-            .addOnSuccessListener { snapshot ->
-                parentEmails = snapshot.documents.mapNotNull { it.getString("email") }
-            }
+        parentEmails = dbHelper.getParents()
     }
 
     private fun loadStudents() {
-        FirebaseFirestore.getInstance().collection("students")
-            .whereEqualTo("classroom_id", classroomId)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) return@addSnapshotListener
-                if (snapshot != null) {
-                    val list = snapshot.documents.mapNotNull { doc ->
-                        val data = doc.data?.mapValues { it.value.toString() }?.toMutableMap()
-                        data?.put("id", doc.id)
-                        data
-                    }
-                    adapter.updateData(list)
-                }
+        if (classroomId != -1) {
+            val students = dbHelper.getStudentsByClassroom(classroomId)
+            // Need to convert Triple to Map for AlumnosAdapter
+            val mappedStudents = students.map {
+                val namesParts = it.second.split(" ")
+                val firstName = namesParts.getOrElse(0) { "" }
+                val lastName = if (namesParts.size > 1) namesParts.subList(1, namesParts.size).joinToString(" ") else ""
+                
+                mapOf(
+                    "id" to it.first.toString(),
+                    "names" to firstName,
+                    "lastnames" to lastName,
+                    "dni" to it.third,
+                    "parent_email" to ""
+                )
             }
+            adapter.updateData(mappedStudents)
+        }
     }
 
     private fun showAlumnoDialog(alumno: Map<String, String>?) {
@@ -95,32 +96,16 @@ class AlumnosListaActivity : AppCompatActivity() {
             val parentEmail = dialogBinding.spinnerPadres.selectedItem?.toString() ?: ""
 
             if (names.isNotEmpty() && lastnames.isNotEmpty() && dni.isNotEmpty()) {
-                val data = hashMapOf(
-                    "names" to names,
-                    "lastnames" to lastnames,
-                    "dni" to dni,
-                    "parent_email" to parentEmail,
-                    "classroom_id" to classroomId,
-                    "classroom_name" to (intent.getStringExtra("CLASSROOM_NAME") ?: "Salón"),
-                    "school_id" to (intent.getStringExtra("SCHOOL_ID") ?: "Colegio San José"),
-                    "created_at" to com.google.firebase.Timestamp.now()
-                )
-
                 if (alumno == null) {
-                    FirebaseFirestore.getInstance().collection("students")
-                        .add(data)
-                        .addOnSuccessListener {
-                            loadStudents()
-                            Toast.makeText(this, "Alumno asignado al padre $parentEmail", Toast.LENGTH_SHORT).show()
-                        }
+                    if (dbHelper.addStudent(names, lastnames, dni, classroomId, parentEmail)) {
+                        loadStudents()
+                        Toast.makeText(this, "Alumno guardado", Toast.LENGTH_SHORT).show()
+                    }
                 } else {
-                    FirebaseFirestore.getInstance().collection("students")
-                        .document(alumno["id"]!!)
-                        .update(data as Map<String, Any>)
-                        .addOnSuccessListener {
-                            loadStudents()
-                            Toast.makeText(this, "Datos actualizados", Toast.LENGTH_SHORT).show()
-                        }
+                    if (dbHelper.updateStudent(alumno["id"]!!.toInt(), names, lastnames, dni, parentEmail, classroomId)) {
+                        loadStudents()
+                        Toast.makeText(this, "Datos actualizados", Toast.LENGTH_SHORT).show()
+                    }
                 }
             } else {
                 Toast.makeText(this, "Completa todos los campos", Toast.LENGTH_SHORT).show()
@@ -130,17 +115,15 @@ class AlumnosListaActivity : AppCompatActivity() {
         builder.show()
     }
 
-    private fun confirmDelete(id: String) {
+    private fun confirmDelete(id: Int) {
         AlertDialog.Builder(this)
             .setTitle("Eliminar Alumno")
             .setMessage("¿Estás seguro de eliminar este alumno?")
             .setPositiveButton("Eliminar") { _, _ ->
-                FirebaseFirestore.getInstance().collection("students").document(id)
-                    .delete()
-                    .addOnSuccessListener {
-                        loadStudents()
-                        Toast.makeText(this, "Eliminado", Toast.LENGTH_SHORT).show()
-                    }
+                if (dbHelper.deleteStudent(id)) {
+                    loadStudents()
+                    Toast.makeText(this, "Eliminado", Toast.LENGTH_SHORT).show()
+                }
             }
             .setNegativeButton("Cancelar", null)
             .show()
