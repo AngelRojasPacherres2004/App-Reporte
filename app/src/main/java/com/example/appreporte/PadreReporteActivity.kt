@@ -5,6 +5,8 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
+import android.view.View
+import android.view.ViewGroup
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -51,11 +53,78 @@ class PadreReporteActivity : AppCompatActivity() {
         studentId = intent.getStringExtra("STUDENT_ID") ?: ""
 
         setupUI()
+        setupBottomNavigation()
         if (studentId.isNotEmpty()) {
             loadStudentData()
         } else {
             binding.tvStudentName.text = "Error: No se proporcionó el ID del estudiante."
             binding.btnDownloadReport.isEnabled = false
+        }
+    }
+
+    private fun setupBottomNavigation() {
+        binding.bottomNavigation.selectedItemId = R.id.nav_reportes
+
+        // Ajuste de icono de asistente
+        val menuView = binding.bottomNavigation.getChildAt(0) as? ViewGroup
+        val assistantItem = menuView?.findViewById<View>(R.id.nav_asistente)
+        val iconView = assistantItem?.findViewById<android.widget.ImageView>(com.google.android.material.R.id.navigation_bar_item_icon_view)
+        iconView?.post {
+            val params = iconView.layoutParams
+            val density = resources.displayMetrics.density
+            val sizeInPx = (40 * density).toInt()
+            params.width = sizeInPx
+            params.height = sizeInPx
+            iconView.layoutParams = params
+            iconView.scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+        }
+
+        binding.bottomNavigation.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_inicio -> {
+                    val intent = android.content.Intent(this, PadreDashboardActivity::class.java)
+                    intent.putExtra("USER_EMAIL", userEmail)
+                    intent.putExtra("USER_ROL", "usuario")
+                    intent.setFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    startActivity(intent)
+                    true
+                }
+                R.id.nav_foro -> {
+                    FirebaseFirestore.getInstance().collection("students").document(studentId).get()
+                        .addOnSuccessListener { doc ->
+                            val classroomId = doc.getString("classroom_id") ?: ""
+                            // También necesitamos el nombre del salón para que el Foro cargue los posts
+                            FirebaseFirestore.getInstance().collection("classrooms").document(classroomId).get()
+                                .addOnSuccessListener { classDoc ->
+                                    val classroomName = classDoc.getString("name") ?: "Foro"
+                                    val intent = android.content.Intent(this, ForoDetalleActivity::class.java)
+                                    intent.putExtra("CLASSROOM_ID", classroomId)
+                                    intent.putExtra("SALON_NAME", classroomName)
+                                    intent.putExtra("USER_EMAIL", userEmail)
+                                    intent.putExtra("USER_ROL", "usuario")
+                                    intent.putExtra("STUDENT_ID", studentId)
+                                    startActivity(intent)
+                                }
+                        }
+                    true
+                }
+                R.id.nav_asistente -> {
+                    val intent = android.content.Intent(this, ChatbotPadreActivity::class.java)
+                    intent.putExtra("USER_EMAIL", userEmail)
+                    intent.putExtra("STUDENT_ID", studentId)
+                    startActivity(intent)
+                    true
+                }
+                R.id.nav_reportes -> true
+                R.id.nav_perfil -> {
+                    val intent = android.content.Intent(this, PerfilActivity::class.java)
+                    intent.putExtra("USER_EMAIL", userEmail)
+                    intent.putExtra("USER_ROL", "usuario")
+                    startActivity(intent)
+                    true
+                }
+                else -> false
+            }
         }
     }
 

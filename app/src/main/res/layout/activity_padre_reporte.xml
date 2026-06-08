@@ -162,9 +162,20 @@
                 android:text="DESCARGAR REPORTE PDF"
                 app:cornerRadius="12dp"
                 app:icon="@android:drawable/ic_menu_save"
-                android:layout_marginBottom="80dp"/>
+                android:layout_marginBottom="100dp"/>
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
+
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomNavigation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="@color/surface"
+        app:menu="@menu/bottom_nav_menu_padre"
+        app:labelVisibilityMode="labeled"
+        app:itemIconTint="@color/primary"
+        app:itemTextColor="@color/primary" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

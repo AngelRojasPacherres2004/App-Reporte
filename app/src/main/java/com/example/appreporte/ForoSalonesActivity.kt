@@ -42,8 +42,10 @@ class ForoSalonesActivity : AppCompatActivity() {
         adapter = SalonesAdapter(salones, { salon ->
             val intent = Intent(this, ForoDetalleActivity::class.java)
             intent.putExtra("SALON_NAME", salon["name"])
+            intent.putExtra("CLASSROOM_ID", salon["id"])
             intent.putExtra("USER_ROL", userRole)
             intent.putExtra("USER_EMAIL", userEmail)
+            intent.putExtra("SCHOOL_ID", schoolId)
             startActivity(intent)
         }, { salon ->
             if (userRole == "docente" || userRole == "admin") {

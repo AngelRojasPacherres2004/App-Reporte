@@ -2,6 +2,8 @@ package com.example.appreporte
 
 import android.os.Bundle
 import android.view.View
+import android.view.ViewGroup
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.appreporte.databinding.ActivityChatbotPadreBinding
@@ -19,6 +21,7 @@ class ChatbotPadreActivity : AppCompatActivity() {
     private lateinit var adapter: ChatAdapter
     private var contextData: String = ""
     private val firestore = FirebaseFirestore.getInstance()
+    private var studentId: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,6 +33,7 @@ class ChatbotPadreActivity : AppCompatActivity() {
         binding.rvChat.adapter = adapter
 
         val userEmail = intent.getStringExtra("USER_EMAIL") ?: ""
+        studentId = intent.getStringExtra("STUDENT_ID") ?: ""
         
         // Configuración inicial de UI
         binding.btnSend.isEnabled = false
@@ -47,6 +51,80 @@ class ChatbotPadreActivity : AppCompatActivity() {
                 addUserMessage(text)
                 binding.etMessage.text.clear()
                 processLocalQuery(text)
+            }
+        }
+        setupBottomNavigation(userEmail)
+    }
+
+    private fun setupBottomNavigation(userEmail: String) {
+        binding.bottomNavigation.selectedItemId = R.id.nav_asistente
+
+        // Ajuste de icono de asistente
+        val menuView = binding.bottomNavigation.getChildAt(0) as? ViewGroup
+        val assistantItem = menuView?.findViewById<View>(R.id.nav_asistente)
+        val iconView = assistantItem?.findViewById<android.widget.ImageView>(com.google.android.material.R.id.navigation_bar_item_icon_view)
+        iconView?.post {
+            val params = iconView.layoutParams
+            val density = resources.displayMetrics.density
+            val sizeInPx = (40 * density).toInt()
+            params.width = sizeInPx
+            params.height = sizeInPx
+            iconView.layoutParams = params
+            iconView.scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+        }
+
+        binding.bottomNavigation.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_inicio -> {
+                    val intent = android.content.Intent(this, PadreDashboardActivity::class.java)
+                    intent.putExtra("USER_EMAIL", userEmail)
+                    intent.putExtra("USER_ROL", "usuario")
+                    intent.setFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    startActivity(intent)
+                    true
+                }
+                R.id.nav_foro -> {
+                    if (studentId.isNotEmpty()) {
+                        FirebaseFirestore.getInstance().collection("students").document(studentId).get()
+                            .addOnSuccessListener { doc ->
+                                val classroomId = doc.getString("classroom_id") ?: ""
+                                FirebaseFirestore.getInstance().collection("classrooms").document(classroomId).get()
+                                    .addOnSuccessListener { classDoc ->
+                                        val classroomName = classDoc.getString("name") ?: "Foro"
+                                        val intent = android.content.Intent(this, ForoDetalleActivity::class.java)
+                                        intent.putExtra("CLASSROOM_ID", classroomId)
+                                        intent.putExtra("SALON_NAME", classroomName)
+                                        intent.putExtra("USER_EMAIL", userEmail)
+                                        intent.putExtra("USER_ROL", "usuario")
+                                        intent.putExtra("STUDENT_ID", studentId)
+                                        startActivity(intent)
+                                    }
+                            }
+                    } else {
+                        Toast.makeText(this, "Por favor, seleccione un hijo en el Inicio primero", Toast.LENGTH_SHORT).show()
+                    }
+                    true
+                }
+                R.id.nav_asistente -> true
+                R.id.nav_reportes -> {
+                    if (studentId.isNotEmpty()) {
+                        val intent = android.content.Intent(this, PadreReporteActivity::class.java)
+                        intent.putExtra("USER_EMAIL", userEmail)
+                        intent.putExtra("STUDENT_ID", studentId)
+                        startActivity(intent)
+                    } else {
+                        Toast.makeText(this, "Seleccione un hijo en el Inicio primero", Toast.LENGTH_SHORT).show()
+                    }
+                    true
+                }
+                R.id.nav_perfil -> {
+                    val intent = android.content.Intent(this, PerfilActivity::class.java)
+                    intent.putExtra("USER_EMAIL", userEmail)
+                    intent.putExtra("USER_ROL", "usuario")
+                    startActivity(intent)
+                    true
+                }
+                else -> false
             }
         }
     }

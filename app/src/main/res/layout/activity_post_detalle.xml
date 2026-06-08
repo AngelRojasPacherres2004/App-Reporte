@@ -76,7 +76,6 @@
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="30dp"
             app:cardElevation="8dp"
             app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.None">
 
@@ -107,6 +106,13 @@
                     app:iconPadding="0dp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/bottomNavigation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/surface"
+            app:labelVisibilityMode="labeled" />
 
     </LinearLayout>
 

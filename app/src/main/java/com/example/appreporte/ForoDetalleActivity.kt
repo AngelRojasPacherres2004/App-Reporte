@@ -12,6 +12,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.appreporte.databinding.ActivityForoDetalleBinding
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreSettings
+import com.google.firebase.firestore.PersistentCacheSettings
 import com.google.firebase.firestore.Query
 
 data class Post(val id: String, val author: String, val title: String, val content: String, val time: String)
@@ -24,8 +26,18 @@ class ForoDetalleActivity : AppCompatActivity() {
     private var userRole: String = "usuario"
     private var userEmail: String = ""
     private var salonName: String = ""
+    private var studentId: String = ""
+    private var classroomId: String = ""
     private lateinit var complaintsAdapter: ComplaintsActivity.ComplaintsAdapter
-    private val firestore = FirebaseFirestore.getInstance()
+    private val firestore = FirebaseFirestore.getInstance().apply {
+        // Configuración para usar SQLite como caché local (100MB)
+        val settings = FirebaseFirestoreSettings.Builder()
+            .setLocalCacheSettings(PersistentCacheSettings.newBuilder()
+                .setSizeBytes(100 * 1024 * 1024)
+                .build())
+            .build()
+        firestoreSettings = settings
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,8 +45,10 @@ class ForoDetalleActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         salonName = intent.getStringExtra("SALON_NAME") ?: "Foro"
+        classroomId = intent.getStringExtra("CLASSROOM_ID") ?: ""
         userRole = intent.getStringExtra("USER_ROL") ?: "usuario"
         userEmail = intent.getStringExtra("USER_EMAIL") ?: ""
+        studentId = intent.getStringExtra("STUDENT_ID") ?: ""
         
         binding.toolbar.title = salonName
         setSupportActionBar(binding.toolbar)
@@ -146,23 +160,73 @@ class ForoDetalleActivity : AppCompatActivity() {
         val menuRes = when (userRole) {
             "docente" -> R.menu.bottom_nav_menu_docente
             "admin" -> R.menu.bottom_nav_menu_admin
-            else -> R.menu.bottom_nav_menu_docente // Por defecto docente o el que corresponda a padre si existe
+            "usuario" -> R.menu.bottom_nav_menu_padre
+            else -> R.menu.bottom_nav_menu_docente
         }
         binding.bottomNavigation.inflateMenu(menuRes)
         binding.bottomNavigation.selectedItemId = R.id.nav_foro
-        
+
+        // Ajuste de icono de asistente si es padre
+        if (userRole == "usuario") {
+            val menuView = binding.bottomNavigation.getChildAt(0) as? ViewGroup
+            val assistantItem = menuView?.findViewById<View>(R.id.nav_asistente)
+            val iconView = assistantItem?.findViewById<android.widget.ImageView>(com.google.android.material.R.id.navigation_bar_item_icon_view)
+            iconView?.post {
+                val params = iconView.layoutParams
+                val density = resources.displayMetrics.density
+                val sizeInPx = (40 * density).toInt()
+                params.width = sizeInPx
+                params.height = sizeInPx
+                iconView.layoutParams = params
+                iconView.scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+            }
+        }
+
         binding.bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_inicio -> {
-                    // Navegar a Inicio/Dashboard
-                    finish()
+                    if (userRole == "usuario") {
+                        val intent = android.content.Intent(this, PadreDashboardActivity::class.java)
+                        intent.putExtra("USER_EMAIL", userEmail)
+                        intent.putExtra("USER_ROL", userRole)
+                        intent.setFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        startActivity(intent)
+                    } else {
+                        finish()
+                    }
                     true
                 }
                 R.id.nav_foro -> true
-                else -> {
-                    Toast.makeText(this, "Funcionalidad en desarrollo", Toast.LENGTH_SHORT).show()
-                    false
+                R.id.nav_asistente -> {
+                    val intent = android.content.Intent(this, ChatbotPadreActivity::class.java)
+                    intent.putExtra("USER_EMAIL", userEmail)
+                    intent.putExtra("STUDENT_ID", studentId)
+                    startActivity(intent)
+                    true
                 }
+                R.id.nav_reportes -> {
+                    if (userRole == "usuario") {
+                        if (studentId.isNotEmpty()) {
+                            val intent = android.content.Intent(this, PadreReporteActivity::class.java)
+                            intent.putExtra("USER_EMAIL", userEmail)
+                            intent.putExtra("STUDENT_ID", studentId)
+                            startActivity(intent)
+                        } else {
+                            Toast.makeText(this, "Seleccione un hijo en el Inicio primero", Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        Toast.makeText(this, "Funcionalidad para padres", Toast.LENGTH_SHORT).show()
+                    }
+                    true
+                }
+                R.id.nav_perfil -> {
+                    val intent = android.content.Intent(this, PerfilActivity::class.java)
+                    intent.putExtra("USER_EMAIL", userEmail)
+                    intent.putExtra("USER_ROL", userRole)
+                    startActivity(intent)
+                    true
+                }
+                else -> false
             }
         }
     }
@@ -292,8 +356,11 @@ class ForoDetalleActivity : AppCompatActivity() {
 
     private fun triggerPostNotification(title: String, content: String) {
         // Buscar todos los alumnos de este salón para notificar a sus padres
+        val filterField = if (classroomId.isNotEmpty()) "classroom_id" else "salonName"
+        val filterValue = if (classroomId.isNotEmpty()) classroomId else salonName
+
         firestore.collection("students")
-            .whereEqualTo("classroom_id", salonName) // Ojo: Verificar si es classroom_id o name
+            .whereEqualTo(filterField, filterValue)
             .get()
             .addOnSuccessListener { snapshot ->
                 snapshot.documents.forEach { doc ->
@@ -323,13 +390,13 @@ class ForoDetalleActivity : AppCompatActivity() {
             }
     }
 
-    class PostAdapter(
+    inner class PostAdapter(
         private val posts: List<Post>, 
         private val userEmail: String, 
         private val userRole: String,
         private val onAction: (Post, String) -> Unit
     ) : RecyclerView.Adapter<PostAdapter.ViewHolder>() {
-        class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
             val tvAuthor: TextView = view.findViewById(R.id.tvAuthorName)
             val tvTitle: TextView = view.findViewById(R.id.tvTitle)
             val tvContent: TextView = view.findViewById(R.id.tvContent)
@@ -358,6 +425,8 @@ class ForoDetalleActivity : AppCompatActivity() {
                     putExtra("POST_TIME", post.time)
                     putExtra("USER_EMAIL", userEmail)
                     putExtra("USER_ROL", userRole)
+                    putExtra("STUDENT_ID", studentId)
+                    putExtra("CLASSROOM_ID", classroomId)
                 }
                 context.startActivity(intent)
             }

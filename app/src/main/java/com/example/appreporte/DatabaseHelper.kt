@@ -12,13 +12,14 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     companion object {
         private const val DATABASE_NAME = "AppReporte.db"
-        private const val DATABASE_VERSION = 8 // Incremented for complaints fix
+        private const val DATABASE_VERSION = 9 // Incremented for address column
         private const val TABLE_USERS = "users"
         private const val COLUMN_ID = "id"
         private const val COLUMN_EMAIL = "email"
         private const val COLUMN_PASSWORD = "password"
         private const val COLUMN_ROL = "rol"
         private const val COLUMN_PHONE = "phone"
+        private const val COLUMN_ADDRESS = "address"
 
         private const val TABLE_CLASSROOMS = "classrooms"
         private const val COLUMN_CLASSROOM_ID = "id"
@@ -85,7 +86,8 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 + COLUMN_EMAIL + " TEXT UNIQUE,"
                 + COLUMN_PASSWORD + " TEXT,"
                 + COLUMN_ROL + " TEXT,"
-                + COLUMN_PHONE + " TEXT" + ")")
+                + COLUMN_PHONE + " TEXT,"
+                + COLUMN_ADDRESS + " TEXT" + ")")
         db.execSQL(createUsersTable)
 
         val createClassroomsTable = ("CREATE TABLE " + TABLE_CLASSROOMS + "("
@@ -160,9 +162,9 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         db.execSQL(createAttendanceTable)
 
         // Insertar usuarios iniciales
-        insertUser(db, "admin@reporte.com", "admin123", "admin", "")
-        insertUser(db, "user@reporte.com", "user123", "usuario", "912345678")
-        insertUser(db, "docente@reporte.com", "docente123", "docente", "")
+        insertUser(db, "admin@reporte.com", "admin123", "admin", "", "")
+        insertUser(db, "user@reporte.com", "user123", "usuario", "912345678", "")
+        insertUser(db, "docente@reporte.com", "docente123", "docente", "", "")
 
         // Insertar salones iniciales
         insertClassroom(db, "Sala de 3 años")
@@ -264,12 +266,13 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         return list
     }
 
-    private fun insertUser(db: SQLiteDatabase, email: String, pass: String, rol: String, phone: String) {
+    private fun insertUser(db: SQLiteDatabase, email: String, pass: String, rol: String, phone: String, address: String) {
         val values = ContentValues()
         values.put(COLUMN_EMAIL, email)
         values.put(COLUMN_PASSWORD, pass)
         values.put(COLUMN_ROL, rol)
         values.put(COLUMN_PHONE, phone)
+        values.put(COLUMN_ADDRESS, address)
         db.insert(TABLE_USERS, null, values)
     }
 
@@ -290,7 +293,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
     fun getAllUsers(): List<Map<String, String>> {
         val userList = mutableListOf<Map<String, String>>()
         val db = this.readableDatabase
-        val cursor = db.rawQuery("SELECT $COLUMN_EMAIL, $COLUMN_PASSWORD, $COLUMN_ROL, $COLUMN_PHONE FROM $TABLE_USERS", null)
+        val cursor = db.rawQuery("SELECT $COLUMN_EMAIL, $COLUMN_PASSWORD, $COLUMN_ROL, $COLUMN_PHONE, $COLUMN_ADDRESS FROM $TABLE_USERS", null)
         if (cursor.moveToFirst()) {
             do {
                 val map = mutableMapOf<String, String>()
@@ -298,6 +301,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 map["password"] = cursor.getString(1)
                 map["rol"] = cursor.getString(2)
                 map["phone"] = cursor.getString(3) ?: ""
+                map["address"] = cursor.getString(4) ?: ""
                 userList.add(map)
             } while (cursor.moveToNext())
         }
@@ -313,30 +317,51 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             user = mapOf(
                 "email" to cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_EMAIL)),
                 "rol" to cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ROL)),
-                "phone" to (cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PHONE)) ?: "No registrado")
+                "phone" to (cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PHONE)) ?: "No registrado"),
+                "address" to (cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ADDRESS)) ?: "No registrado")
             )
         }
         cursor.close()
         return user
     }
 
-    fun addUser(email: String, pass: String, rol: String, phone: String = ""): Boolean {
+    fun addUser(email: String, pass: String, rol: String, phone: String = "", address: String = ""): Boolean {
         val db = this.writableDatabase
         val values = ContentValues()
         values.put(COLUMN_EMAIL, email)
         values.put(COLUMN_PASSWORD, pass)
         values.put(COLUMN_ROL, rol)
         values.put(COLUMN_PHONE, phone)
+        values.put(COLUMN_ADDRESS, address)
         val result = db.insert(TABLE_USERS, null, values)
         return result != -1L
     }
 
-    fun updateUser(email: String, pass: String, rol: String, phone: String): Boolean {
+    fun updateUser(email: String, pass: String, rol: String, phone: String, address: String = ""): Boolean {
         val db = this.writableDatabase
         val values = ContentValues()
         values.put(COLUMN_PASSWORD, pass)
         values.put(COLUMN_ROL, rol)
         values.put(COLUMN_PHONE, phone)
+        values.put(COLUMN_ADDRESS, address)
+        val result = db.update(TABLE_USERS, values, "$COLUMN_EMAIL = ?", arrayOf(email))
+        return result > 0
+    }
+
+    fun syncUserProfile(email: String, rol: String, phone: String, address: String): Boolean {
+        val db = this.writableDatabase
+        val values = ContentValues()
+        values.put(COLUMN_ROL, rol)
+        values.put(COLUMN_PHONE, phone)
+        values.put(COLUMN_ADDRESS, address)
+        val result = db.update(TABLE_USERS, values, "$COLUMN_EMAIL = ?", arrayOf(email))
+        return result > 0
+    }
+
+    fun updateUserAddress(email: String, address: String): Boolean {
+        val db = this.writableDatabase
+        val values = ContentValues()
+        values.put(COLUMN_ADDRESS, address)
         val result = db.update(TABLE_USERS, values, "$COLUMN_EMAIL = ?", arrayOf(email))
         return result > 0
     }

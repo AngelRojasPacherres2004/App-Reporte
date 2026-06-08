@@ -29,6 +29,9 @@ class PostDetalleActivity : AppCompatActivity() {
     private val firestore = FirebaseFirestore.getInstance()
     private var postId: String = ""
     private var userEmail: String = ""
+    private var userRole: String = ""
+    private var studentId: String = ""
+    private var classroomId: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,7 +48,9 @@ class PostDetalleActivity : AppCompatActivity() {
         val content = intent.getStringExtra("POST_CONTENT") ?: "Contenido"
         val time = intent.getStringExtra("POST_TIME") ?: "HACE MOMENTOS"
         userEmail = intent.getStringExtra("USER_EMAIL") ?: "Usuario"
-        val userRol = intent.getStringExtra("USER_ROL") ?: ""
+        userRole = intent.getStringExtra("USER_ROL") ?: ""
+        studentId = intent.getStringExtra("STUDENT_ID") ?: ""
+        classroomId = intent.getStringExtra("CLASSROOM_ID") ?: ""
 
         binding.includedPost.tvAuthorName.text = author
         binding.includedPost.tvTitle.text = title
@@ -53,7 +58,7 @@ class PostDetalleActivity : AppCompatActivity() {
         binding.includedPost.tvTime.text = time
         binding.includedPost.tvCommentsCount.visibility = View.GONE
 
-        if (userRol == "usuario") {
+        if (userRole == "usuario") {
             binding.btnQueja.visibility = View.VISIBLE
             binding.btnQueja.setOnClickListener {
                 showQuejaDialog()
@@ -63,6 +68,85 @@ class PostDetalleActivity : AppCompatActivity() {
         setupRecyclerView()
         loadComments()
         setupCommentInput()
+        setupBottomNavigation()
+    }
+
+    private fun setupBottomNavigation() {
+        val menuRes = when (userRole) {
+            "docente" -> R.menu.bottom_nav_menu_docente
+            "admin" -> R.menu.bottom_nav_menu_admin
+            "usuario" -> R.menu.bottom_nav_menu_padre
+            else -> R.menu.bottom_nav_menu_docente
+        }
+        binding.bottomNavigation.inflateMenu(menuRes)
+        binding.bottomNavigation.selectedItemId = R.id.nav_foro
+
+        // Ajuste de icono de asistente si es padre
+        if (userRole == "usuario") {
+            val menuView = binding.bottomNavigation.getChildAt(0) as? ViewGroup
+            val assistantItem = menuView?.findViewById<View>(R.id.nav_asistente)
+            val iconView = assistantItem?.findViewById<android.widget.ImageView>(com.google.android.material.R.id.navigation_bar_item_icon_view)
+            iconView?.post {
+                val params = iconView.layoutParams
+                val density = resources.displayMetrics.density
+                val sizeInPx = (40 * density).toInt()
+                params.width = sizeInPx
+                params.height = sizeInPx
+                iconView.layoutParams = params
+                iconView.scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+            }
+        }
+
+        binding.bottomNavigation.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_inicio -> {
+                    if (userRole == "usuario") {
+                        val intent = android.content.Intent(this, PadreDashboardActivity::class.java)
+                        intent.putExtra("USER_EMAIL", userEmail)
+                        intent.putExtra("USER_ROL", userRole)
+                        intent.setFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        startActivity(intent)
+                    } else {
+                        finish()
+                    }
+                    true
+                }
+                R.id.nav_foro -> {
+                    finish() // Regresar al ForoDetalleActivity
+                    true
+                }
+                R.id.nav_asistente -> {
+                    val intent = android.content.Intent(this, ChatbotPadreActivity::class.java)
+                    intent.putExtra("USER_EMAIL", userEmail)
+                    intent.putExtra("STUDENT_ID", studentId)
+                    startActivity(intent)
+                    true
+                }
+                R.id.nav_reportes -> {
+                    if (userRole == "usuario") {
+                        if (studentId.isNotEmpty()) {
+                            val intent = android.content.Intent(this, PadreReporteActivity::class.java)
+                            intent.putExtra("USER_EMAIL", userEmail)
+                            intent.putExtra("STUDENT_ID", studentId)
+                            startActivity(intent)
+                        } else {
+                            Toast.makeText(this, "Seleccione un hijo en el Inicio primero", Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        Toast.makeText(this, "Funcionalidad para padres", Toast.LENGTH_SHORT).show()
+                    }
+                    true
+                }
+                R.id.nav_perfil -> {
+                    val intent = android.content.Intent(this, PerfilActivity::class.java)
+                    intent.putExtra("USER_EMAIL", userEmail)
+                    intent.putExtra("USER_ROL", userRole)
+                    startActivity(intent)
+                    true
+                }
+                else -> false
+            }
+        }
     }
 
     private fun showQuejaDialog() {
