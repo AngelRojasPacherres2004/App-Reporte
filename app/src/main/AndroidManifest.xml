@@ -15,7 +15,7 @@
         android:theme="@style/Theme.AppReporte">
 
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.general.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -24,115 +24,115 @@
         </activity>
 
         <activity
-            android:name=".LoadingActivity"
+            android:name=".ui.general.LoadingActivity"
             android:exported="false" />
             
         <activity
-            android:name=".SuperAdminDashboardActivity"
+            android:name=".ui.admin.SuperAdminDashboardActivity"
             android:exported="false"
             android:label="Panel Súper Administrador" />
 
         <activity
-            android:name=".DirectChatActivity"
+            android:name=".ui.general.DirectChatActivity"
             android:exported="false"
             android:label="Chat" />
 
         <activity
-            android:name=".PadreDashboardActivity"
+            android:name=".ui.padre.PadreDashboardActivity"
             android:exported="false" />
 
         <activity
-            android:name=".AdminDashboardActivity"
+            android:name=".ui.admin.AdminDashboardActivity"
             android:exported="false" />
 
         <activity
-            android:name=".InicioActivity"
+            android:name=".ui.general.InicioActivity"
             android:exported="false" />
 
         <activity
-            android:name=".DocenteDashboardActivity"
+            android:name=".ui.docente.DocenteDashboardActivity"
             android:exported="false" />
 
         <activity
-            android:name=".ForoSalonesActivity"
+            android:name=".ui.general.ForoSalonesActivity"
             android:exported="false" />
 
         <activity
-            android:name=".ForoDetalleActivity"
+            android:name=".ui.general.ForoDetalleActivity"
             android:exported="false" />
 
         <activity
-            android:name=".PostDetalleActivity"
+            android:name=".ui.general.PostDetalleActivity"
             android:exported="false"
             android:label="Comentarios"
             android:theme="@style/Theme.AppReporte" />
 
         <!-- Pantalla del Chatbot con su nombre oficial -->
         <activity
-            android:name=".ChatbotPadreActivity"
+            android:name=".ui.padre.ChatbotPadreActivity"
             android:exported="false"
             android:label="Asistente EduConnect" />
 
         <activity
-            android:name=".ForoActivity"
+            android:name=".ui.general.ForoActivity"
             android:exported="false" />
 
         <activity
-            android:name=".AsistenteActivity"
+            android:name=".ui.padre.AsistenteActivity"
             android:exported="false" />
 
         <activity
-            android:name=".GestionAlumnosSalonesActivity"
+            android:name=".ui.admin.GestionAlumnosSalonesActivity"
             android:exported="false"
             android:label="Seleccionar Salón" />
 
         <activity
-            android:name=".AlumnosListaActivity"
+            android:name=".ui.docente.AlumnosListaActivity"
             android:exported="false"
             android:label="Lista de Alumnos" />
 
         <activity
-            android:name=".GestionReportesSalonesActivity"
+            android:name=".ui.admin.GestionReportesSalonesActivity"
             android:exported="false"
             android:label="Reportes por Salón" />
 
         <activity
-            android:name=".AlumnosReporteListaActivity"
+            android:name=".ui.docente.AlumnosReporteListaActivity"
             android:exported="false"
             android:label="Asignar Notas" />
 
         <activity
-            android:name=".PerfilActivity"
+            android:name=".ui.general.PerfilActivity"
             android:exported="false"
             android:label="Mi Perfil" />
 
         <activity
-            android:name=".PadreReporteActivity"
+            android:name=".ui.padre.PadreReporteActivity"
             android:exported="false"
             android:label="Mis Reportes" />
 
         <activity
-            android:name=".ComplaintsActivity"
+            android:name=".ui.docente.ComplaintsActivity"
             android:exported="false"
             android:label="Gestión de Quejas" />
 
         <activity
-            android:name=".DocenteHorarioActivity"
+            android:name=".ui.docente.DocenteHorarioActivity"
             android:exported="false"
             android:label="Mi Horario" />
 
         <activity
-            android:name=".DocenteAsistenciaActivity"
+            android:name=".ui.docente.DocenteAsistenciaActivity"
             android:exported="false"
             android:label="Tomar Asistencia" />
 
         <activity
-            android:name=".PadreHorarioActivity"
+            android:name=".ui.padre.PadreHorarioActivity"
             android:exported="false"
             android:label="Horario del Alumno" />
 
         <activity
-            android:name=".PadreAsistenciaActivity"
+            android:name=".ui.padre.PadreAsistenciaActivity"
             android:exported="false"
             android:label="Historial de Asistencia" />
 

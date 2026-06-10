@@ -41,6 +41,20 @@ android {
         viewBinding = true
         buildConfig = true
     }
+
+    sourceSets {
+        getByName("main") {
+            res.srcDirs(
+                "src/main/res/admin",
+                "src/main/res/docente",
+                "src/main/res/padre",
+                "src/main/res/common",
+                "src/main/res/components",
+                "src/main/res"
+            )
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
