@@ -56,8 +56,11 @@ class AdminDashboardActivity : AppCompatActivity() {
     private fun setupAdminProfile() {
         binding.ivAdminProfile.setOnClickListener {
             val userEmail = intent.getStringExtra("USER_EMAIL")
+            val userRol = intent.getStringExtra("USER_ROL") ?: "admin"
             val intent = Intent(this, PerfilActivity::class.java)
             intent.putExtra("USER_EMAIL", userEmail)
+            intent.putExtra("USER_ROL", userRol)
+            intent.putExtra("SCHOOL_ID", currentSchoolId)
             startActivity(intent)
         }
     }
@@ -170,32 +173,46 @@ class AdminDashboardActivity : AppCompatActivity() {
         val bottomNav = findViewById<com.google.android.material.bottomnavigation.BottomNavigationView>(R.id.bottomNavigation)
         bottomNav.selectedItemId = R.id.nav_gestion
         bottomNav.setOnItemSelectedListener { item ->
+            val userEmail = intent.getStringExtra("USER_EMAIL") ?: ""
+            val userRol = intent.getStringExtra("USER_ROL") ?: "admin"
             when (item.itemId) {
                 R.id.nav_inicio -> {
-                    startActivity(Intent(this, InicioActivity::class.java))
+                    val initIntent = Intent(this, InicioActivity::class.java)
+                    initIntent.putExtra("SCHOOL_ID", currentSchoolId)
+                    initIntent.putExtra("USER_EMAIL", userEmail)
+                    initIntent.putExtra("USER_ROL", userRol)
+                    startActivity(initIntent)
                     overridePendingTransition(0, 0)
                     finish()
                     true
                 }
                 R.id.nav_gestion -> true
                 R.id.nav_foro -> {
-                    val userEmail = intent.getStringExtra("USER_EMAIL") ?: ""
-                    val chatIntent = Intent(this, DirectChatActivity::class.java)
-                    chatIntent.putExtra("CURRENT_EMAIL", userEmail)
-                    chatIntent.putExtra("TARGET_EMAIL", "superadmin@reporte.com")
-                    startActivity(chatIntent)
+                    val foroIntent = Intent(this, ForoSalonesActivity::class.java)
+                    foroIntent.putExtra("SCHOOL_ID", currentSchoolId)
+                    foroIntent.putExtra("USER_EMAIL", userEmail)
+                    foroIntent.putExtra("USER_ROL", userRol)
+                    startActivity(foroIntent)
                     overridePendingTransition(0, 0)
                     finish()
                     true
                 }
                 R.id.nav_asistente -> {
-                    startActivity(Intent(this, AsistenteActivity::class.java))
+                    val asistenteIntent = Intent(this, AsistenteActivity::class.java)
+                    asistenteIntent.putExtra("SCHOOL_ID", currentSchoolId)
+                    asistenteIntent.putExtra("USER_EMAIL", userEmail)
+                    asistenteIntent.putExtra("USER_ROL", userRol)
+                    startActivity(asistenteIntent)
                     overridePendingTransition(0, 0)
                     finish()
                     true
                 }
                 R.id.nav_perfil -> {
-                    startActivity(Intent(this, PerfilActivity::class.java))
+                    val perfilIntent = Intent(this, PerfilActivity::class.java)
+                    perfilIntent.putExtra("USER_EMAIL", userEmail)
+                    perfilIntent.putExtra("USER_ROL", userRol)
+                    perfilIntent.putExtra("SCHOOL_ID", currentSchoolId)
+                    startActivity(perfilIntent)
                     overridePendingTransition(0, 0)
                     finish()
                     true

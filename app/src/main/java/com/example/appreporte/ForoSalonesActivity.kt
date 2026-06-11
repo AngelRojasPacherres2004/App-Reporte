@@ -157,33 +157,51 @@ class ForoSalonesActivity : AppCompatActivity() {
         
         binding.bottomNavigation.selectedItemId = R.id.nav_foro
         binding.bottomNavigation.setOnItemSelectedListener { item ->
+            val uEmail = intent.getStringExtra("USER_EMAIL") ?: userEmail
+            val uRol = intent.getStringExtra("USER_ROL") ?: userRole
+            val sId = intent.getStringExtra("SCHOOL_ID") ?: schoolId
             when (item.itemId) {
                 R.id.nav_inicio -> {
+                    val initIntent = Intent(this, InicioActivity::class.java)
+                    initIntent.putExtra("SCHOOL_ID", sId)
+                    initIntent.putExtra("USER_EMAIL", uEmail)
+                    initIntent.putExtra("USER_ROL", uRol)
+                    startActivity(initIntent)
                     finish()
                     true
                 }
                 R.id.nav_gestion -> {
-                    startActivity(Intent(this, AdminDashboardActivity::class.java))
+                    val gestionIntent = Intent(this, AdminDashboardActivity::class.java)
+                    gestionIntent.putExtra("SCHOOL_ID", sId)
+                    gestionIntent.putExtra("USER_EMAIL", uEmail)
+                    gestionIntent.putExtra("USER_ROL", uRol)
+                    startActivity(gestionIntent)
                     finish()
                     true
                 }
                 R.id.nav_reportes -> {
-                    val intent = Intent(this, GestionReportesSalonesActivity::class.java)
-                    intent.putExtra("SCHOOL_ID", intent.getStringExtra("SCHOOL_ID"))
-                    startActivity(intent)
+                    val repIntent = Intent(this, GestionReportesSalonesActivity::class.java)
+                    repIntent.putExtra("SCHOOL_ID", sId)
+                    repIntent.putExtra("USER_EMAIL", uEmail)
+                    repIntent.putExtra("USER_ROL", uRol)
+                    startActivity(repIntent)
                     finish()
                     true
                 }
                 R.id.nav_asistente -> {
-                    startActivity(Intent(this, AsistenteActivity::class.java))
+                    val asistenteIntent = Intent(this, AsistenteActivity::class.java)
+                    asistenteIntent.putExtra("SCHOOL_ID", sId)
+                    asistenteIntent.putExtra("USER_EMAIL", uEmail)
+                    asistenteIntent.putExtra("USER_ROL", uRol)
+                    startActivity(asistenteIntent)
                     finish()
                     true
                 }
                 R.id.nav_perfil -> {
                     val perfilIntent = Intent(this, PerfilActivity::class.java)
-                    perfilIntent.putExtra("USER_EMAIL", userEmail)
-                    perfilIntent.putExtra("USER_ROL", userRole)
-                    perfilIntent.putExtra("SCHOOL_ID", schoolId)
+                    perfilIntent.putExtra("USER_EMAIL", uEmail)
+                    perfilIntent.putExtra("USER_ROL", uRol)
+                    perfilIntent.putExtra("SCHOOL_ID", sId)
                     startActivity(perfilIntent)
                     finish()
                     true

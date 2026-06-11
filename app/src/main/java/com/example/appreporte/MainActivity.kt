@@ -11,7 +11,6 @@ import com.example.appreporte.databinding.ActivityMainBinding
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private var selectedRole = "admin" // Default selection
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -20,8 +19,6 @@ class MainActivity : AppCompatActivity() {
 
         // INYECCIÓN DE DATOS DE PRUEBA (Se ejecuta en segundo plano silenciosamente)
         MockDataInjector.injectData()
-
-        setupProfileSelection()
 
         // 1. Revisamos en qué modo está la app actualmente
         val isNightMode = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
@@ -142,48 +139,6 @@ class MainActivity : AppCompatActivity() {
                     binding.btnIngresar.isEnabled = true
                     Toast.makeText(this@MainActivity, "Error conectando a Firebase", Toast.LENGTH_SHORT).show()
                 }
-        }
-    }
-
-    private fun setupProfileSelection() {
-        binding.cardAdmin.setOnClickListener {
-            selectProfile("admin")
-        }
-
-        binding.cardUser.setOnClickListener {
-            selectProfile("usuario")
-        }
-    }
-
-    private fun selectProfile(role: String) {
-        selectedRole = role
-
-        // Reset all
-        val unselectedBg = ContextCompat.getColor(this, R.color.profile_unselected)
-        val onSurface = ContextCompat.getColor(this, R.color.on_surface)
-        val primary = ContextCompat.getColor(this, R.color.primary)
-        val onPrimary = ContextCompat.getColor(this, R.color.on_primary)
-
-        binding.cardAdmin.setCardBackgroundColor(unselectedBg)
-        binding.ivAdminIcon.setColorFilter(onSurface)
-        binding.tvAdminText.setTextColor(onSurface)
-
-        binding.cardUser.setCardBackgroundColor(unselectedBg)
-        binding.ivUserIcon.setColorFilter(onSurface)
-        binding.tvUserText.setTextColor(onSurface)
-
-        // Select one
-        when (role) {
-            "admin" -> {
-                binding.cardAdmin.setCardBackgroundColor(primary)
-                binding.ivAdminIcon.setColorFilter(onPrimary)
-                binding.tvAdminText.setTextColor(onPrimary)
-            }
-            "usuario" -> {
-                binding.cardUser.setCardBackgroundColor(primary)
-                binding.ivUserIcon.setColorFilter(onPrimary)
-                binding.tvUserText.setTextColor(onPrimary)
-            }
         }
     }
 

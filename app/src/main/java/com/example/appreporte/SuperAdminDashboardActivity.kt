@@ -40,6 +40,14 @@ class SuperAdminDashboardActivity : AppCompatActivity() {
         findViewById<View>(R.id.cardInbox).setOnClickListener {
             showInboxDialog()
         }
+
+        findViewById<View>(R.id.ivLogout).setOnClickListener {
+            FirebaseAuth.getInstance().signOut()
+            val logoutIntent = Intent(this, MainActivity::class.java)
+            logoutIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(logoutIntent)
+            finish()
+        }
     }
 
     // ────────────────────────────────────────────────────────────
@@ -100,6 +108,13 @@ class SuperAdminDashboardActivity : AppCompatActivity() {
                     )
                 }.sortedBy { it["name"]?.toString()?.lowercase() ?: "" }
                 schoolAdapter.updateSchools(list)
+
+                findViewById<android.widget.TextView>(R.id.tvTotalSchoolsCount)?.text = list.size.toString()
+            }
+
+        firestore.collection("users").whereEqualTo("rol", "admin").get()
+            .addOnSuccessListener { snap ->
+                findViewById<android.widget.TextView>(R.id.tvTotalAdminsCount)?.text = snap.size().toString()
             }
     }
 
@@ -109,16 +124,29 @@ class SuperAdminDashboardActivity : AppCompatActivity() {
     private fun showSchoolActionDialog(school: Map<String, Any>) {
         val schoolDocId = school["id"]?.toString() ?: return
         val currentName = school["name"] as? String ?: ""
-        val options = arrayOf("Ver detalles", "Modificar nombre", "Ver/crear Grados y Secciones", "Gestionar Admins", "Eliminar")
+        val adminEmail = school["adminEmail"]?.toString() ?: ""
+        val options = if (adminEmail.isNotEmpty() && adminEmail != "Sin admin") {
+            arrayOf("Ver detalles", "Modificar nombre", "Ver/crear Grados y Secciones", "Gestionar Admins", "Enviar mensaje al Admin", "Eliminar")
+        } else {
+            arrayOf("Ver detalles", "Modificar nombre", "Ver/crear Grados y Secciones", "Gestionar Admins", "Eliminar")
+        }
         AlertDialog.Builder(this)
             .setTitle(currentName)
             .setItems(options) { _, which ->
-                when (which) {
-                    0 -> showSchoolDetailsDialog(schoolDocId, currentName)
-                    1 -> showEditSchoolDialog(schoolDocId, currentName)
-                    2 -> showGradosSectionesDialog(schoolDocId, currentName)
-                    3 -> showManageAdminsDialog(schoolDocId, currentName)
-                    4 -> confirmDeleteSchool(schoolDocId, currentName)
+                val selectedOption = options[which]
+                when (selectedOption) {
+                    "Ver detalles" -> showSchoolDetailsDialog(schoolDocId, currentName)
+                    "Modificar nombre" -> showEditSchoolDialog(schoolDocId, currentName)
+                    "Ver/crear Grados y Secciones" -> showGradosSectionesDialog(schoolDocId, currentName)
+                    "Gestionar Admins" -> showManageAdminsDialog(schoolDocId, currentName)
+                    "Enviar mensaje al Admin" -> {
+                        val superAdminEmail = intent.getStringExtra("USER_EMAIL") ?: auth.currentUser?.email ?: "superadmin@reporte.com"
+                        val intent = Intent(this, DirectChatActivity::class.java)
+                        intent.putExtra("CURRENT_EMAIL", superAdminEmail)
+                        intent.putExtra("TARGET_EMAIL", adminEmail)
+                        startActivity(intent)
+                    }
+                    "Eliminar" -> confirmDeleteSchool(schoolDocId, currentName)
                 }
             }
             .show()
@@ -428,14 +456,21 @@ class SuperAdminDashboardActivity : AppCompatActivity() {
                         val email = u["email"] ?: return@setItems
                         AlertDialog.Builder(this)
                             .setTitle("Acción para $email")
-                            .setItems(arrayOf("Restablecer contraseña", "Eliminar usuario")) { _, opt ->
+                            .setItems(arrayOf("Enviar mensaje", "Restablecer contraseña", "Eliminar usuario")) { _, opt ->
                                 when (opt) {
-                                    0 -> firestore.collection("users").document(email)
+                                    0 -> {
+                                        val superAdminEmail = intent.getStringExtra("USER_EMAIL") ?: auth.currentUser?.email ?: "superadmin@reporte.com"
+                                        val intent = Intent(this, DirectChatActivity::class.java)
+                                        intent.putExtra("CURRENT_EMAIL", superAdminEmail)
+                                        intent.putExtra("TARGET_EMAIL", email)
+                                        startActivity(intent)
+                                    }
+                                    1 -> firestore.collection("users").document(email)
                                         .update("password", "admin123")
                                         .addOnSuccessListener {
                                             Toast.makeText(this, "Contraseña restablecida a admin123", Toast.LENGTH_SHORT).show()
                                         }
-                                    1 -> firestore.collection("users").document(email).delete()
+                                    2 -> firestore.collection("users").document(email).delete()
                                         .addOnSuccessListener {
                                             Toast.makeText(this, "Usuario eliminado", Toast.LENGTH_SHORT).show()
                                         }

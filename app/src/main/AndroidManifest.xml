@@ -73,9 +73,6 @@
             android:exported="false"
             android:label="Asistente EduConnect" />
 
-        <activity
-            android:name=".ForoActivity"
-            android:exported="false" />
 
         <activity
             android:name=".AsistenteActivity"

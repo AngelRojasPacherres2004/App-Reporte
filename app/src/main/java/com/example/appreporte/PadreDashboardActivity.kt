@@ -148,6 +148,8 @@ class PadreDashboardActivity : AppCompatActivity() {
         binding.ivPadreProfile.setOnClickListener {
             val intent = Intent(this, PerfilActivity::class.java)
             intent.putExtra("USER_EMAIL", userEmail)
+            intent.putExtra("USER_ROL", userRole)
+            intent.putExtra("SCHOOL_ID", getIntent().getStringExtra("SCHOOL_ID") ?: "")
             startActivity(intent)
         }
 
@@ -200,7 +202,16 @@ class PadreDashboardActivity : AppCompatActivity() {
             when (item.itemId) {
                 R.id.nav_inicio -> true
                 R.id.nav_foro -> {
-                    Toast.makeText(this, "Seleccione un hijo y use el botón Ver Foro", Toast.LENGTH_SHORT).show()
+                    if (selectedClassroomId.isNotEmpty()) {
+                        val intent = Intent(this, ForoDetalleActivity::class.java)
+                        intent.putExtra("SALON_NAME", selectedClassroomName)
+                        intent.putExtra("CLASSROOM_ID", selectedClassroomId)
+                        intent.putExtra("USER_ROL", userRole)
+                        intent.putExtra("USER_EMAIL", userEmail)
+                        startActivity(intent)
+                    } else {
+                        Toast.makeText(this, "Seleccione un hijo arriba primero para ver su Foro", Toast.LENGTH_SHORT).show()
+                    }
                     true
                 }
                 R.id.nav_asistente -> {
@@ -210,12 +221,20 @@ class PadreDashboardActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_reportes -> {
-                    Toast.makeText(this, "Seleccione un hijo y use el botón Ver Notas", Toast.LENGTH_SHORT).show()
+                    if (selectedStudentId.isNotEmpty()) {
+                        val intent = Intent(this, PadreReporteActivity::class.java)
+                        intent.putExtra("USER_EMAIL", userEmail)
+                        intent.putExtra("STUDENT_ID", selectedStudentId)
+                        startActivity(intent)
+                    } else {
+                        Toast.makeText(this, "Seleccione un hijo arriba primero para ver sus Notas", Toast.LENGTH_SHORT).show()
+                    }
                     true
                 }
                 R.id.nav_perfil -> {
                     val intent = Intent(this, PerfilActivity::class.java)
                     intent.putExtra("USER_EMAIL", userEmail)
+                    intent.putExtra("USER_ROL", userRole)
                     startActivity(intent)
                     true
                 }

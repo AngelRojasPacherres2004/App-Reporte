@@ -17,8 +17,9 @@ class PerfilActivity : AppCompatActivity() {
     private lateinit var tvSchool: TextView
     private lateinit var btnLogout: Button
 
-    // Guardamos el rol recibido por intent para navegación segura
+    // Guardamos el rol y escuela recibidos por intent para navegación segura
     private var currentRole: String = "usuario"
+    private var currentSchoolId: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,8 +31,9 @@ class PerfilActivity : AppCompatActivity() {
         tvSchool = findViewById(R.id.tvProfileSchool)
         btnLogout = findViewById(R.id.btnLogout)
 
-        // Leer el rol que nos pasó la actividad anterior (confiable, no asincrónico)
+        // Leer el rol y escuela que nos pasó la actividad anterior (sincrónico y confiable)
         currentRole = intent.getStringExtra("USER_ROL") ?: "usuario"
+        currentSchoolId = intent.getStringExtra("SCHOOL_ID") ?: ""
 
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavigation)
 
@@ -55,41 +57,45 @@ class PerfilActivity : AppCompatActivity() {
                     val navIntent = Intent(this, targetActivity)
                     navIntent.putExtra("USER_EMAIL", tvEmail.text.toString())
                     navIntent.putExtra("USER_ROL", currentRole)
-                    navIntent.putExtra("SCHOOL_ID", tvSchool.text.toString())
+                    navIntent.putExtra("SCHOOL_ID", currentSchoolId)
                     navIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
                     startActivity(navIntent)
                     finish()
                     true
                 }
                 R.id.nav_gestion -> {
-                    // Solo admin
                     val gestionIntent = Intent(this, AdminDashboardActivity::class.java)
                     gestionIntent.putExtra("USER_EMAIL", tvEmail.text.toString())
-                    gestionIntent.putExtra("SCHOOL_ID", tvSchool.text.toString())
+                    gestionIntent.putExtra("USER_ROL", currentRole)
+                    gestionIntent.putExtra("SCHOOL_ID", currentSchoolId)
                     startActivity(gestionIntent)
                     finish()
                     true
                 }
                 R.id.nav_foro -> {
-                    val foroIntent = Intent(this, ForoActivity::class.java)
+                    val foroIntent = Intent(this, ForoSalonesActivity::class.java)
                     foroIntent.putExtra("USER_EMAIL", tvEmail.text.toString())
                     foroIntent.putExtra("USER_ROL", currentRole)
-                    foroIntent.putExtra("SCHOOL_ID", tvSchool.text.toString())
+                    foroIntent.putExtra("SCHOOL_ID", currentSchoolId)
                     startActivity(foroIntent)
                     finish()
                     true
                 }
                 R.id.nav_asistente -> {
-                    // Admin o Padre
-                    val asistenteIntent = Intent(this, AsistenteActivity::class.java)
+                    val targetAsistente = if (currentRole.lowercase() == "usuario") {
+                        ChatbotPadreActivity::class.java
+                    } else {
+                        AsistenteActivity::class.java
+                    }
+                    val asistenteIntent = Intent(this, targetAsistente)
                     asistenteIntent.putExtra("USER_EMAIL", tvEmail.text.toString())
                     asistenteIntent.putExtra("USER_ROL", currentRole)
+                    asistenteIntent.putExtra("SCHOOL_ID", currentSchoolId)
                     startActivity(asistenteIntent)
                     finish()
                     true
                 }
                 R.id.nav_reportes -> {
-                    // Padre: volver al inicio (los reportes están dentro del dash)
                     val targetActivity = when (currentRole.lowercase()) {
                         "docente" -> DocenteDashboardActivity::class.java
                         else -> PadreDashboardActivity::class.java
@@ -97,7 +103,7 @@ class PerfilActivity : AppCompatActivity() {
                     val navIntent = Intent(this, targetActivity)
                     navIntent.putExtra("USER_EMAIL", tvEmail.text.toString())
                     navIntent.putExtra("USER_ROL", currentRole)
-                    navIntent.putExtra("SCHOOL_ID", tvSchool.text.toString())
+                    navIntent.putExtra("SCHOOL_ID", currentSchoolId)
                     startActivity(navIntent)
                     finish()
                     true
@@ -120,7 +126,6 @@ class PerfilActivity : AppCompatActivity() {
     private fun loadProfileData() {
         val intentEmail = intent.getStringExtra("USER_EMAIL") ?: ""
 
-        // Primero intentamos con el correo del intent (más confiable)
         if (intentEmail.isNotEmpty()) {
             tvEmail.text = intentEmail
             tvInitials.text = intentEmail.take(1).uppercase()
@@ -128,16 +133,21 @@ class PerfilActivity : AppCompatActivity() {
                 .addOnSuccessListener { doc ->
                     if (doc.exists()) {
                         val rolFromFirestore = doc.getString("rol") ?: currentRole
-                        // Solo actualizamos el display, no currentRole
                         tvRole.text = rolFromFirestore.uppercase()
-                        tvSchool.text = doc.getString("school_id") ?: "Sin Colegio"
+                        
+                        val schoolFromFirestore = doc.getString("school_id")
+                        if (schoolFromFirestore != null) {
+                            currentSchoolId = schoolFromFirestore
+                            tvSchool.text = schoolFromFirestore
+                        } else {
+                            tvSchool.text = currentSchoolId.ifEmpty { "Sin Colegio" }
+                        }
                     } else {
-                        // Mostrar el rol recibido como fallback
                         tvRole.text = currentRole.uppercase()
+                        tvSchool.text = currentSchoolId.ifEmpty { "Sin Colegio" }
                     }
                 }
         } else {
-            // Fallback: leer de FirebaseAuth si no vino por intent
             val user = FirebaseAuth.getInstance().currentUser
             if (user != null) {
                 val email = user.email ?: ""
@@ -146,8 +156,16 @@ class PerfilActivity : AppCompatActivity() {
                 FirebaseFirestore.getInstance().collection("users").document(email).get()
                     .addOnSuccessListener { doc ->
                         if (doc.exists()) {
-                            tvRole.text = (doc.getString("rol") ?: currentRole).uppercase()
-                            tvSchool.text = doc.getString("school_id") ?: "Sin Colegio"
+                            val rolFromFirestore = doc.getString("rol") ?: currentRole
+                            tvRole.text = rolFromFirestore.uppercase()
+                            
+                            val schoolFromFirestore = doc.getString("school_id")
+                            if (schoolFromFirestore != null) {
+                                currentSchoolId = schoolFromFirestore
+                                tvSchool.text = schoolFromFirestore
+                            } else {
+                                tvSchool.text = currentSchoolId.ifEmpty { "Sin Colegio" }
+                            }
                         }
                     }
             }

@@ -29,35 +29,43 @@ class InicioActivity : AppCompatActivity() {
 
         binding.bottomNavigation.selectedItemId = R.id.nav_inicio
         binding.bottomNavigation.setOnItemSelectedListener { item ->
+            val userEmail = intent.getStringExtra("USER_EMAIL") ?: ""
+            val userRol = intent.getStringExtra("USER_ROL") ?: "admin"
             when (item.itemId) {
                 R.id.nav_gestion -> {
                     val intent = Intent(this, AdminDashboardActivity::class.java)
                     intent.putExtra("SCHOOL_ID", currentSchoolId)
+                    intent.putExtra("USER_EMAIL", userEmail)
+                    intent.putExtra("USER_ROL", userRol)
                     startActivity(intent)
                     overridePendingTransition(0, 0)
                     finish()
                     true
                 }
                 R.id.nav_foro -> {
-                    val userEmail = intent.getStringExtra("USER_EMAIL") ?: ""
-                    val chatIntent = Intent(this, DirectChatActivity::class.java)
-                    chatIntent.putExtra("CURRENT_EMAIL", userEmail)
-                    chatIntent.putExtra("TARGET_EMAIL", "superadmin@reporte.com")
-                    startActivity(chatIntent)
+                    val foroIntent = Intent(this, ForoSalonesActivity::class.java)
+                    foroIntent.putExtra("SCHOOL_ID", currentSchoolId)
+                    foroIntent.putExtra("USER_EMAIL", userEmail)
+                    foroIntent.putExtra("USER_ROL", userRol)
+                    startActivity(foroIntent)
                     overridePendingTransition(0, 0)
                     finish()
                     true
                 }
                 R.id.nav_asistente -> {
-                    startActivity(Intent(this, AsistenteActivity::class.java))
+                    val asistenteIntent = Intent(this, AsistenteActivity::class.java)
+                    asistenteIntent.putExtra("SCHOOL_ID", currentSchoolId)
+                    asistenteIntent.putExtra("USER_EMAIL", userEmail)
+                    asistenteIntent.putExtra("USER_ROL", userRol)
+                    startActivity(asistenteIntent)
                     overridePendingTransition(0, 0)
                     finish()
                     true
                 }
                 R.id.nav_perfil -> {
                     val perfilIntent = Intent(this, PerfilActivity::class.java)
-                    perfilIntent.putExtra("USER_EMAIL", intent.getStringExtra("USER_EMAIL") ?: "")
-                    perfilIntent.putExtra("USER_ROL", "admin")
+                    perfilIntent.putExtra("USER_EMAIL", userEmail)
+                    perfilIntent.putExtra("USER_ROL", userRol)
                     perfilIntent.putExtra("SCHOOL_ID", currentSchoolId)
                     startActivity(perfilIntent)
                     overridePendingTransition(0, 0)
@@ -94,15 +102,21 @@ class InicioActivity : AppCompatActivity() {
         val db = FirebaseFirestore.getInstance()
         
         // Count users
-        db.collection("users").whereEqualTo("school_id", currentSchoolId).get()
-            .addOnSuccessListener { snap ->
-                binding.tvTotalUsers.text = snap.size().toString()
+        db.collection("users").whereEqualTo("school_id", currentSchoolId)
+            .addSnapshotListener { snap, error ->
+                if (error != null) return@addSnapshotListener
+                if (snap != null) {
+                    binding.tvTotalUsers.text = snap.size().toString()
+                }
             }
 
         // Count classrooms
-        db.collection("classrooms").whereEqualTo("school_id", currentSchoolId).get()
-            .addOnSuccessListener { snap ->
-                binding.tvTotalClassrooms.text = snap.size().toString()
+        db.collection("classrooms").whereEqualTo("school_id", currentSchoolId)
+            .addSnapshotListener { snap, error ->
+                if (error != null) return@addSnapshotListener
+                if (snap != null) {
+                    binding.tvTotalClassrooms.text = snap.size().toString()
+                }
             }
     }
 
@@ -111,12 +125,14 @@ class InicioActivity : AppCompatActivity() {
             .whereEqualTo("school_id", currentSchoolId)
             .whereEqualTo("rol", "docente")
             .limit(3)
-            .get()
-            .addOnSuccessListener { snapshot ->
-                val list = snapshot.documents.mapNotNull { doc ->
-                    doc.data?.mapValues { it.value.toString() }
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) return@addSnapshotListener
+                if (snapshot != null) {
+                    val list = snapshot.documents.mapNotNull { doc ->
+                        doc.data?.mapValues { it.value.toString() }
+                    }
+                    staffAdapter.updateStaff(list)
                 }
-                staffAdapter.updateStaff(list)
             }
     }
 }
