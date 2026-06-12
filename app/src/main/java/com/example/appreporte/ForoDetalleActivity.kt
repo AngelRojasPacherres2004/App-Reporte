@@ -143,10 +143,10 @@ class ForoDetalleActivity : AppCompatActivity() {
     }
 
     private fun setupBottomNavigation() {
-        val menuRes = when (userRole) {
+        val menuRes = when (userRole.lowercase()) {
+            "superadmin", "admin" -> R.menu.bottom_nav_menu_admin
             "docente" -> R.menu.bottom_nav_menu_docente
-            "admin" -> R.menu.bottom_nav_menu_admin
-            else -> R.menu.bottom_nav_menu_docente // Por defecto docente o el que corresponda a padre si existe
+            else -> R.menu.bottom_nav_menu_padre
         }
         binding.bottomNavigation.inflateMenu(menuRes)
         binding.bottomNavigation.selectedItemId = R.id.nav_foro

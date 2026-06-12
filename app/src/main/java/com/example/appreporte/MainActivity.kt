@@ -17,8 +17,8 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // INYECCIÓN DE DATOS DE PRUEBA (Se ejecuta en segundo plano silenciosamente)
-        MockDataInjector.injectData()
+        // INYECCIÓN DE DATOS DE PRUEBA DESACTIVADA POR SEGURIDAD
+        // MockDataInjector.injectData()
 
         // 1. Revisamos en qué modo está la app actualmente
         val isNightMode = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
@@ -56,22 +56,7 @@ class MainActivity : AppCompatActivity() {
 
             binding.btnIngresar.isEnabled = false
 
-            // --- MAGIC TEST LOGIN BYPASS ---
-            // Para probar rápido sin depender de la red:
-            if (email == "superadmin" || email == "superadmin@reporte.com" || email.equals("angelrojaspacherres@gmail.com", ignoreCase = true)) {
-                val targetEmail = if (email == "superadmin") "superadmin@reporte.com" else email
-                navigateToSplash("superadmin", targetEmail, "Global")
-                return@setOnClickListener
-            }
-            if (email == "padre" || email == "user@reporte.com") {
-                navigateToSplash("usuario", "user@reporte.com", "Colegio San José")
-                return@setOnClickListener
-            }
-            if (email == "docente" || email == "docente@reporte.com") {
-                navigateToSplash("docente", "docente@reporte.com", "Colegio San José")
-                return@setOnClickListener
-            }
-            // -------------------------------
+            // --- BYPASS DE LOGIN DE PRUEBA REMOVIDO POR SEGURIDAD ---
 
             // Usuarios por defecto para sembrar (seeding) la BD
             val seedUsers = listOf(

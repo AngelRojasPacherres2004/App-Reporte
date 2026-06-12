@@ -57,7 +57,13 @@ class AsistenteActivity : AppCompatActivity() {
             val userRol = intent.getStringExtra("USER_ROL") ?: "admin"
             when (item.itemId) {
                 R.id.nav_inicio -> {
-                    val initIntent = Intent(this, InicioActivity::class.java)
+                    val targetActivity = when (userRol.lowercase()) {
+                        "superadmin" -> SuperAdminDashboardActivity::class.java
+                        "admin" -> InicioActivity::class.java
+                        "docente" -> DocenteDashboardActivity::class.java
+                        else -> PadreDashboardActivity::class.java
+                    }
+                    val initIntent = Intent(this, targetActivity)
                     initIntent.putExtra("SCHOOL_ID", schoolId)
                     initIntent.putExtra("USER_EMAIL", userEmail)
                     initIntent.putExtra("USER_ROL", userRol)
@@ -67,13 +73,15 @@ class AsistenteActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_gestion -> {
-                    val gestionIntent = Intent(this, AdminDashboardActivity::class.java)
-                    gestionIntent.putExtra("SCHOOL_ID", schoolId)
-                    gestionIntent.putExtra("USER_EMAIL", userEmail)
-                    gestionIntent.putExtra("USER_ROL", userRol)
-                    startActivity(gestionIntent)
-                    overridePendingTransition(0, 0)
-                    finish()
+                    if (userRol.lowercase() == "admin" || userRol.lowercase() == "superadmin") {
+                        val gestionIntent = Intent(this, AdminDashboardActivity::class.java)
+                        gestionIntent.putExtra("SCHOOL_ID", schoolId)
+                        gestionIntent.putExtra("USER_EMAIL", userEmail)
+                        gestionIntent.putExtra("USER_ROL", userRol)
+                        startActivity(gestionIntent)
+                        overridePendingTransition(0, 0)
+                        finish()
+                    }
                     true
                 }
                 R.id.nav_foro -> {

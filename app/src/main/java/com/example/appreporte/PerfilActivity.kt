@@ -38,13 +38,8 @@ class PerfilActivity : AppCompatActivity() {
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavigation)
 
         // Cargar el menú correcto según el rol
-        bottomNav.menu.clear()
-        when (currentRole.lowercase()) {
-            "superadmin", "admin" -> bottomNav.inflateMenu(R.menu.bottom_nav_menu_admin)
-            "docente" -> bottomNav.inflateMenu(R.menu.bottom_nav_menu_docente)
-            else -> bottomNav.inflateMenu(R.menu.bottom_nav_menu_padre)
-        }
-        bottomNav.selectedItemId = R.id.nav_perfil
+        setupBottomMenu(currentRole)
+        
         bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_inicio -> {
@@ -123,6 +118,17 @@ class PerfilActivity : AppCompatActivity() {
         loadProfileData()
     }
 
+    private fun setupBottomMenu(role: String) {
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavigation)
+        bottomNav.menu.clear()
+        when (role.lowercase()) {
+            "superadmin", "admin" -> bottomNav.inflateMenu(R.menu.bottom_nav_menu_admin)
+            "docente" -> bottomNav.inflateMenu(R.menu.bottom_nav_menu_docente)
+            else -> bottomNav.inflateMenu(R.menu.bottom_nav_menu_padre)
+        }
+        bottomNav.selectedItemId = R.id.nav_perfil
+    }
+
     private fun loadProfileData() {
         val intentEmail = intent.getStringExtra("USER_EMAIL") ?: ""
 
@@ -133,7 +139,9 @@ class PerfilActivity : AppCompatActivity() {
                 .addOnSuccessListener { doc ->
                     if (doc.exists()) {
                         val rolFromFirestore = doc.getString("rol") ?: currentRole
-                        tvRole.text = rolFromFirestore.uppercase()
+                        currentRole = rolFromFirestore
+                        tvRole.text = currentRole.uppercase()
+                        setupBottomMenu(currentRole)
                         
                         val schoolFromFirestore = doc.getString("school_id")
                         if (schoolFromFirestore != null) {
@@ -157,7 +165,9 @@ class PerfilActivity : AppCompatActivity() {
                     .addOnSuccessListener { doc ->
                         if (doc.exists()) {
                             val rolFromFirestore = doc.getString("rol") ?: currentRole
-                            tvRole.text = rolFromFirestore.uppercase()
+                            currentRole = rolFromFirestore
+                            tvRole.text = currentRole.uppercase()
+                            setupBottomMenu(currentRole)
                             
                             val schoolFromFirestore = doc.getString("school_id")
                             if (schoolFromFirestore != null) {

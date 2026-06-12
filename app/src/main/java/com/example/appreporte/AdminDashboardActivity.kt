@@ -31,7 +31,6 @@ class AdminDashboardActivity : AppCompatActivity() {
         currentSchoolId = intent.getStringExtra("SCHOOL_ID") ?: "Colegio San José"
 
         setupRecyclerViews()
-        setupBottomNavigation()
         setupClickListeners()
         setupThemeToggle()
         setupAdminProfile()
@@ -442,24 +441,7 @@ class AdminDashboardActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun setupBottomNavigation() {
-        val userEmail = intent.getStringExtra("USER_EMAIL")
-        binding.bottomNavigation.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.nav_inicio -> true
-                R.id.nav_gestion -> true
-                R.id.nav_foro -> true
-                R.id.nav_asistente -> true
-                R.id.nav_perfil -> {
-                    val intent = Intent(this, PerfilActivity::class.java)
-                    intent.putExtra("USER_EMAIL", userEmail)
-                    startActivity(intent)
-                    true
-                }
-                else -> false
-            }
-        }
-    }
+
 
     private fun loadUsers() {
         FirebaseFirestore.getInstance().collection("users")

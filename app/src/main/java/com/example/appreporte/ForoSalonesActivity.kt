@@ -147,10 +147,10 @@ class ForoSalonesActivity : AppCompatActivity() {
 
 
     private fun setupBottomNavigation() {
-        val menuRes = when (userRole) {
-            "admin" -> R.menu.bottom_nav_menu_admin
+        val menuRes = when (userRole.lowercase()) {
+            "superadmin", "admin" -> R.menu.bottom_nav_menu_admin
             "docente" -> R.menu.bottom_nav_menu_docente
-            else -> R.menu.bottom_nav_menu
+            else -> R.menu.bottom_nav_menu_padre
         }
         binding.bottomNavigation.menu.clear()
         binding.bottomNavigation.inflateMenu(menuRes)
@@ -162,7 +162,13 @@ class ForoSalonesActivity : AppCompatActivity() {
             val sId = intent.getStringExtra("SCHOOL_ID") ?: schoolId
             when (item.itemId) {
                 R.id.nav_inicio -> {
-                    val initIntent = Intent(this, InicioActivity::class.java)
+                    val targetActivity = when (uRol.lowercase()) {
+                        "superadmin" -> SuperAdminDashboardActivity::class.java
+                        "admin" -> InicioActivity::class.java
+                        "docente" -> DocenteDashboardActivity::class.java
+                        else -> PadreDashboardActivity::class.java
+                    }
+                    val initIntent = Intent(this, targetActivity)
                     initIntent.putExtra("SCHOOL_ID", sId)
                     initIntent.putExtra("USER_EMAIL", uEmail)
                     initIntent.putExtra("USER_ROL", uRol)
@@ -171,16 +177,22 @@ class ForoSalonesActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_gestion -> {
-                    val gestionIntent = Intent(this, AdminDashboardActivity::class.java)
-                    gestionIntent.putExtra("SCHOOL_ID", sId)
-                    gestionIntent.putExtra("USER_EMAIL", uEmail)
-                    gestionIntent.putExtra("USER_ROL", uRol)
-                    startActivity(gestionIntent)
-                    finish()
+                    if (uRol.lowercase() == "admin" || uRol.lowercase() == "superadmin") {
+                        val gestionIntent = Intent(this, AdminDashboardActivity::class.java)
+                        gestionIntent.putExtra("SCHOOL_ID", sId)
+                        gestionIntent.putExtra("USER_EMAIL", uEmail)
+                        gestionIntent.putExtra("USER_ROL", uRol)
+                        startActivity(gestionIntent)
+                        finish()
+                    }
                     true
                 }
                 R.id.nav_reportes -> {
-                    val repIntent = Intent(this, GestionReportesSalonesActivity::class.java)
+                    val targetActivity = when (uRol.lowercase()) {
+                        "docente", "admin" -> GestionReportesSalonesActivity::class.java
+                        else -> PadreDashboardActivity::class.java
+                    }
+                    val repIntent = Intent(this, targetActivity)
                     repIntent.putExtra("SCHOOL_ID", sId)
                     repIntent.putExtra("USER_EMAIL", uEmail)
                     repIntent.putExtra("USER_ROL", uRol)
@@ -189,7 +201,12 @@ class ForoSalonesActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_asistente -> {
-                    val asistenteIntent = Intent(this, AsistenteActivity::class.java)
+                    val targetActivity = if (uRol.lowercase() == "usuario") {
+                        ChatbotPadreActivity::class.java
+                    } else {
+                        AsistenteActivity::class.java
+                    }
+                    val asistenteIntent = Intent(this, targetActivity)
                     asistenteIntent.putExtra("SCHOOL_ID", sId)
                     asistenteIntent.putExtra("USER_EMAIL", uEmail)
                     asistenteIntent.putExtra("USER_ROL", uRol)
