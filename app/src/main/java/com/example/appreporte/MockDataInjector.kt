@@ -1,6 +1,7 @@
 package com.example.appreporte
 
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 
 object MockDataInjector {
     fun injectData() {
@@ -13,24 +14,24 @@ object MockDataInjector {
         clearAndSeed(db, collections, 0)
     }
 
-    private fun clearAndSeed(db: FirebaseFirestore, collections: List<String>, index: Int) {
-        if (index < collections.size) {
-            val col = collections[index]
-            db.collection(col).get()
-                .addOnSuccessListener { snapshot ->
-                    val batch = db.batch()
-                    snapshot.documents.forEach { batch.delete(it.reference) }
-                    batch.commit().addOnSuccessListener {
-                        clearAndSeed(db, collections, index + 1)
-                    }.addOnFailureListener {
-                        clearAndSeed(db, collections, index + 1)
-                    }
-                }
-                .addOnFailureListener {
-                    clearAndSeed(db, collections, index + 1)
-                }
-        } else {
-            insertCleanData(db)
+        for ((name, levels, adminEmail) in schools) {
+            val schoolMap = hashMapOf(
+                "name" to name,
+                "levels" to levels,
+                "adminEmail" to adminEmail
+            )
+            db.collection("colegios").document(name).set(schoolMap, SetOptions.merge())
+
+            // Inyectar el usuario admin del colegio
+            db.collection("users").document(adminEmail).set(
+                hashMapOf(
+                    "email" to adminEmail,
+                    "password" to "admin123",
+                    "rol" to "admin",
+                    "school_id" to name,
+                    "phone" to "+51900000000"
+                ), SetOptions.merge()
+            )
         }
     }
 
@@ -45,22 +46,28 @@ object MockDataInjector {
             db.collection("colegios").document(name).set(school)
         }
 
-        // 2. Classrooms (Salones)
-        val classrooms = listOf(
-            mapOf("id" to "sanjose_1er_a", "name" to "1er Grado A - Primaria", "school_id" to "Colegio San José"),
-            mapOf("id" to "sanjose_2do_a", "name" to "2do Grado A - Primaria", "school_id" to "Colegio San José"),
-            mapOf("id" to "sanjose_3er_a", "name" to "3er Grado A - Primaria", "school_id" to "Colegio San José"),
-            mapOf("id" to "santamaria_1er_a", "name" to "1er Año A - Secundaria", "school_id" to "Colegio Santa María")
-        )
-        for (c in classrooms) {
-            val id = c["id"] as String
-            db.collection("classrooms").document(id).set(c)
+        for ((salonName, schoolName) in salonesList) {
+            val docId = "${schoolName.replace(" ", "_")}_${salonName.replace(" ", "_")}"
+            val map = hashMapOf(
+                "name" to salonName,
+                "school_id" to schoolName,
+                "tutor" to "docente@reporte.com"
+            )
+            db.collection("classrooms").document(docId).set(map, SetOptions.merge())
         }
 
-        // 3. Forums (Foros independientes)
-        val forums = listOf(
-            mapOf("name" to "Club de Deportes", "schoolId" to "Colegio San José", "createdBy" to "admin@sanjose.com"),
-            mapOf("name" to "Consejo de Padres", "schoolId" to "Colegio San José", "createdBy" to "admin@sanjose.com")
+        // ────────────────────────────────────────────────────────────
+        // 3. USUARIOS DOCENTES Y PADRES DE FAMILIA
+        // ────────────────────────────────────────────────────────────
+        // Docente demo para probar salones
+        db.collection("users").document("docente@reporte.com").set(
+            hashMapOf(
+                "email" to "docente@reporte.com",
+                "password" to "docente123",
+                "rol" to "docente",
+                "school_id" to "Colegio San José",
+                "phone" to "+51999999999"
+            ), SetOptions.merge()
         )
         for ((index, f) in forums.withIndex()) {
             db.collection("forums").document("forum_$index").set(f)
@@ -79,45 +86,45 @@ object MockDataInjector {
                 "school_id" to "Colegio San José", 
                 "classrooms" to listOf("sanjose_1er_a", "sanjose_2do_a", "sanjose_3er_a"), 
                 "phone" to "+51999999999"
-            ),
-            mapOf(
-                "email" to "profesora.maria@sanjose.com", 
-                "password" to "docente123", 
-                "rol" to "docente", 
-                "school_id" to "Colegio San José", 
-                "classrooms" to listOf("sanjose_1er_a"), 
-                "phone" to "+51987654321"
-            ),
-            mapOf("email" to "padre@sanjose.com", "password" to "padre123", "rol" to "usuario", "school_id" to "Colegio San José", "phone" to "+51988888888")
+            ), SetOptions.merge()
         )
-        for (u in users) {
-            val email = u["email"] as String
-            db.collection("users").document(email).set(u)
+
+        // Inyectar superadministradores en Firestore
+        val superAdmins = listOf("superadmin@reporte.com", "Angelrojaspacherres@gmail.com")
+        for (saEmail in superAdmins) {
+            db.collection("users").document(saEmail).set(
+                hashMapOf(
+                    "email" to saEmail,
+                    "password" to "superadmin123",
+                    "rol" to "superadmin",
+                    "school_id" to "Global",
+                    "phone" to ""
+                ), SetOptions.merge()
+            )
         }
 
-        // 5. Students (Alumnos)
-        val students = listOf(
-            mapOf(
-                "id" to "student_mateo",
-                "names" to "Mateo",
-                "lastnames" to "Rojas",
-                "name" to "Mateo Rojas",
-                "dni" to "71234567",
-                "parent_email" to "padre@sanjose.com",
-                "classroom_id" to "sanjose_1er_a",
-                "classroom_name" to "1er Grado A - Primaria",
-                "school_id" to "Colegio San José"
-            ),
-            mapOf(
-                "id" to "student_sofia",
-                "names" to "Sofia",
-                "lastnames" to "Rojas",
-                "name" to "Sofia Rojas",
-                "dni" to "76543210",
-                "parent_email" to "padre@sanjose.com",
-                "classroom_id" to "sanjose_2do_a",
-                "classroom_name" to "2do Grado A - Primaria",
-                "school_id" to "Colegio San José"
+        // Registrar más usuarios docentes y padres para simular volumen
+        for (i in 1..5) {
+            val docEmail = "docente$i@reporte.com"
+            db.collection("users").document(docEmail).set(
+                hashMapOf(
+                    "email" to docEmail,
+                    "password" to "docente123",
+                    "rol" to "docente",
+                    "school_id" to "Colegio San José",
+                    "phone" to "+5191111111$i"
+                ), SetOptions.merge()
+            )
+
+            val pEmail = "padre$i@reporte.com"
+            db.collection("users").document(pEmail).set(
+                hashMapOf(
+                    "email" to pEmail,
+                    "password" to "user123",
+                    "rol" to "usuario",
+                    "school_id" to "Colegio San José",
+                    "phone" to "+5192222222$i"
+                ), SetOptions.merge()
             )
         )
         for (s in students) {
@@ -153,9 +160,7 @@ object MockDataInjector {
             mapOf("student_id" to "student_sofia", "subject" to "Personal Social", "type" to "mensual", "value" to "15", "date" to "2026-06-09", "classroom_id" to "sanjose_2do_a"),
             mapOf("student_id" to "student_sofia", "subject" to "Personal Social", "type" to "bimestral", "value" to "16", "date" to "2026-06-10", "classroom_id" to "sanjose_2do_a")
         )
-        for ((index, g) in grades.withIndex()) {
-            db.collection("grades").document("grade_$index").set(g)
-        }
+        db.collection("students").document("student_juanito").set(student, SetOptions.merge())
 
         // 7. Attendance (Asistencia)
         val attendance = listOf(
@@ -168,8 +173,15 @@ object MockDataInjector {
             mapOf("student_id" to "student_sofia", "date" to "2026-06-09", "status" to "Presente", "course_name" to "2do Grado A - Primaria"),
             mapOf("student_id" to "student_sofia", "date" to "2026-06-10", "status" to "Falta", "course_name" to "2do Grado A - Primaria")
         )
-        for ((index, att) in attendance.withIndex()) {
-            db.collection("attendance").document("att_$index").set(att)
+        for ((attId, date, status) in attendance) {
+            db.collection("attendance").document(attId).set(
+                hashMapOf(
+                    "student_id" to "student_juanito",
+                    "date" to date,
+                    "status" to status,
+                    "course_name" to "General"
+                ), SetOptions.merge()
+            )
         }
 
         // 8. Courses
@@ -275,10 +287,7 @@ object MockDataInjector {
                 "time" to "Hace 15 minutos", 
                 "timestamp" to System.currentTimeMillis() - 900000
             )
-        )
-        for ((index, comm) in comments.withIndex()) {
-            db.collection("comments").document("comment_$index").set(comm)
-        }
+            db.collection("posts").document(postId).set(postMap, SetOptions.merge())
 
         // 11. Complaints
         val complaint = mapOf(
@@ -290,43 +299,16 @@ object MockDataInjector {
         )
         db.collection("complaints").document("complaint_mateo").set(complaint)
 
-        // 12. Direct Chats
-        val chat1Id = "docente@sanjose.com_padre@sanjose.com"
-        db.collection("direct_chats").document(chat1Id).set(mapOf("participants" to listOf("docente@sanjose.com", "padre@sanjose.com")))
-        
-        val chat1Messages = listOf(
-            mapOf(
-                "sender" to "padre@sanjose.com", 
-                "content" to "Buenas tardes profesor, una consulta sobre las notas de Mateo.", 
-                "timestamp" to System.currentTimeMillis() - 7200000
-            ),
-            mapOf(
-                "sender" to "docente@sanjose.com", 
-                "content" to "Hola, claro que sí. Mateo va muy bien, solo le falta completar su promedio en Ciencia y Tecnología.", 
-                "timestamp" to System.currentTimeMillis() - 3600000
-            )
-        )
-        for ((index, m) in chat1Messages.withIndex()) {
-            db.collection("direct_chats").document(chat1Id).collection("messages").document("msg_$index").set(m)
-        }
-
-        val chat2Id = "admin@sanjose.com_superadmin@reporte.com"
-        db.collection("direct_chats").document(chat2Id).set(mapOf("participants" to listOf("admin@sanjose.com", "superadmin@reporte.com")))
-        
-        val chat2Messages = listOf(
-            mapOf(
-                "sender" to "admin@sanjose.com", 
-                "content" to "Hola Superadmin, tenemos un nuevo salón de 3er grado y ya registré al docente.", 
-                "timestamp" to System.currentTimeMillis() - 86400000
-            ),
-            mapOf(
-                "sender" to "superadmin@reporte.com", 
-                "content" to "Excelente. Cualquier inconveniente técnico me avisas.", 
-                "timestamp" to System.currentTimeMillis() - 43200000
-            )
-        )
-        for ((index, m) in chat2Messages.withIndex()) {
-            db.collection("direct_chats").document(chat2Id).collection("messages").document("msg_$index").set(m)
+            for ((index, comment) in comments.withIndex()) {
+                db.collection("posts").document(postId)
+                    .collection("comments").document("comment_${postId}_$index").set(
+                        hashMapOf(
+                            "content" to comment.first,
+                            "author" to comment.second,
+                            "timestamp" to com.google.firebase.Timestamp.now()
+                        ), SetOptions.merge()
+                    )
+            }
         }
     }
 }

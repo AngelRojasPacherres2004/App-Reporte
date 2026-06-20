@@ -13,9 +13,9 @@
         android:icon="@android:drawable/ic_menu_help"
         android:title="Foro" />
     <item
-        android:id="@+id/nav_asistente"
-        android:icon="@android:drawable/ic_menu_view"
-        android:title="Asistente" />
+        android:id="@+id/nav_alumnos"
+        android:icon="@android:drawable/ic_menu_agenda"
+        android:title="Alumnos" />
     <item
         android:id="@+id/nav_perfil"
         android:icon="@android:drawable/ic_menu_myplaces"

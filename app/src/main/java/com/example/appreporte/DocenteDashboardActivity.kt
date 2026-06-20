@@ -9,7 +9,7 @@ class DocenteDashboardActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityDashboardDocenteBinding
     private var userRole: String = "docente"
-    private var schoolId: String = ""
+    private var schoolId: String = "Colegio San José"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,7 +30,7 @@ class DocenteDashboardActivity : AppCompatActivity() {
             val perfilIntent = Intent(this, PerfilActivity::class.java)
             perfilIntent.putExtra("USER_EMAIL", userEmail)
             perfilIntent.putExtra("USER_ROL", "docente")
-            perfilIntent.putExtra("SCHOOL_ID", intent.getStringExtra("SCHOOL_ID") ?: "")
+            perfilIntent.putExtra("SCHOOL_ID", schoolId)
             startActivity(perfilIntent)
         }
     }
@@ -42,7 +42,7 @@ class DocenteDashboardActivity : AppCompatActivity() {
             val intent = Intent(this, ForoSalonesActivity::class.java)
             intent.putExtra("USER_ROL", userRole)
             intent.putExtra("USER_EMAIL", userEmail)
-            intent.putExtra("SCHOOL_ID", intent.getStringExtra("SCHOOL_ID"))
+            intent.putExtra("SCHOOL_ID", schoolId)
             startActivity(intent)
         }
 
@@ -118,8 +118,6 @@ class DocenteDashboardActivity : AppCompatActivity() {
                 R.id.nav_reportes -> {
                     val intent = Intent(this, GestionReportesSalonesActivity::class.java)
                     intent.putExtra("SCHOOL_ID", schoolId)
-                    intent.putExtra("USER_EMAIL", userEmail)
-                    intent.putExtra("USER_ROL", userRole)
                     startActivity(intent)
                     true
                 }

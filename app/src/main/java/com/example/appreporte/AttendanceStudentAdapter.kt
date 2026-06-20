@@ -14,6 +14,10 @@ class AttendanceStudentAdapter(
 
     val attendanceResults = mutableMapOf<String, String>()
 
+    fun getStudentData(studentId: String): Map<String, Any> {
+        return studentList.find { it["id"].toString() == studentId } ?: emptyMap()
+    }
+
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvName: TextView = view.findViewById(R.id.tvStudentNameAttendance)
         val rgStatus: RadioGroup = view.findViewById(R.id.rgAttendanceStatus)

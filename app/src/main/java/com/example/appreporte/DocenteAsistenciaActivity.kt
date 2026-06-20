@@ -1,6 +1,7 @@
 package com.example.appreporte
 
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -125,9 +126,46 @@ class DocenteAsistenciaActivity : AppCompatActivity() {
             }
 
             Toast.makeText(this, "Asistencia guardada exitosamente", Toast.LENGTH_SHORT).show()
+            // CA1: Activar notificaciones para inasistencias
+            triggerAttendanceNotifications()
             finish()
         }.addOnFailureListener {
             Toast.makeText(this, "Error al guardar asistencia", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun triggerAttendanceNotifications() {
+        if (!::adapter.isInitialized) return
+        val results = adapter.attendanceResults
+        
+        results.filter { it.value != "Presente" }.forEach { (studentId, status) ->
+            val student = adapter.getStudentData(studentId)
+            val studentName = student["names"]?.toString() ?: student["name"]?.toString() ?: "Su hijo(a)"
+            val parentAppEmail = student["parent_email"]?.toString() ?: ""
+            
+            if (parentAppEmail.isNotEmpty()) {
+                db.collection("users").document(parentAppEmail).get()
+                    .addOnSuccessListener { userDoc ->
+                        if (userDoc.exists()) {
+                            val targetGmail = userDoc.getString("correo_reportes") ?: ""
+                            if (targetGmail.isNotEmpty()) {
+                                val data = androidx.work.Data.Builder()
+                                    .putString("student_name", studentName)
+                                    .putString("subject", "Aviso de Asistencia - $studentName")
+                                    .putString("message", "Estimado Padre de Familia, le informamos que el alumno $studentName registra $status hoy $currentDateStr.\n\nSaludos,\nEduConnect")
+                                    .putString("recipient_email", targetGmail)
+                                    .build()
+
+                                val workRequest = androidx.work.OneTimeWorkRequestBuilder<EmailNotificationWorker>()
+                                    .setInputData(data)
+                                    .build()
+
+                                androidx.work.WorkManager.getInstance(applicationContext).enqueue(workRequest)
+                                Log.d("Asistencia", "Notificación encolada para $targetGmail")
+                            }
+                        }
+                    }
+            }
         }
     }
 }
