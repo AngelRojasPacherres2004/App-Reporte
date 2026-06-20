@@ -1,6 +1,7 @@
 package com.example.appreporte
 
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 
 object MockDataInjector {
     fun injectData() {
@@ -28,7 +29,7 @@ object MockDataInjector {
                 "levels" to levels,
                 "adminEmail" to adminEmail
             )
-            db.collection("colegios").document(name).set(schoolMap)
+            db.collection("colegios").document(name).set(schoolMap, SetOptions.merge())
 
             // Inyectar el usuario admin del colegio
             db.collection("users").document(adminEmail).set(
@@ -38,7 +39,7 @@ object MockDataInjector {
                     "rol" to "admin",
                     "school_id" to name,
                     "phone" to "+51900000000"
-                )
+                ), SetOptions.merge()
             )
         }
 
@@ -88,7 +89,7 @@ object MockDataInjector {
                 "school_id" to schoolName,
                 "tutor" to "docente@reporte.com"
             )
-            db.collection("classrooms").document(docId).set(map)
+            db.collection("classrooms").document(docId).set(map, SetOptions.merge())
         }
 
         // ────────────────────────────────────────────────────────────
@@ -102,7 +103,7 @@ object MockDataInjector {
                 "rol" to "docente",
                 "school_id" to "Colegio San José",
                 "phone" to "+51999999999"
-            )
+            ), SetOptions.merge()
         )
         // Padre demo para probar reportes e hijo
         db.collection("users").document("user@reporte.com").set(
@@ -112,7 +113,7 @@ object MockDataInjector {
                 "rol" to "usuario",
                 "school_id" to "Colegio San José",
                 "phone" to "+51999999999"
-            )
+            ), SetOptions.merge()
         )
 
         // Inyectar superadministradores en Firestore
@@ -125,7 +126,7 @@ object MockDataInjector {
                     "rol" to "superadmin",
                     "school_id" to "Global",
                     "phone" to ""
-                )
+                ), SetOptions.merge()
             )
         }
 
@@ -139,7 +140,7 @@ object MockDataInjector {
                     "rol" to "docente",
                     "school_id" to "Colegio San José",
                     "phone" to "+5191111111$i"
-                )
+                ), SetOptions.merge()
             )
 
             val pEmail = "padre$i@reporte.com"
@@ -150,7 +151,7 @@ object MockDataInjector {
                     "rol" to "usuario",
                     "school_id" to "Colegio San José",
                     "phone" to "+5192222222$i"
-                )
+                ), SetOptions.merge()
             )
         }
 
@@ -167,7 +168,7 @@ object MockDataInjector {
             "classroom_id" to salonJose,
             "school_id" to "Colegio San José"
         )
-        db.collection("students").document("student_juanito").set(student)
+        db.collection("students").document("student_juanito").set(student, SetOptions.merge())
 
         // Asistencias
         val attendance = listOf(
@@ -183,7 +184,7 @@ object MockDataInjector {
                     "date" to date,
                     "status" to status,
                     "course_name" to "General"
-                )
+                ), SetOptions.merge()
             )
         }
 
@@ -226,7 +227,7 @@ object MockDataInjector {
                 "timestamp" to com.google.firebase.Timestamp.now(),
                 "classroomId" to salonJose
             )
-            db.collection("posts").document(postId).set(postMap)
+            db.collection("posts").document(postId).set(postMap, SetOptions.merge())
 
             // Comentarios simulando comunidad activa (Estrés del Foro)
             val comments = when (postId) {
@@ -251,7 +252,7 @@ object MockDataInjector {
                             "content" to comment.first,
                             "author" to comment.second,
                             "timestamp" to com.google.firebase.Timestamp.now()
-                        )
+                        ), SetOptions.merge()
                     )
             }
         }

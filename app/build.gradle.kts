@@ -79,6 +79,8 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
     implementation(libs.generativeai)
+    implementation(libs.javax.mail)
+    implementation(libs.javax.activation)
     implementation("com.google.android.gms:play-services-location:21.3.0")
     implementation("com.google.android.gms:play-services-maps:19.0.0")
 }

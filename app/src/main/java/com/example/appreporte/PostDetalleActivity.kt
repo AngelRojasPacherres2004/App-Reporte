@@ -179,24 +179,21 @@ class PostDetalleActivity : AppCompatActivity() {
     }
 
     private fun triggerComplaintNotification(content: String) {
-        // En un caso real buscaríamos al admin del colegio, aquí usamos el admin@reporte.com demo
-        firestore.collection("users").document("admin@reporte.com").get()
-            .addOnSuccessListener { userSnap ->
-                val phone = userSnap.getString("phone") ?: ""
-                if (phone.isNotEmpty()) {
-                    val data = androidx.work.Data.Builder()
-                        .putString("student_name", "ADMINISTRADOR")
-                        .putString("message", "Nueva queja recibida de $userEmail: $content")
-                        .putString("phone", phone)
-                        .build()
+        // Notificar al administrador sobre la nueva queja
+        val adminEmail = "admin@reporte.com" 
+        
+        val data = androidx.work.Data.Builder()
+            .putString("student_name", "ADMINISTRADOR")
+            .putString("subject", "Nueva Queja Recibida")
+            .putString("message", "Se ha recibido una nueva queja del usuario $userEmail.\n\nContenido: $content\n\nSaludos,\nSistema de Gestión")
+            .putString("recipient_email", adminEmail)
+            .build()
 
-                    val workRequest = androidx.work.OneTimeWorkRequestBuilder<WhatsAppNotificationWorker>()
-                        .setInputData(data)
-                        .build()
+        val workRequest = androidx.work.OneTimeWorkRequestBuilder<EmailNotificationWorker>()
+            .setInputData(data)
+            .build()
 
-                    androidx.work.WorkManager.getInstance(applicationContext).enqueue(workRequest)
-                }
-            }
+        androidx.work.WorkManager.getInstance(applicationContext).enqueue(workRequest)
     }
 
     private fun loadComments() {

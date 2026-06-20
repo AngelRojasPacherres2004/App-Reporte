@@ -123,7 +123,7 @@ class MainActivity : AppCompatActivity() {
                                                 "phone" to "",
                                                 "school_id" to "Colegio San José"
                                             )
-                                            db.collection("users").document(email).set(userMap)
+                                            db.collection("users").document(email).set(userMap, com.google.firebase.firestore.SetOptions.merge())
                                                 .addOnSuccessListener {
                                                     binding.btnIngresar.isEnabled = true
                                                     navigateToSplash(seedUser.third, email, "Colegio San José")

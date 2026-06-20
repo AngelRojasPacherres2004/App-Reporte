@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.appreporte.databinding.ActivityGradingBinding
 import com.example.appreporte.databinding.ItemStudentGradeBinding
+import android.util.Log
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -61,13 +62,57 @@ class GradingActivity : AppCompatActivity() {
         
         if (success) {
             Toast.makeText(this, "Nota guardada correctamente", Toast.LENGTH_SHORT).show()
+            // Disparar notificación por correo
+            triggerEmailNotification(studentId, gradeStr)
         } else {
             Toast.makeText(this, "Error al guardar nota", Toast.LENGTH_SHORT).show()
         }
     }
 
+    private fun triggerEmailNotification(studentId: Int, grade: String) {
+        val studentData = dbHelper.getStudentById(studentId)
+        val firestoreId = studentData["firestore_id"] ?: ""
+        val studentFullName = "${studentData["names"]} ${studentData["lastnames"]}"
+
+        if (firestoreId.isNotEmpty()) {
+            val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+            db.collection("students").document(firestoreId).get().addOnSuccessListener { doc ->
+                // El alumno no tiene correo. Buscamos directamente al padre.
+                val parentAppEmail = doc.getString("parent_email") ?: studentData["parent_email"] ?: ""
+                
+                if (parentAppEmail.isNotEmpty()) {
+                    db.collection("users").document(parentAppEmail).get().addOnSuccessListener { pDoc ->
+                        val recipientGmail = pDoc.getString("correo_reportes") ?: ""
+                        if (recipientGmail.isNotEmpty()) {
+                            sendToWorker(studentFullName, recipientGmail, grade)
+                        } else {
+                            Log.w("GradingActivity", "El padre $parentAppEmail no tiene configurado correo_reportes")
+                        }
+                    }
+                } else {
+                    Log.w("GradingActivity", "El estudiante no tiene un padre asociado")
+                }
+            }
+        }
+    }
+
+    private fun sendToWorker(studentName: String, email: String, grade: String) {
+        val data = androidx.work.Data.Builder()
+            .putString("student_name", studentName)
+            .putString("subject", "Notificación de Nota - $studentName")
+            .putString("message", "Estimado padre de familia, acabamos de subir la nota (diaria) de su hijo $studentName y ya está cargado en su sección de reportes.\n\nCalificación: $grade\n\nSaludos,\nEduConnect")
+            .putString("recipient_email", email)
+            .build()
+
+        val workRequest = androidx.work.OneTimeWorkRequestBuilder<EmailNotificationWorker>()
+            .setInputData(data)
+            .build()
+
+        androidx.work.WorkManager.getInstance(this).enqueue(workRequest)
+    }
+
     class GradeAdapter(
-        private val students: List<Triple<Int, String, String>>,
+        private val students: List<Map<String, String>>,
         private val onSave: (Int, String) -> Unit
     ) : RecyclerView.Adapter<GradeAdapter.ViewHolder>() {
 
@@ -80,9 +125,10 @@ class GradingActivity : AppCompatActivity() {
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val student = students[position]
-            holder.binding.tvStudentName.text = student.second
+            val studentId = student["id"]?.toInt() ?: -1
+            holder.binding.tvStudentName.text = "${student["names"]} ${student["lastnames"]}"
             holder.binding.btnSaveGrade.setOnClickListener {
-                onSave(student.first, holder.binding.etGrade.text.toString())
+                if (studentId != -1) onSave(studentId, holder.binding.etGrade.text.toString())
             }
         }
 

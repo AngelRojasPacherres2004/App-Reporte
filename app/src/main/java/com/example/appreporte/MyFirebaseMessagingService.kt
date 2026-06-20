@@ -18,28 +18,29 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
 
-        // CA1 & CA3: Encolar el procesamiento de la notificación para envío por WhatsApp
+        // CA1 & CA3: Encolar el procesamiento de la notificación para envío por Gmail
         val studentName = remoteMessage.data["student_name"] ?: "Estudiante"
         val message = remoteMessage.data["message"] ?: "Nueva notificación académica disponible."
-        val parentPhone = remoteMessage.data["parent_phone"] ?: ""
+        val parentEmail = remoteMessage.data["parent_email"] ?: ""
 
-        if (parentPhone.isNotEmpty()) {
-            scheduleWhatsAppNotification(studentName, message, parentPhone)
+        if (parentEmail.isNotEmpty()) {
+            scheduleEmailNotification(studentName, message, parentEmail)
         }
 
         showNotification(remoteMessage.notification?.title ?: "Aviso Académico", 
                          remoteMessage.notification?.body ?: message)
     }
 
-    private fun scheduleWhatsAppNotification(studentName: String, message: String, phone: String) {
+    private fun scheduleEmailNotification(studentName: String, message: String, email: String) {
         val data = Data.Builder()
             .putString("student_name", studentName)
+            .putString("subject", "Notificación de EduConnect")
             .putString("message", message)
-            .putString("phone", phone)
+            .putString("recipient_email", email)
             .build()
 
         // CA3 & CA4: Uso de WorkManager para entrega ordenada y sin afectar el rendimiento
-        val workRequest = OneTimeWorkRequestBuilder<WhatsAppNotificationWorker>()
+        val workRequest = OneTimeWorkRequestBuilder<EmailNotificationWorker>()
             .setInputData(data)
             .build()
 

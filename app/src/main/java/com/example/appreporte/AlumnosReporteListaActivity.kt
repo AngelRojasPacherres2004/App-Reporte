@@ -27,9 +27,6 @@ import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.util.zip.ZipEntry
-import java.util.zip.ZipOutputStream
-
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.CoroutineScope
@@ -62,8 +59,8 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
 
     private fun setupRecyclerView() {
         val adapter = AlumnosAdapter(emptyList(),
-            onEdit = { _ -> /* No editar */ },
-            onDelete = { _ -> /* No borrar */ },
+            onEdit = { _ -> },
+            onDelete = { _ -> },
             onItemClick = { id, name ->
                 showStudentOptionsDialog(id, name)
             },
@@ -109,10 +106,9 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
             .get()
             .addOnSuccessListener { documents ->
                 if (documents.isEmpty) {
-                    Toast.makeText(this, "No hay notas registradas para este alumno", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "No hay notas registradas", Toast.LENGTH_SHORT).show()
                     return@addOnSuccessListener
                 }
-
                 val gradesList = documents.map { it to it.data }
                 val options = gradesList.map { (_, data) ->
                     "${data["subject"]} - ${data["type"]?.toString()?.uppercase()}: ${data["value"]} (${data["date"]})"
@@ -127,19 +123,14 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
                     .setNegativeButton(R.string.cancel, null)
                     .show()
             }
-            .addOnFailureListener {
-                Toast.makeText(this, "Error al obtener notas", Toast.LENGTH_SHORT).show()
-            }
     }
 
     private fun showEditGradeDialog(gradeId: String, currentData: Map<String, Any?>, studentName: String) {
         val dialogBinding = DialogAddGradeBinding.inflate(layoutInflater)
         val types = arrayOf("Diaria", "Mensual", "Bimestral")
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, types)
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         dialogBinding.spinnerGradeType.adapter = adapter
 
-        // Pre-cargar datos actuales
         val currentType = currentData["type"]?.toString()?.lowercase() ?: "diaria"
         val typeIndex = types.indexOfFirst { it.lowercase() == currentType }.let { if (it == -1) 0 else it }
         dialogBinding.spinnerGradeType.setSelection(typeIndex)
@@ -155,24 +146,9 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
                 val subject = dialogBinding.etSubject.text.toString()
 
                 if (value.isNotEmpty() && subject.isNotEmpty()) {
-                    val updateData = hashMapOf(
-                        "type" to type,
-                        "value" to value,
-                        "subject" to subject
-                        // Mantenemos la fecha original a menos que quieras actualizarla también
-                    )
-                    
-                    FirebaseFirestore.getInstance().collection("grades").document(gradeId)
-                        .update(updateData as Map<String, Any>)
-                        .addOnSuccessListener {
-                            Toast.makeText(this, "¡Nota actualizada con éxito!", Toast.LENGTH_SHORT).show()
-                            // Aquí se podrían disparar notificaciones de actualización si fuera necesario
-                        }
-                        .addOnFailureListener {
-                            Toast.makeText(this, "Error al actualizar la nota", Toast.LENGTH_SHORT).show()
-                        }
-                } else {
-                    Toast.makeText(this, R.string.fill_all_fields, Toast.LENGTH_SHORT).show()
+                    val updateData = hashMapOf("type" to type, "value" to value, "subject" to subject)
+                    FirebaseFirestore.getInstance().collection("grades").document(gradeId).update(updateData as Map<String, Any>)
+                        .addOnSuccessListener { Toast.makeText(this, "Nota actualizada", Toast.LENGTH_SHORT).show() }
                 }
             }
             .setNegativeButton(R.string.cancel, null)
@@ -183,7 +159,6 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
         val dialogBinding = DialogAddGradeBinding.inflate(layoutInflater)
         val types = arrayOf("Diaria", "Mensual", "Bimestral")
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, types)
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         dialogBinding.spinnerGradeType.adapter = adapter
 
         AlertDialog.Builder(this)
@@ -196,24 +171,12 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
                 val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
 
                 if (value.isNotEmpty() && subject.isNotEmpty()) {
-                    val gradeData = hashMapOf(
-                        "student_id" to studentId,
-                        "type" to type,
-                        "value" to value,
-                        "subject" to subject,
-                        "date" to date
-                    )
+                    val gradeData = hashMapOf("student_id" to studentId, "type" to type, "value" to value, "subject" to subject, "date" to date)
                     FirebaseFirestore.getInstance().collection("grades").add(gradeData)
                         .addOnSuccessListener {
                             Toast.makeText(this, R.string.grade_assigned_success, Toast.LENGTH_SHORT).show()
-                            // CA1: Simulación de activación del sistema de notificaciones automáticas
-                            simulateNotificationTrigger(studentId, studentName, subject, value)
+                            simulateNotificationTrigger(studentId, studentName, subject, value, type)
                         }
-                        .addOnFailureListener {
-                            Toast.makeText(this, R.string.grade_assigned_error, Toast.LENGTH_SHORT).show()
-                        }
-                } else {
-                    Toast.makeText(this, R.string.fill_all_fields, Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton(R.string.cancel, null)
@@ -223,27 +186,23 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
     private fun generateAndSendReport(studentId: String, studentName: String) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                // Fetch student
                 val studentSnap = FirebaseFirestore.getInstance().collection("students").document(studentId).get().await()
-                val parentEmail = studentSnap.getString("parent_email") ?: return@launch
+                val parentAppEmail = studentSnap.getString("parent_email") ?: ""
                 
-                // Fetch parent to get phone
-                val userSnap = FirebaseFirestore.getInstance().collection("users").whereEqualTo("email", parentEmail).get().await()
-                val phone = userSnap.documents.firstOrNull()?.getString("phone") ?: ""
-
-                if (phone.isEmpty()) {
-                    withContext(Dispatchers.Main) { Toast.makeText(this@AlumnosReporteListaActivity, R.string.error_no_phone, Toast.LENGTH_LONG).show() }
-                    return@launch
+                var targetGmail = ""
+                var phone = ""
+                if (parentAppEmail.isNotEmpty()) {
+                    val parentSnap = FirebaseFirestore.getInstance().collection("users").document(parentAppEmail).get().await()
+                    if (parentSnap.exists()) {
+                        targetGmail = parentSnap.getString("correo_reportes") ?: ""
+                        phone = parentSnap.getString("phone") ?: ""
+                    }
                 }
 
-                // Fetch grades
                 val gradesSnap = FirebaseFirestore.getInstance().collection("grades").whereEqualTo("student_id", studentId).get().await()
-                val grades = gradesSnap.documents.mapNotNull { doc ->
-                    doc.data?.mapValues { it.value.toString() }
-                }
+                val grades = gradesSnap.documents.mapNotNull { doc -> doc.data?.mapValues { it.value.toString() } }
 
                 val pdfFile = File(cacheDir, "Reporte_${studentName.replace(" ", "_")}.pdf")
-                
                 val writer = PdfWriter(FileOutputStream(pdfFile))
                 val pdf = PdfDocument(writer)
                 val document = Document(pdf)
@@ -254,134 +213,105 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
                 document.add(Paragraph("\n"))
 
                 val table = Table(UnitValue.createPercentArray(floatArrayOf(3f, 2f, 3f, 2f))).useAllAvailableWidth()
-                table.addHeaderCell("Materia")
-                table.addHeaderCell("Tipo")
-                table.addHeaderCell("Fecha")
-                table.addHeaderCell("Nota")
+                table.addHeaderCell("Materia"); table.addHeaderCell("Tipo"); table.addHeaderCell("Fecha"); table.addHeaderCell("Nota")
 
                 for (grade in grades) {
-                    table.addCell(grade["subject"] ?: "")
-                    table.addCell(grade["type"] ?: "")
-                    table.addCell(grade["date"] ?: "")
-                    table.addCell(grade["value"] ?: "")
+                    table.addCell(grade["subject"] ?: ""); table.addCell(grade["type"] ?: ""); table.addCell(grade["date"] ?: ""); table.addCell(grade["value"] ?: "")
                 }
-
                 document.add(table)
                 document.close()
 
                 saveToDownloads(pdfFile)
-                withContext(Dispatchers.Main) { sendToWhatsApp(pdfFile, phone, studentName) }
-                
+
+                if (targetGmail.isNotEmpty()) {
+                    val data = Data.Builder()
+                        .putString("student_name", studentName)
+                        .putString("subject", "Reporte Académico PDF - $studentName")
+                        .putString("message", "Estimado Padre de Familia, adjunto encontrará el reporte académico detallado de $studentName.\n\nSaludos,\nEquipo EduConnect")
+                        .putString("recipient_email", targetGmail)
+                        .putString("attachment_path", pdfFile.absolutePath)
+                        .build()
+
+                    val workRequest = OneTimeWorkRequestBuilder<EmailNotificationWorker>().setInputData(data).build()
+                    WorkManager.getInstance(applicationContext).enqueue(workRequest)
+                    Log.d("AlumnosReporte", "Reporte PDF encolado para $targetGmail")
+                }
+
+                if (phone.isNotEmpty()) {
+                    withContext(Dispatchers.Main) { sendToWhatsApp(pdfFile, phone, studentName) }
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
-                withContext(Dispatchers.Main) { Toast.makeText(this@AlumnosReporteListaActivity, R.string.error_pdf, Toast.LENGTH_SHORT).show() }
+                withContext(Dispatchers.Main) { Toast.makeText(this@AlumnosReporteListaActivity, "Error al generar reporte", Toast.LENGTH_SHORT).show() }
+            }
+        }
+    }
+
+    private fun simulateNotificationTrigger(studentId: String, studentName: String, subject: String, value: String, type: String) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val studentSnap = FirebaseFirestore.getInstance().collection("students").document(studentId).get().await()
+                val parentAppEmail = studentSnap.getString("parent_email") ?: ""
+                var targetGmail = ""
+
+                if (parentAppEmail.isNotEmpty()) {
+                    val parentSnap = FirebaseFirestore.getInstance().collection("users").document(parentAppEmail).get().await()
+                    if (parentSnap.exists()) {
+                        targetGmail = parentSnap.getString("correo_reportes") ?: ""
+                    }
+                }
+
+                if (targetGmail.isNotEmpty()) {
+                    val data = Data.Builder()
+                        .putString("student_name", studentName)
+                        .putString("subject", "Nueva Nota Registrada - $studentName")
+                        .putString("message", "Estimado padre de familia, acabamos de subir una nueva calificación para su hijo $studentName.\n\nMateria: $subject\nTipo: ${type.uppercase()}\nCalificación: $value\n\nEl reporte actualizado ya está disponible.\n\nSaludos,\nEduConnect")
+                        .putString("recipient_email", targetGmail)
+                        .build()
+
+                    val workRequest = OneTimeWorkRequestBuilder<EmailNotificationWorker>().setInputData(data).build()
+                    WorkManager.getInstance(applicationContext).enqueue(workRequest)
+                    Log.d("AlumnosReporte", "Notificación de nota encolada para $targetGmail")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
 
     private fun sendToWhatsApp(file: File, phone: String, studentName: String) {
         val uri: Uri = FileProvider.getUriForFile(this, "${packageName}.fileprovider", file)
-        
-        // Limpiar número: Solo dígitos y prefijo 51
         val digitsOnly = phone.replace("\\D".toRegex(), "")
         val finalPhone = if (digitsOnly.startsWith("51")) digitsOnly else "51$digitsOnly"
 
-        val intent = Intent(Intent.ACTION_SEND)
-        intent.type = "application/pdf"
-        intent.putExtra(Intent.EXTRA_STREAM, uri)
-        intent.putExtra(Intent.EXTRA_TEXT, "Hola, adjunto el reporte académico de $studentName.")
-        // JID específico para abrir la conversación directamente
-        intent.putExtra("jid", "$finalPhone@s.whatsapp.net")
-        intent.setPackage("com.whatsapp")
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-
-        try {
-            startActivity(intent)
-        } catch (e: Exception) {
-            try {
-                // Intento con WhatsApp Business
-                intent.setPackage("com.whatsapp.w4b")
-                startActivity(intent)
-            } catch (e2: Exception) {
-                // Selector normal si nada falla
-                val chooser = Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
-                    type = "application/pdf"
-                    putExtra(Intent.EXTRA_STREAM, uri)
-                }, getString(R.string.share_report))
-                startActivity(chooser)
-            }
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "application/pdf"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            putExtra(Intent.EXTRA_TEXT, "Hola, adjunto el reporte académico de $studentName.")
+            putExtra("jid", "$finalPhone@s.whatsapp.net")
+            setPackage("com.whatsapp")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-    }
-
-    private fun simulateNotificationTrigger(studentId: String, studentName: String, subject: String, value: String) {
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                // Fetch student to get parent email
-                val studentSnap = FirebaseFirestore.getInstance().collection("students").document(studentId).get().await()
-                val parentEmail = studentSnap.getString("parent_email") ?: return@launch
-
-                // Fetch parent to get phone
-                val userSnap = FirebaseFirestore.getInstance().collection("users").whereEqualTo("email", parentEmail).get().await()
-                val phone = userSnap.documents.firstOrNull()?.getString("phone") ?: ""
-
-                if (phone.isNotEmpty()) {
-                    // CA1, CA3, CA4: Encolar el envío automático por WhatsApp usando WorkManager
-                    val data = Data.Builder()
-                        .putString("student_name", studentName)
-                        .putString("message", "Nueva nota en $subject: $value")
-                        .putString("phone", phone)
-                        .build()
-
-                    val workRequest = OneTimeWorkRequestBuilder<WhatsAppNotificationWorker>()
-                        .setInputData(data)
-                        .build()
-
-                    WorkManager.getInstance(applicationContext).enqueue(workRequest)
-                    
-                    withContext(Dispatchers.Main) {
-                        Log.d("NotificationTrigger", "Notificación automática encolada para $studentName")
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+        try { startActivity(intent) } catch (e: Exception) {
+            val chooser = Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
+                type = "application/pdf"
+                putExtra(Intent.EXTRA_STREAM, uri)
+            }, "Compartir reporte")
+            startActivity(chooser)
         }
     }
 
     private fun saveToDownloads(file: File) {
-        val fileName = file.name
         val resolver = contentResolver
-        
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val contentValues = ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                put(MediaStore.MediaColumns.DISPLAY_NAME, file.name)
                 put(MediaStore.MediaColumns.MIME_TYPE, "application/pdf")
                 put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
             }
             val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
             uri?.let {
-                resolver.openOutputStream(it)?.use { outputStream ->
-                    FileInputStream(file).use { inputStream ->
-                        inputStream.copyTo(outputStream)
-                    }
-                }
-                runOnUiThread {
-                    Toast.makeText(this, "Reporte guardado en Descargas", Toast.LENGTH_SHORT).show()
-                }
-            }
-        } else {
-            val targetFile = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
-            try {
-                FileInputStream(file).use { inputStream ->
-                    FileOutputStream(targetFile).use { outputStream ->
-                        inputStream.copyTo(outputStream)
-                    }
-                }
-                runOnUiThread {
-                    Toast.makeText(this, "Reporte guardado en Descargas", Toast.LENGTH_SHORT).show()
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
+                resolver.openOutputStream(it)?.use { out -> FileInputStream(file).use { it.copyTo(out) } }
             }
         }
     }

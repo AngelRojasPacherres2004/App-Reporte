@@ -36,6 +36,19 @@
             android:hint="Nombre del Alumno" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etCorreoAlumno"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Gmail para reportes"
+            android:inputType="textEmailAddress" />
+    </com.google.android.material.textfield.TextInputLayout>
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

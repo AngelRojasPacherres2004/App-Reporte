@@ -7,7 +7,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
 class StudentAdapter(
-    private var students: List<Triple<Int, String, String>>,
+    private var students: List<Map<String, String>>,
     private val onDeleteClick: (Int) -> Unit,
     private val onSendReportClick: (Int, String, String) -> Unit
 ) : RecyclerView.Adapter<StudentAdapter.StudentViewHolder>() {
@@ -27,21 +27,25 @@ class StudentAdapter(
 
     override fun onBindViewHolder(holder: StudentViewHolder, position: Int) {
         val student = students[position]
-        holder.tvName.text = student.second
-        holder.tvParent.text = "Padre: ${student.third}"
+        val studentId = student["id"]?.toInt() ?: -1
+        val studentName = "${student["names"]} ${student["lastnames"]}"
+        val parentEmail = student["parent_email"] ?: ""
+        
+        holder.tvName.text = studentName
+        holder.tvParent.text = "Padre: $parentEmail"
         
         holder.btnDelete.setOnClickListener {
-            onDeleteClick(student.first)
+            if (studentId != -1) onDeleteClick(studentId)
         }
 
         holder.btnSendReport.setOnClickListener {
-            onSendReportClick(student.first, student.second, student.third)
+            if (studentId != -1) onSendReportClick(studentId, studentName, parentEmail)
         }
     }
 
     override fun getItemCount() = students.size
 
-    fun updateList(newList: List<Triple<Int, String, String>>) {
+    fun updateList(newList: List<Map<String, String>>) {
         students = newList
         notifyDataSetChanged()
     }

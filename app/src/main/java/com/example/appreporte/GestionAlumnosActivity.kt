@@ -105,10 +105,16 @@ class GestionAlumnosActivity : AppCompatActivity() {
 
     private fun addStudent() {
         val name = binding.etNombreAlumno.text.toString().trim()
+        val gmail = binding.etCorreoAlumno.text.toString().trim()
         val parentEmail = binding.spinnerPadres.selectedItem?.toString() ?: ""
 
         if (name.isEmpty()) {
             Toast.makeText(this, "Ingrese el nombre del alumno", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if (gmail.isEmpty()) {
+            Toast.makeText(this, "Ingrese el Gmail para reportes", Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -126,9 +132,26 @@ class GestionAlumnosActivity : AppCompatActivity() {
         val firstName = names.getOrElse(0) { "" }
         val lastName = if (names.size > 1) names.subList(1, names.size).joinToString(" ") else ""
 
-        if (dbHelper.addStudent(firstName, lastName, "", selectedClassroomId, parentEmail)) {
+        if (dbHelper.addStudent(firstName, lastName, "", selectedClassroomId, parentEmail, gmail)) {
+            // Sincronizar con Firestore
+            val studentData = hashMapOf(
+                "names" to firstName,
+                "lastnames" to lastName,
+                "classroom_id" to selectedClassroomId.toString(),
+                "parent_email" to parentEmail,
+                "correo" to gmail,
+                "school_id" to (intent.getStringExtra("SCHOOL_ID") ?: "Colegio San José")
+            )
+            // Usamos un ID único o el nombre para el documento en Firestore
+            val firestoreId = "${firstName}_${lastName}_${System.currentTimeMillis()}".replace(" ", "_")
+            com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                .collection("students")
+                .document(firestoreId)
+                .set(studentData)
+
             Toast.makeText(this, "Alumno añadido con éxito", Toast.LENGTH_SHORT).show()
             binding.etNombreAlumno.text?.clear()
+            binding.etCorreoAlumno.text?.clear()
             updateStudentList()
         } else {
             Toast.makeText(this, "Error al añadir alumno", Toast.LENGTH_SHORT).show()

@@ -53,21 +53,7 @@ class AlumnosListaActivity : AppCompatActivity() {
     private fun loadStudents() {
         if (classroomId != -1) {
             val students = dbHelper.getStudentsByClassroom(classroomId)
-            // Need to convert Triple to Map for AlumnosAdapter
-            val mappedStudents = students.map {
-                val namesParts = it.second.split(" ")
-                val firstName = namesParts.getOrElse(0) { "" }
-                val lastName = if (namesParts.size > 1) namesParts.subList(1, namesParts.size).joinToString(" ") else ""
-                
-                mapOf(
-                    "id" to it.first.toString(),
-                    "names" to firstName,
-                    "lastnames" to lastName,
-                    "dni" to it.third,
-                    "parent_email" to ""
-                )
-            }
-            adapter.updateData(mappedStudents)
+            adapter.updateData(students)
         }
     }
 
@@ -84,6 +70,7 @@ class AlumnosListaActivity : AppCompatActivity() {
             dialogBinding.etNombresAlumno.setText(alumno["names"])
             dialogBinding.etApellidosAlumno.setText(alumno["lastnames"])
             dialogBinding.etDniAlumno.setText(alumno["dni"])
+            dialogBinding.etGmailAlumno.setText(alumno["correo"])
             val parentPos = parentEmails.indexOf(alumno["parent_email"])
             if (parentPos != -1) dialogBinding.spinnerPadres.setSelection(parentPos)
         }
@@ -93,16 +80,17 @@ class AlumnosListaActivity : AppCompatActivity() {
             val names = dialogBinding.etNombresAlumno.text.toString()
             val lastnames = dialogBinding.etApellidosAlumno.text.toString()
             val dni = dialogBinding.etDniAlumno.text.toString()
+            val gmail = dialogBinding.etGmailAlumno.text.toString()
             val parentEmail = dialogBinding.spinnerPadres.selectedItem?.toString() ?: ""
 
             if (names.isNotEmpty() && lastnames.isNotEmpty() && dni.isNotEmpty()) {
                 if (alumno == null) {
-                    if (dbHelper.addStudent(names, lastnames, dni, classroomId, parentEmail)) {
+                    if (dbHelper.addStudent(names, lastnames, dni, classroomId, parentEmail, gmail)) {
                         loadStudents()
                         Toast.makeText(this, "Alumno guardado", Toast.LENGTH_SHORT).show()
                     }
                 } else {
-                    if (dbHelper.updateStudent(alumno["id"]!!.toInt(), names, lastnames, dni, parentEmail, classroomId)) {
+                    if (dbHelper.updateStudent(alumno["id"]!!.toInt(), names, lastnames, dni, parentEmail, gmail, classroomId)) {
                         loadStudents()
                         Toast.makeText(this, "Datos actualizados", Toast.LENGTH_SHORT).show()
                     }

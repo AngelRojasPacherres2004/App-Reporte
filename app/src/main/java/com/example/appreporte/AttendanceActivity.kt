@@ -18,7 +18,7 @@ class AttendanceActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAttendanceBinding
     private lateinit var dbHelper: DatabaseHelper
     private var selectedClassroomId: Int = -1
-    private var studentList: List<Triple<Int, String, String>> = emptyList()
+    private var studentList: List<Map<String, String>> = emptyList()
     private val attendanceMap = mutableMapOf<Int, String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,7 +51,10 @@ class AttendanceActivity : AppCompatActivity() {
         studentList = dbHelper.getStudentsByClassroom(classroomId)
         attendanceMap.clear()
         // Default to present
-        studentList.forEach { attendanceMap[it.first] = "present" }
+        studentList.forEach { 
+            val id = it["id"]?.toInt() ?: -1
+            if (id != -1) attendanceMap[id] = "present" 
+        }
 
         binding.rvStudentsAttendance.layoutManager = LinearLayoutManager(this)
         binding.rvStudentsAttendance.adapter = AttendanceAdapter(studentList) { studentId, status ->
@@ -82,7 +85,7 @@ class AttendanceActivity : AppCompatActivity() {
     }
 
     class AttendanceAdapter(
-        private val students: List<Triple<Int, String, String>>,
+        private val students: List<Map<String, String>>,
         private val onStatusChanged: (Int, String) -> Unit
     ) : RecyclerView.Adapter<AttendanceAdapter.ViewHolder>() {
 
@@ -95,7 +98,8 @@ class AttendanceActivity : AppCompatActivity() {
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val student = students[position]
-            holder.binding.tvStudentName.text = student.second
+            val studentId = student["id"]?.toInt() ?: -1
+            holder.binding.tvStudentName.text = "${student["names"]} ${student["lastnames"]}"
             
             // Set initial state
             holder.binding.rbPresent.isChecked = true
@@ -107,7 +111,7 @@ class AttendanceActivity : AppCompatActivity() {
                     R.id.rbAbsent -> "absent"
                     else -> "present"
                 }
-                onStatusChanged(student.first, status)
+                if (studentId != -1) onStatusChanged(studentId, status)
             }
         }
 

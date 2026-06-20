@@ -31,9 +31,11 @@ class PerfilActivity : AppCompatActivity() {
     private lateinit var tvSchool: TextView
     private lateinit var tvPhone: TextView
     private lateinit var tvAddress: TextView
+    private lateinit var tvGmail: TextView
     private lateinit var llAddressSection: LinearLayout
     private lateinit var btnLogout: Button
     private lateinit var btnGetLocation: Button
+    private lateinit var btnEditGmail: ImageButton
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private val LOCATION_PERMISSION_REQUEST_CODE = 100
@@ -54,15 +56,20 @@ class PerfilActivity : AppCompatActivity() {
         tvSchool = findViewById(R.id.tvProfileSchool)
         tvPhone = findViewById(R.id.tvProfilePhone)
         tvAddress = findViewById(R.id.tvProfileAddress)
+        tvGmail = findViewById(R.id.tvProfileGmail)
         llAddressSection = findViewById(R.id.llAddressSection)
         btnLogout = findViewById(R.id.btnLogout)
         btnGetLocation = findViewById(R.id.btnGetLocation)
+        btnEditGmail = findViewById(R.id.btnEditGmail)
 
         currentRole = intent.getStringExtra("USER_ROL")?.lowercase() ?: "usuario"
         
         btnGetLocation.setOnClickListener { 
-            val mapIntent = Intent(this, MapSelectionActivity::class.java)
-            startActivityForResult(mapIntent, MAP_REQUEST_CODE)
+            checkLocationPermission()
+        }
+
+        btnEditGmail.setOnClickListener {
+            showEditGmailDialog()
         }
 
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavigation)
@@ -145,8 +152,7 @@ class PerfilActivity : AppCompatActivity() {
         loadProfileData()
 
         if (intent.getStringExtra("ACTION") == "EDIT_ADDRESS") {
-            val mapIntent = Intent(this, MapSelectionActivity::class.java)
-            startActivityForResult(mapIntent, MAP_REQUEST_CODE)
+            checkLocationPermission()
         }
     }
 
@@ -199,6 +205,9 @@ class PerfilActivity : AppCompatActivity() {
                         tvSchool.text = school
                         tvPhone.text = phone
                         tvAddress.text = displayAddress
+                        
+                        val gmailReportes = snapshot.getString("correo_reportes") ?: ""
+                        tvGmail.text = if (gmailReportes.isNotEmpty()) gmailReportes else "No registrado"
 
                         val normalizedRole = role.lowercase()
                         if (normalizedRole == "padre" || normalizedRole == "usuario") {
@@ -207,7 +216,7 @@ class PerfilActivity : AppCompatActivity() {
                             llAddressSection.visibility = android.view.View.GONE
                         }
 
-                        dbHelper.syncUserProfile(intentEmail, role, phone, displayAddress)
+                        dbHelper.syncUserProfile(intentEmail, role, phone, displayAddress, gmailReportes)
                         checkMissingData(displayAddress)
                     } else {
                         val localData = dbHelper.getUserData(intentEmail)
@@ -216,6 +225,7 @@ class PerfilActivity : AppCompatActivity() {
                             tvSchool.text = "Modo Offline"
                             tvPhone.text = it["phone"]
                             tvAddress.text = it["address"]
+                            tvGmail.text = it["correo_reportes"] ?: "No registrado"
                         }
                     }
                 }
@@ -311,11 +321,60 @@ class PerfilActivity : AppCompatActivity() {
             hasPromptedForAddress = true
             android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
                 if (!isFinishing) {
-                    val mapIntent = Intent(this, MapSelectionActivity::class.java)
-                    startActivityForResult(mapIntent, MAP_REQUEST_CODE)
-                    Toast.makeText(this, "Por favor, seleccione su domicilio en el mapa para completar su perfil", Toast.LENGTH_LONG).show()
+                    checkLocationPermission()
+                    Toast.makeText(this, "Actualizando su domicilio automáticamente...", Toast.LENGTH_LONG).show()
                 }
             }, 1000)
+        }
+    }
+
+    private fun showEditGmailDialog() {
+        val builder = androidx.appcompat.app.AlertDialog.Builder(this)
+        builder.setTitle("Gmail para Reportes")
+        
+        val input = android.widget.EditText(this)
+        input.hint = "ejemplo@gmail.com"
+        input.inputType = android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+        input.setText(if (tvGmail.text == "No registrado") "" else tvGmail.text)
+        
+        val container = android.widget.FrameLayout(this)
+        val params = android.widget.FrameLayout.LayoutParams(
+            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+        params.leftMargin = 48
+        params.rightMargin = 48
+        input.layoutParams = params
+        container.addView(input)
+        
+        builder.setView(container)
+        builder.setPositiveButton("Guardar") { _, _ ->
+            val newGmail = input.text.toString().trim()
+            if (newGmail.isNotEmpty() && android.util.Patterns.EMAIL_ADDRESS.matcher(newGmail).matches()) {
+                updateGmailInFirestore(newGmail)
+            } else {
+                Toast.makeText(this, "Por favor, ingrese un correo válido", Toast.LENGTH_SHORT).show()
+            }
+        }
+        builder.setNegativeButton("Cancelar", null)
+        builder.show()
+    }
+
+    private fun updateGmailInFirestore(gmail: String) {
+        val email = tvEmail.text.toString()
+        if (email.isNotEmpty()) {
+            val userRef = FirebaseFirestore.getInstance().collection("users").document(email)
+            val data = mapOf("correo_reportes" to gmail)
+            
+            userRef.set(data, SetOptions.merge())
+                .addOnSuccessListener {
+                    tvGmail.text = gmail
+                    DatabaseHelper(this).updateUserGmail(email, gmail)
+                    Toast.makeText(this, "Gmail actualizado correctamente", Toast.LENGTH_SHORT).show()
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(this, "Error al guardar: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
         }
     }
 

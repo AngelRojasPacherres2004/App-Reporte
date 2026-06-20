@@ -371,14 +371,15 @@ class ForoDetalleActivity : AppCompatActivity() {
                         firestore.collection("users").document(parentEmail).get()
                             .addOnSuccessListener { userSnap ->
                                 val phone = userSnap.getString("phone") ?: ""
-                                if (phone.isNotEmpty()) {
+                                if (parentEmail.isNotEmpty()) {
                                     val data = androidx.work.Data.Builder()
                                         .putString("student_name", studentName)
-                                        .putString("message", "Nueva publicación en el foro: $title")
-                                        .putString("phone", phone)
+                                        .putString("subject", "Nueva Publicación en el Foro")
+                                        .putString("message", "Estimado Padre de Familia, hay una nueva publicación en el foro del salón: $title\n\nContenido: $content\n\nSaludos,\nEduConnect")
+                                        .putString("recipient_email", parentEmail)
                                         .build()
 
-                                    val workRequest = androidx.work.OneTimeWorkRequestBuilder<WhatsAppNotificationWorker>()
+                                    val workRequest = androidx.work.OneTimeWorkRequestBuilder<EmailNotificationWorker>()
                                         .setInputData(data)
                                         .build()
 
