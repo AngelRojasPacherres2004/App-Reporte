@@ -55,6 +55,20 @@
         android:clipToPadding="false"
         tools:listitem="@layout/item_chat_bot" />
 
+    <!-- Indicador de escribiendo -->
+    <TextView
+        android:id="@+id/tvTypingIndicator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/bottomInputArea"
+        android:layout_marginStart="24dp"
+        android:layout_marginBottom="8dp"
+        android:text="EduConnect IA está analizando..."
+        android:textColor="@color/primary"
+        android:textSize="12sp"
+        android:textStyle="italic"
+        android:visibility="gone" />
+
     <!-- Panel Inferior Morado/Azul con bordes redondeados (SIN los botones extra) -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/bottomInputArea"

@@ -41,6 +41,7 @@ import androidx.work.WorkManager
 class AlumnosReporteListaActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityAlumnosListaBinding
+    private lateinit var dbHelper: DatabaseHelper
     private var classroomId: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,6 +49,7 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
         binding = ActivityAlumnosListaBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        dbHelper = DatabaseHelper(this)
         classroomId = intent.getStringExtra("CLASSROOM_ID") ?: ""
         val classroomName = intent.getStringExtra("CLASSROOM_NAME") ?: "Salón"
 
@@ -76,6 +78,15 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
                 val list = snapshot.documents.mapNotNull { doc ->
                     val data = doc.data?.mapValues { it.value.toString() }?.toMutableMap()
                     data?.put("id", doc.id)
+                    
+                    // Respaldo en SQLite para uso offline
+                    dbHelper.saveStudent(
+                        doc.id, 
+                        data?.get("name") ?: data?.get("names") ?: "Sin Nombre", 
+                        classroomId,
+                        data?.get("parent_email") ?: ""
+                    )
+
                     data
                 }
                 adapter.updateData(list)
@@ -168,12 +179,16 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
                 val type = dialogBinding.spinnerGradeType.selectedItem.toString().lowercase()
                 val value = dialogBinding.etGradeValue.text.toString()
                 val subject = dialogBinding.etSubject.text.toString()
+                val period = dialogBinding.etPeriod.text.toString()
                 val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
 
                 if (value.isNotEmpty() && subject.isNotEmpty()) {
                     val gradeData = hashMapOf("student_id" to studentId, "type" to type, "value" to value, "subject" to subject, "date" to date)
                     FirebaseFirestore.getInstance().collection("grades").add(gradeData)
                         .addOnSuccessListener {
+                            // Respaldo en SQLite
+                            dbHelper.saveGrade(studentId, subject, value, type, date, period)
+
                             Toast.makeText(this, R.string.grade_assigned_success, Toast.LENGTH_SHORT).show()
                             simulateNotificationTrigger(studentId, studentName, subject, value, type)
                         }
@@ -275,6 +290,19 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+            }
+        }
+    }
+
+    private fun zipFiles(files: List<File>, zipFile: File) {
+        ZipOutputStream(FileOutputStream(zipFile)).use { zipOut ->
+            for (file in files) {
+                FileInputStream(file).use { fis ->
+                    val zipEntry = ZipEntry(file.name)
+                    zipOut.putNextEntry(zipEntry)
+                    fis.copyTo(zipOut)
+                    zipOut.closeEntry()
+                }
             }
         }
     }

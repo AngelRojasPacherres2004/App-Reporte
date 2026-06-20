@@ -11,17 +11,17 @@ import com.example.appreporte.databinding.ActivityMainBinding
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private var selectedRole = "admin" // Default selection
+    private lateinit var dbHelper: DatabaseHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // INYECCIÓN DE DATOS DE PRUEBA (Se ejecuta en segundo plano silenciosamente)
-        MockDataInjector.injectData()
+        dbHelper = DatabaseHelper(this)
 
-        setupProfileSelection()
+        // INYECCIÓN DE DATOS DE PRUEBA ACTIVA PARA VERIFICACIÓN
+        MockDataInjector.injectData()
 
         // 1. Revisamos en qué modo está la app actualmente
         val isNightMode = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
@@ -59,22 +59,13 @@ class MainActivity : AppCompatActivity() {
 
             binding.btnIngresar.isEnabled = false
 
-            // --- MAGIC TEST LOGIN BYPASS ---
-            // Para probar rápido sin depender de la red:
-            if (email == "superadmin" || email == "superadmin@reporte.com" || email.equals("angelrojaspacherres@gmail.com", ignoreCase = true)) {
-                val targetEmail = if (email == "superadmin") "superadmin@reporte.com" else email
-                navigateToSplash("superadmin", targetEmail, "Global")
+            // --- BYPASS DE LOGIN DE PRUEBA REACTIVADO PARA VERIFICACIÓN ---
+            if (email == "padre@sanjose.com" && password == "padre123") {
+                binding.btnIngresar.isEnabled = true
+                dbHelper.saveUser(email, "usuario", "Colegio San José")
+                navigateToSplash("usuario", email, "Colegio San José")
                 return@setOnClickListener
             }
-            if (email == "padre" || email == "user@reporte.com") {
-                navigateToSplash("usuario", "user@reporte.com", "Colegio San José")
-                return@setOnClickListener
-            }
-            if (email == "docente" || email == "docente@reporte.com") {
-                navigateToSplash("docente", "docente@reporte.com", "Colegio San José")
-                return@setOnClickListener
-            }
-            // -------------------------------
 
             // Usuarios por defecto para sembrar (seeding) la BD
             val seedUsers = listOf(
@@ -90,6 +81,10 @@ class MainActivity : AppCompatActivity() {
                         binding.btnIngresar.isEnabled = true
                         val role = document.getString("rol") ?: "usuario"
                         val schoolId = document.getString("school_id") ?: "Colegio San José"
+                        
+                        // Respaldo en SQLite
+                        dbHelper.saveUser(email, role, schoolId)
+
                         navigateToSplash(role, email, schoolId)
                     } else {
                         // Si no está en Firestore o la contraseña no coincide, intentamos con Auth normal
@@ -142,48 +137,6 @@ class MainActivity : AppCompatActivity() {
                     binding.btnIngresar.isEnabled = true
                     Toast.makeText(this@MainActivity, "Error conectando a Firebase", Toast.LENGTH_SHORT).show()
                 }
-        }
-    }
-
-    private fun setupProfileSelection() {
-        binding.cardAdmin.setOnClickListener {
-            selectProfile("admin")
-        }
-
-        binding.cardUser.setOnClickListener {
-            selectProfile("usuario")
-        }
-    }
-
-    private fun selectProfile(role: String) {
-        selectedRole = role
-
-        // Reset all
-        val unselectedBg = ContextCompat.getColor(this, R.color.profile_unselected)
-        val onSurface = ContextCompat.getColor(this, R.color.on_surface)
-        val primary = ContextCompat.getColor(this, R.color.primary)
-        val onPrimary = ContextCompat.getColor(this, R.color.on_primary)
-
-        binding.cardAdmin.setCardBackgroundColor(unselectedBg)
-        binding.ivAdminIcon.setColorFilter(onSurface)
-        binding.tvAdminText.setTextColor(onSurface)
-
-        binding.cardUser.setCardBackgroundColor(unselectedBg)
-        binding.ivUserIcon.setColorFilter(onSurface)
-        binding.tvUserText.setTextColor(onSurface)
-
-        // Select one
-        when (role) {
-            "admin" -> {
-                binding.cardAdmin.setCardBackgroundColor(primary)
-                binding.ivAdminIcon.setColorFilter(onPrimary)
-                binding.tvAdminText.setTextColor(onPrimary)
-            }
-            "usuario" -> {
-                binding.cardUser.setCardBackgroundColor(primary)
-                binding.ivUserIcon.setColorFilter(onPrimary)
-                binding.tvUserText.setTextColor(onPrimary)
-            }
         }
     }
 

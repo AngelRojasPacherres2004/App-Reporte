@@ -39,6 +39,7 @@ class PadreReporteActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityPadreReporteBinding
     private lateinit var gradesAdapter: GradesAdapter
+    private lateinit var dbHelper: DatabaseHelper
     private var userEmail: String = ""
     private var studentId: String = ""
     private var studentName: String = ""
@@ -49,6 +50,7 @@ class PadreReporteActivity : AppCompatActivity() {
         binding = ActivityPadreReporteBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        dbHelper = DatabaseHelper(this)
         userEmail = intent.getStringExtra("USER_EMAIL") ?: ""
         studentId = intent.getStringExtra("STUDENT_ID") ?: ""
 
@@ -178,6 +180,15 @@ class PadreReporteActivity : AppCompatActivity() {
                     }
                     gradesAdapter.updateData(gradesList)
                     updateCharts(gradesList)
+                }
+            }
+            .addOnFailureListener {
+                // Fallback a SQLite si falla la conexión (Offline)
+                val offlineGrades = dbHelper.getOfflineGrades(studentId)
+                if (offlineGrades.isNotEmpty()) {
+                    gradesList = offlineGrades
+                    gradesAdapter.updateData(gradesList)
+                    Toast.makeText(this, "Mostrando datos locales (Sin conexión)", Toast.LENGTH_SHORT).show()
                 }
             }
     }

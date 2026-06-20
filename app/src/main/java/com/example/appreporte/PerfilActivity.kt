@@ -93,7 +93,7 @@ class PerfilActivity : AppCompatActivity() {
                     val navIntent = Intent(this, targetActivity)
                     navIntent.putExtra("USER_EMAIL", tvEmail.text.toString())
                     navIntent.putExtra("USER_ROL", currentRole)
-                    navIntent.putExtra("SCHOOL_ID", tvSchool.text.toString())
+                    navIntent.putExtra("SCHOOL_ID", currentSchoolId)
                     navIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
                     startActivity(navIntent)
                     finish()
@@ -102,16 +102,17 @@ class PerfilActivity : AppCompatActivity() {
                 R.id.nav_gestion -> {
                     val gestionIntent = Intent(this, AdminDashboardActivity::class.java)
                     gestionIntent.putExtra("USER_EMAIL", tvEmail.text.toString())
-                    gestionIntent.putExtra("SCHOOL_ID", tvSchool.text.toString())
+                    gestionIntent.putExtra("USER_ROL", currentRole)
+                    gestionIntent.putExtra("SCHOOL_ID", currentSchoolId)
                     startActivity(gestionIntent)
                     finish()
                     true
                 }
                 R.id.nav_foro -> {
-                    val foroIntent = Intent(this, ForoActivity::class.java)
+                    val foroIntent = Intent(this, ForoSalonesActivity::class.java)
                     foroIntent.putExtra("USER_EMAIL", tvEmail.text.toString())
                     foroIntent.putExtra("USER_ROL", currentRole)
-                    foroIntent.putExtra("SCHOOL_ID", tvSchool.text.toString())
+                    foroIntent.putExtra("SCHOOL_ID", currentSchoolId)
                     startActivity(foroIntent)
                     finish()
                     true
@@ -120,6 +121,7 @@ class PerfilActivity : AppCompatActivity() {
                     val asistenteIntent = Intent(this, AsistenteActivity::class.java)
                     asistenteIntent.putExtra("USER_EMAIL", tvEmail.text.toString())
                     asistenteIntent.putExtra("USER_ROL", currentRole)
+                    asistenteIntent.putExtra("SCHOOL_ID", currentSchoolId)
                     startActivity(asistenteIntent)
                     finish()
                     true
@@ -132,7 +134,7 @@ class PerfilActivity : AppCompatActivity() {
                     val navIntent = Intent(this, targetActivity)
                     navIntent.putExtra("USER_EMAIL", tvEmail.text.toString())
                     navIntent.putExtra("USER_ROL", currentRole)
-                    navIntent.putExtra("SCHOOL_ID", tvSchool.text.toString())
+                    navIntent.putExtra("SCHOOL_ID", currentSchoolId)
                     startActivity(navIntent)
                     finish()
                     true
@@ -167,6 +169,17 @@ class PerfilActivity : AppCompatActivity() {
                 updateAddressInFirestore(address, lat, lng)
             }
         }
+    }
+
+    private fun setupBottomMenu(role: String) {
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavigation)
+        bottomNav.menu.clear()
+        when (role.lowercase()) {
+            "superadmin", "admin" -> bottomNav.inflateMenu(R.menu.bottom_nav_menu_admin)
+            "docente" -> bottomNav.inflateMenu(R.menu.bottom_nav_menu_docente)
+            else -> bottomNav.inflateMenu(R.menu.bottom_nav_menu_padre)
+        }
+        bottomNav.selectedItemId = R.id.nav_perfil
     }
 
     private fun loadProfileData() {

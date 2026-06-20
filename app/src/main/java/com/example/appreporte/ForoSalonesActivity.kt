@@ -34,7 +34,6 @@ class ForoSalonesActivity : AppCompatActivity() {
 
         setupRecyclerView()
         setupBottomNavigation()
-        setupFab()
         loadForums()
     }
 
@@ -147,70 +146,81 @@ class ForoSalonesActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun setupFab() {
-        if (userRole == "docente" || userRole == "admin") {
-            binding.fabAddForum.visibility = View.VISIBLE
-            binding.fabAddForum.setOnClickListener {
-                val input = com.google.android.material.textfield.TextInputEditText(this)
-                input.hint = "Nombre del Nuevo Foro"
-                androidx.appcompat.app.AlertDialog.Builder(this)
-                    .setTitle("Crear Nuevo Foro")
-                    .setView(input)
-                    .setPositiveButton("Crear") { _, _ ->
-                        val name = input.text?.toString() ?: ""
-                        if (name.isNotEmpty()) {
-                            val map = hashMapOf(
-                                "name" to name,
-                                "schoolId" to schoolId,
-                                "createdBy" to userEmail
-                            )
-                            firestore.collection("forums").add(map)
-                        }
-                    }
-                    .setNegativeButton("Cancelar", null)
-                    .show()
-            }
-        }
-    }
+
 
     private fun setupBottomNavigation() {
-        val menuRes = when (userRole) {
-            "admin" -> R.menu.bottom_nav_menu_admin
+        val menuRes = when (userRole.lowercase()) {
+            "superadmin", "admin" -> R.menu.bottom_nav_menu_admin
             "docente" -> R.menu.bottom_nav_menu_docente
-            else -> R.menu.bottom_nav_menu
+            else -> R.menu.bottom_nav_menu_padre
         }
         binding.bottomNavigation.menu.clear()
         binding.bottomNavigation.inflateMenu(menuRes)
         
         binding.bottomNavigation.selectedItemId = R.id.nav_foro
         binding.bottomNavigation.setOnItemSelectedListener { item ->
+            val uEmail = intent.getStringExtra("USER_EMAIL") ?: userEmail
+            val uRol = intent.getStringExtra("USER_ROL") ?: userRole
+            val sId = intent.getStringExtra("SCHOOL_ID") ?: schoolId
             when (item.itemId) {
                 R.id.nav_inicio -> {
+                    val targetActivity = when (uRol.lowercase()) {
+                        "superadmin" -> SuperAdminDashboardActivity::class.java
+                        "admin" -> InicioActivity::class.java
+                        "docente" -> DocenteDashboardActivity::class.java
+                        else -> PadreDashboardActivity::class.java
+                    }
+                    val initIntent = Intent(this, targetActivity)
+                    initIntent.putExtra("SCHOOL_ID", sId)
+                    initIntent.putExtra("USER_EMAIL", uEmail)
+                    initIntent.putExtra("USER_ROL", uRol)
+                    startActivity(initIntent)
                     finish()
                     true
                 }
                 R.id.nav_gestion -> {
-                    startActivity(Intent(this, AdminDashboardActivity::class.java))
-                    finish()
+                    if (uRol.lowercase() == "admin" || uRol.lowercase() == "superadmin") {
+                        val gestionIntent = Intent(this, AdminDashboardActivity::class.java)
+                        gestionIntent.putExtra("SCHOOL_ID", sId)
+                        gestionIntent.putExtra("USER_EMAIL", uEmail)
+                        gestionIntent.putExtra("USER_ROL", uRol)
+                        startActivity(gestionIntent)
+                        finish()
+                    }
                     true
                 }
                 R.id.nav_reportes -> {
-                    val intent = Intent(this, GestionReportesSalonesActivity::class.java)
-                    intent.putExtra("SCHOOL_ID", intent.getStringExtra("SCHOOL_ID"))
-                    startActivity(intent)
+                    val targetActivity = when (uRol.lowercase()) {
+                        "docente", "admin" -> GestionReportesSalonesActivity::class.java
+                        else -> PadreDashboardActivity::class.java
+                    }
+                    val repIntent = Intent(this, targetActivity)
+                    repIntent.putExtra("SCHOOL_ID", sId)
+                    repIntent.putExtra("USER_EMAIL", uEmail)
+                    repIntent.putExtra("USER_ROL", uRol)
+                    startActivity(repIntent)
                     finish()
                     true
                 }
                 R.id.nav_asistente -> {
-                    startActivity(Intent(this, AsistenteActivity::class.java))
+                    val targetActivity = if (uRol.lowercase() == "usuario") {
+                        ChatbotPadreActivity::class.java
+                    } else {
+                        AsistenteActivity::class.java
+                    }
+                    val asistenteIntent = Intent(this, targetActivity)
+                    asistenteIntent.putExtra("SCHOOL_ID", sId)
+                    asistenteIntent.putExtra("USER_EMAIL", uEmail)
+                    asistenteIntent.putExtra("USER_ROL", uRol)
+                    startActivity(asistenteIntent)
                     finish()
                     true
                 }
                 R.id.nav_perfil -> {
                     val perfilIntent = Intent(this, PerfilActivity::class.java)
-                    perfilIntent.putExtra("USER_EMAIL", userEmail)
-                    perfilIntent.putExtra("USER_ROL", userRole)
-                    perfilIntent.putExtra("SCHOOL_ID", schoolId)
+                    perfilIntent.putExtra("USER_EMAIL", uEmail)
+                    perfilIntent.putExtra("USER_ROL", uRol)
+                    perfilIntent.putExtra("SCHOOL_ID", sId)
                     startActivity(perfilIntent)
                     finish()
                     true

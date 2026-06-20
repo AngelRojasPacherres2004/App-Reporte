@@ -157,7 +157,8 @@ class ForoDetalleActivity : AppCompatActivity() {
     }
 
     private fun setupBottomNavigation() {
-        val menuRes = when (userRole) {
+        val menuRes = when (userRole.lowercase()) {
+            "superadmin", "admin" -> R.menu.bottom_nav_menu_admin
             "docente" -> R.menu.bottom_nav_menu_docente
             "admin" -> R.menu.bottom_nav_menu_admin
             "usuario" -> R.menu.bottom_nav_menu_padre

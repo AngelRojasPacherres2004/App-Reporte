@@ -17,17 +17,20 @@ import android.view.View
 
 class DocenteAsistenciaActivity : AppCompatActivity() {
     private lateinit var binding: ActivityDocenteAsistenciaBinding
+    private lateinit var dbHelper: DatabaseHelper
     private val db = FirebaseFirestore.getInstance()
     private lateinit var adapter: AttendanceStudentAdapter
     private var schoolId: String = ""
     private val currentDateStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
     private var selectedClassroom: String = ""
+    private var selectedClassroomId: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityDocenteAsistenciaBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        dbHelper = DatabaseHelper(this)
         schoolId = intent.getStringExtra("SCHOOL_ID") ?: ""
         binding.tvAttendanceDateInfo.text = "Fecha: $currentDateStr"
         
@@ -43,38 +46,47 @@ class DocenteAsistenciaActivity : AppCompatActivity() {
     private fun loadClassrooms() {
         if (schoolId.isEmpty()) return
 
-        db.collection("forums")
-            .whereEqualTo("schoolId", schoolId)
+        db.collection("classrooms")
+            .whereEqualTo("school_id", schoolId)
             .get()
             .addOnSuccessListener { snapshot ->
-                val classList = snapshot.documents.mapNotNull { it.getString("name") }.toMutableList()
-                if (classList.isEmpty()) {
-                    classList.add("General")
+                val classroomsList = snapshot.documents.map { doc ->
+                    Pair(doc.id, doc.getString("name") ?: "Sin nombre")
+                }.toMutableList()
+                
+                if (classroomsList.isEmpty()) {
+                    classroomsList.add(Pair("general", "General"))
                 }
                 
-                val spinnerAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, classList)
+                val names = classroomsList.map { it.second }
+                val spinnerAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, names)
                 binding.spinnerClassrooms.adapter = spinnerAdapter
                 
                 binding.spinnerClassrooms.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                     override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                        selectedClassroom = classList[position]
-                        loadStudents()
+                        val selectedPair = classroomsList[position]
+                        selectedClassroom = selectedPair.second
+                        selectedClassroomId = selectedPair.first
+                        loadStudents(selectedClassroomId)
                     }
                     override fun onNothingSelected(parent: AdapterView<*>?) {}
                 }
             }
             .addOnFailureListener {
                 Toast.makeText(this, "Error cargando salones", Toast.LENGTH_SHORT).show()
-                loadStudents() // Fallback
+                loadStudents("general") // Fallback
             }
     }
 
-    private fun loadStudents() {
+    private fun loadStudents(classroomId: String) {
         if (schoolId.isEmpty()) return
         
-        // Carga todos los alumnos del colegio para simplificar (MVP)
-        val query = db.collection("students").whereEqualTo("school_id", schoolId)
-        // If we have selectedClassroom we might filter by it if the DB supports it, but for MVP we load and filter locally if needed
+        val query = if (classroomId == "general") {
+            db.collection("students").whereEqualTo("school_id", schoolId)
+        } else {
+            db.collection("students").whereEqualTo("classroom_id", classroomId)
+        }
+        
         query.get()
             .addOnSuccessListener { snapshot ->
                 val list = snapshot.documents.mapNotNull { doc ->
@@ -108,6 +120,11 @@ class DocenteAsistenciaActivity : AppCompatActivity() {
         }
         
         batch.commit().addOnSuccessListener {
+            // Respaldo en SQLite
+            for ((studentId, status) in results) {
+                dbHelper.saveAttendance(studentId, currentDateStr, status, selectedClassroom)
+            }
+
             Toast.makeText(this, "Asistencia guardada exitosamente", Toast.LENGTH_SHORT).show()
             // CA1: Activar notificaciones para inasistencias
             triggerAttendanceNotifications()

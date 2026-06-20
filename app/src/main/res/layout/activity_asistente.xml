@@ -46,7 +46,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
-        android:layout_marginBottom="56dp">
+        android:layout_marginBottom="68dp">
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvBotMessages"

@@ -18,6 +18,7 @@ import java.util.Locale
 class PadreDashboardActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityDashboardPadreBinding
+    private lateinit var dbHelper: DatabaseHelper
     private var userEmail: String = ""
     private var userRole: String = "usuario"
     
@@ -31,6 +32,7 @@ class PadreDashboardActivity : AppCompatActivity() {
         binding = ActivityDashboardPadreBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        dbHelper = DatabaseHelper(this)
         userRole = intent.getStringExtra("USER_ROL") ?: "usuario"
         userEmail = intent.getStringExtra("USER_EMAIL") ?: ""
 
@@ -107,21 +109,40 @@ class PadreDashboardActivity : AppCompatActivity() {
     }
 
     private fun loadHijos() {
+        // Carga inicial desde SQLite (Offline-first)
+        val offlineHijos = dbHelper.getOfflineStudents(userEmail)
+        if (offlineHijos.isNotEmpty()) {
+            hijosAdapter.updateData(offlineHijos)
+            binding.tvSeleccionaHijoMsg.visibility = View.GONE
+        }
+
         FirebaseFirestore.getInstance().collection("students")
             .whereEqualTo("parent_email", userEmail)
             .addSnapshotListener { snapshot, error ->
-                if (error != null) return@addSnapshotListener
+                if (error != null) {
+                    if (offlineHijos.isEmpty()) {
+                        binding.tvSeleccionaHijoMsg.text = "Error al conectar. Verifique su conexión."
+                        binding.tvSeleccionaHijoMsg.visibility = View.VISIBLE
+                    }
+                    return@addSnapshotListener
+                }
                 
                 if (snapshot != null) {
                     val list = snapshot.documents.mapNotNull { doc ->
                         val data = doc.data?.mapValues { it.value.toString() }?.toMutableMap()
                         data?.put("id", doc.id)
+                        
+                        // Respaldo en SQLite
+                        val studentName = data?.get("name") ?: data?.get("names") ?: "Sin Nombre"
+                        val classroomId = data?.get("classroom_id") ?: ""
+                        dbHelper.saveStudent(doc.id, studentName, classroomId, userEmail)
+                        
                         data
                     }
                     if (list.isNotEmpty()) {
                         hijosAdapter.updateData(list)
                         binding.tvSeleccionaHijoMsg.visibility = View.GONE
-                    } else {
+                    } else if (offlineHijos.isEmpty()) {
                         binding.tvSeleccionaHijoMsg.text = "No se encontraron hijos registrados con su correo."
                         binding.tvSeleccionaHijoMsg.visibility = View.VISIBLE
                     }
@@ -161,7 +182,7 @@ class PadreDashboardActivity : AppCompatActivity() {
             }
         }
 
-        binding.root.findViewById<android.view.View>(R.id.btnPadreHorario)?.setOnClickListener {
+        binding.btnPadreHorario.setOnClickListener {
             if (selectedStudentId.isNotEmpty()) {
                 val intent = Intent(this, PadreHorarioActivity::class.java)
                 intent.putExtra("STUDENT_ID", selectedStudentId)
@@ -172,7 +193,7 @@ class PadreDashboardActivity : AppCompatActivity() {
             }
         }
 
-        binding.root.findViewById<android.view.View>(R.id.btnPadreAsistencia)?.setOnClickListener {
+        binding.btnPadreAsistencia.setOnClickListener {
             if (selectedStudentId.isNotEmpty()) {
                 val intent = Intent(this, PadreAsistenciaActivity::class.java)
                 intent.putExtra("STUDENT_ID", selectedStudentId)
@@ -200,7 +221,7 @@ class PadreDashboardActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
-        binding.root.findViewById<android.view.View>(R.id.btnContactarDocente)?.setOnClickListener {
+        binding.btnContactarDocente.setOnClickListener {
             if (selectedClassroomId.isNotEmpty()) {
                 // Find teacher for this classroom
                 FirebaseFirestore.getInstance().collection("users")
