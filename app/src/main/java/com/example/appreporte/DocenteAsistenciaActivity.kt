@@ -16,6 +16,7 @@ import android.view.View
 
 class DocenteAsistenciaActivity : AppCompatActivity() {
     private lateinit var binding: ActivityDocenteAsistenciaBinding
+    private lateinit var dbHelper: DatabaseHelper
     private val db = FirebaseFirestore.getInstance()
     private lateinit var adapter: AttendanceStudentAdapter
     private var schoolId: String = ""
@@ -28,6 +29,7 @@ class DocenteAsistenciaActivity : AppCompatActivity() {
         binding = ActivityDocenteAsistenciaBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        dbHelper = DatabaseHelper(this)
         schoolId = intent.getStringExtra("SCHOOL_ID") ?: ""
         binding.tvAttendanceDateInfo.text = "Fecha: $currentDateStr"
         
@@ -117,6 +119,11 @@ class DocenteAsistenciaActivity : AppCompatActivity() {
         }
         
         batch.commit().addOnSuccessListener {
+            // Respaldo en SQLite
+            for ((studentId, status) in results) {
+                dbHelper.saveAttendance(studentId, currentDateStr, status, selectedClassroom)
+            }
+
             Toast.makeText(this, "Asistencia guardada exitosamente", Toast.LENGTH_SHORT).show()
             finish()
         }.addOnFailureListener {

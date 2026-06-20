@@ -40,6 +40,7 @@ import kotlinx.coroutines.withContext
 class AlumnosReporteListaActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityAlumnosListaBinding
+    private lateinit var dbHelper: DatabaseHelper
     private var classroomId: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,6 +48,7 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
         binding = ActivityAlumnosListaBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        dbHelper = DatabaseHelper(this)
         classroomId = intent.getStringExtra("CLASSROOM_ID") ?: ""
         val classroomName = intent.getStringExtra("CLASSROOM_NAME") ?: "Salón"
 
@@ -75,6 +77,15 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
                 val list = snapshot.documents.mapNotNull { doc ->
                     val data = doc.data?.mapValues { it.value.toString() }?.toMutableMap()
                     data?.put("id", doc.id)
+                    
+                    // Respaldo en SQLite para uso offline
+                    dbHelper.saveStudent(
+                        doc.id, 
+                        data?.get("name") ?: data?.get("names") ?: "Sin Nombre", 
+                        classroomId,
+                        data?.get("parent_email") ?: ""
+                    )
+
                     data
                 }
                 adapter.updateData(list)
@@ -122,6 +133,9 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
                     )
                     FirebaseFirestore.getInstance().collection("grades").add(gradeData)
                         .addOnSuccessListener {
+                            // Respaldo en SQLite
+                            dbHelper.saveGrade(studentId, subject, value, type, date, period)
+
                             Toast.makeText(this, R.string.grade_assigned_success, Toast.LENGTH_SHORT).show()
                         }
                         .addOnFailureListener {

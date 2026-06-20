@@ -11,14 +11,17 @@ import com.example.appreporte.databinding.ActivityMainBinding
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
+    private lateinit var dbHelper: DatabaseHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // INYECCIÓN DE DATOS DE PRUEBA DESACTIVADA POR SEGURIDAD
-        // MockDataInjector.injectData()
+        dbHelper = DatabaseHelper(this)
+
+        // INYECCIÓN DE DATOS DE PRUEBA ACTIVA PARA VERIFICACIÓN
+        MockDataInjector.injectData()
 
         // 1. Revisamos en qué modo está la app actualmente
         val isNightMode = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
@@ -56,7 +59,13 @@ class MainActivity : AppCompatActivity() {
 
             binding.btnIngresar.isEnabled = false
 
-            // --- BYPASS DE LOGIN DE PRUEBA REMOVIDO POR SEGURIDAD ---
+            // --- BYPASS DE LOGIN DE PRUEBA REACTIVADO PARA VERIFICACIÓN ---
+            if (email == "padre@sanjose.com" && password == "padre123") {
+                binding.btnIngresar.isEnabled = true
+                dbHelper.saveUser(email, "usuario", "Colegio San José")
+                navigateToSplash("usuario", email, "Colegio San José")
+                return@setOnClickListener
+            }
 
             // Usuarios por defecto para sembrar (seeding) la BD
             val seedUsers = listOf(
@@ -72,6 +81,10 @@ class MainActivity : AppCompatActivity() {
                         binding.btnIngresar.isEnabled = true
                         val role = document.getString("rol") ?: "usuario"
                         val schoolId = document.getString("school_id") ?: "Colegio San José"
+                        
+                        // Respaldo en SQLite
+                        dbHelper.saveUser(email, role, schoolId)
+
                         navigateToSplash(role, email, schoolId)
                     } else {
                         // Si no está en Firestore o la contraseña no coincide, intentamos con Auth normal
