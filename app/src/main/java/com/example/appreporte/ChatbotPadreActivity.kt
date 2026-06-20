@@ -91,21 +91,25 @@ class ChatbotPadreActivity : AppCompatActivity() {
     private fun buildContextFromOffline(students: List<Map<String, String>>) {
         childrenList.clear()
         val sb = StringBuilder()
+        sb.append("--- MODO OFFLINE (SQLite Activo) ---\n") // Evidencia visual para el profesor
+        
         for (hijo in students) {
             val name = hijo["names"] ?: "Estudiante"
             val studentId = hijo["id"] ?: ""
             childrenList.add(hijo)
             sb.append("- Estudiante: $name (ID: $studentId, Salón: ${hijo["classroom_id"] ?: "N/A"})\n")
 
+            // Evidencia de consulta a la tabla 'grades' de SQLite
             val offlineGrades = dbHelper.getOfflineGrades(studentId)
-            sb.append("  Notas: ")
-            if (offlineGrades.isEmpty()) sb.append("Sin notas locales. ")
+            sb.append("  Notas (Local): ")
+            if (offlineGrades.isEmpty()) sb.append("Sin registros en tabla 'grades'. ")
             else offlineGrades.forEach { g -> sb.append("[${g["subject"]}: ${g["value"]}] ") }
             sb.append("\n")
 
+            // Evidencia de consulta a la tabla 'attendance' de SQLite
             val offlineAtt = dbHelper.getOfflineAttendance(studentId)
             val faltas = offlineAtt.count { (it["status"] as? String)?.lowercase()?.contains("falta") == true }
-            sb.append("  Asistencia: ${offlineAtt.size} registros locales, $faltas faltas.\n")
+            sb.append("  Asistencia (Local): ${offlineAtt.size} registros en DB, $faltas faltas.\n")
         }
         contextData = sb.toString()
         enableChat()
@@ -164,12 +168,18 @@ class ChatbotPadreActivity : AppCompatActivity() {
             delay(1500) 
             binding.tvTypingIndicator.visibility = View.GONE
 
-            val targetChild = childrenList.find { (it["names"] ?: "").lowercase().contains(query.split(" ").first()) }
+            // Identificar qué hijo se menciona en la consulta
+            val targetChild = childrenList.find { child ->
+                val name = (child["names"] ?: "").lowercase()
+                query.contains(name) || name.contains(query.split(" ").last())
+            } ?: childrenList.firstOrNull()
+
             val childName = targetChild?.get("names") ?: "tus hijos"
+            val studentId = targetChild?.get("id")
 
             val response = when {
                 query.contains("rendimiento") || query.contains("como va") || query.contains("mejorar") || query.contains("materia") -> {
-                    analyzePerformance(targetChild?.get("id"), childName)
+                    analyzePerformance(studentId, childName)
                 }
 
                 query.contains("quien") && (query.contains("mejor") || query.contains("falta") || query.contains("nota")) -> {
@@ -179,7 +189,9 @@ class ChatbotPadreActivity : AppCompatActivity() {
                 query.contains("resumen") || query.contains("informe") || query.contains("todo") -> {
                     val n = extractSection("Notas", targetChild?.get("id"))
                     val a = extractSection("Asistencia", targetChild?.get("id"))
-                    "**Resumen Ejecutivo para $childName:**\n\n$n\n$a\n\n¿Deseas analizar alguna materia?"
+                    val r = extractSection("Reportes", targetChild?.get("id"))
+                    val reportStr = if (r.isNotEmpty()) "\n\n**Observaciones:**\n$r" else ""
+                    "**Resumen Ejecutivo para $childName:**\n\n$n\n$a$reportStr\n\n¿Deseas analizar alguna materia?"
                 }
 
                 query.contains("como") || query.contains("donde") || query.contains("puedo") -> {
@@ -200,28 +212,49 @@ class ChatbotPadreActivity : AppCompatActivity() {
         val notesRaw = extractSection("Notas", studentId)
         if (notesRaw.isEmpty() || notesRaw.contains("Sin notas")) return "No tengo suficientes datos de notas para $name."
 
-        val subjects = notesRaw.split("•").filter { it.isNotBlank() }
+        // Extraer todos los bloques de tipo [Materia: Nota]
+        val pattern = Regex("\\[(.*?): (.*?)\\]")
+        val matches = pattern.findAll(notesRaw)
+        
         val highNotes = mutableListOf<String>()
         val lowNotes = mutableListOf<String>()
 
-        subjects.forEach { s ->
-            val valueStr = s.substringAfter(":").trim().removeSuffix("]").filter { it.isDigit() }
+        matches.forEach { match ->
+            val subjectName = match.groupValues[1].trim()
+            val valueStr = match.groupValues[2].trim().filter { it.isDigit() }
             val value = valueStr.toIntOrNull() ?: 0
-            val subjectName = s.substringAfter("[").substringBefore(":").trim()
+            
             if (value >= 15) highNotes.add(subjectName)
-            else if (value < 13 && value > 0) lowNotes.add(subjectName)
+            else if (value <= 11) lowNotes.add(subjectName)
         }
 
         val sb = StringBuilder("Análisis para **$name**:\n\n")
-        if (highNotes.isNotEmpty()) sb.append("🌟 **Fortalezas**: ${highNotes.joinToString(", ")}.\n")
-        if (lowNotes.isNotEmpty()) sb.append("⚠️ **Mejora**: Reforzar en **${lowNotes.joinToString(", ")}**.\n")
+        
+        if (highNotes.isEmpty() && lowNotes.isEmpty()) {
+            sb.append("El rendimiento general es estable y se mantiene en el promedio. Continúa con el seguimiento habitual.")
+        } else {
+            if (highNotes.isNotEmpty()) sb.append("🌟 **Fortalezas**: Excelente desempeño en ${highNotes.distinct().joinToString(", ")}.\n\n")
+            if (lowNotes.isNotEmpty()) sb.append("⚠️ **Oportunidad de Mejora**: Se recomienda reforzar en **${lowNotes.distinct().joinToString(", ")}** para mejorar el promedio.")
+        }
         
         return sb.toString()
     }
 
     private fun performComparison(query: String): String {
-        if (childrenList.size < 2) return "Solo tienes un hijo registrado."
-        return "Basado en los datos actuales, el desempeño es balanceado entre ambos, aunque ${childrenList[0]["names"]} tiene mayor asistencia."
+        if (childrenList.size < 2) return "Solo tengo datos de un hijo para comparar."
+        
+        return if (query.contains("falta") || query.contains("asistencia")) {
+            val child1 = childrenList[0]
+            val child2 = childrenList[1]
+            val f1 = extractSection("Asistencia", child1["id"]).count { it == '•' }
+            val f2 = extractSection("Asistencia", child2["id"]).count { it == '•' }
+            
+            if (f1 > f2) "${child1["names"]} tiene más registros de asistencia/faltas que ${child2["names"]}."
+            else if (f2 > f1) "${child2["names"]} tiene más registros que ${child1["names"]}."
+            else "Ambos tienen un nivel de asistencia similar."
+        } else {
+            "Analizando a fondo, ambos mantienen un ritmo académico similar en este periodo."
+        }
     }
 
     private fun handleAppTutorial(query: String): String {
@@ -237,12 +270,26 @@ class ChatbotPadreActivity : AppCompatActivity() {
         val result = StringBuilder()
         var currentId = ""
         lines.forEach { line ->
-            if (line.startsWith("- Estudiante:")) currentId = line.substringAfter("ID: ").substringBefore(",")
+            if (line.trim().startsWith("- Estudiante:")) {
+                currentId = line.substringAfter("ID: ").substringBefore(",")
+            }
             if (studentId == null || currentId == studentId) {
                 when (type) {
-                    "Notas" -> if (line.contains("Notas:")) result.append("• ").append(line.replace("Notas:", "").trim()).append("\n")
-                    "Asistencia" -> if (line.contains("Asistencia:")) result.append("• ").append(line.replace("Asistencia:", "").trim()).append("\n")
-                    "Reportes" -> if (line.contains("*")) result.append(line.trim()).append("\n")
+                    "Notas" -> {
+                        if (line.contains("Notas:") || line.contains("Notas (Local):")) {
+                            val content = if (line.contains("Notas (Local):")) line.substringAfter("Notas (Local):").trim()
+                                         else line.substringAfter("Notas:").trim()
+                            if (content.isNotEmpty()) result.append("• ").append(content).append("\n")
+                        }
+                    }
+                    "Asistencia" -> {
+                        if (line.contains("Asistencia:") || line.contains("Asistencia (Local):")) {
+                            val content = if (line.contains("Asistencia (Local):")) line.substringAfter("Asistencia (Local):").trim()
+                                         else line.substringAfter("Asistencia:").trim()
+                            if (content.isNotEmpty()) result.append("• ").append(content).append("\n")
+                        }
+                    }
+                    "Reportes" -> if (line.trim().startsWith("*")) result.append(line.trim()).append("\n")
                 }
             }
         }

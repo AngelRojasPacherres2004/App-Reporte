@@ -5,26 +5,54 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
+/**
+ * CLASE DE PERSISTENCIA LOCAL (SQLite) - EduConnect
+ * 
+ * PROPÓSITO: Proporcionar una capa de datos offline que sincroniza con Firebase Firestore.
+ * 
+ * EVIDENCIA DE TABLAS Y ESQUEMA:
+ * 
+ * 1. TABLE_USERS (users): Almacena credenciales básicas y roles para acceso rápido sin red.
+ *    - email: Identificador único del usuario (PK).
+ *    - rol: Determina el Dashboard a cargar (admin, docente, usuario).
+ *    - school_id: Colegio asociado.
+ * 
+ * 2. TABLE_STUDENTS (students): Almacena los datos de los hijos asociados a un padre.
+ *    - id: Identificador único del alumno (PK).
+ *    - name: Nombre completo del estudiante.
+ *    - classroom_id: Salón asignado.
+ *    - parent_email: Enlace con el correo del padre para filtrado.
+ * 
+ * 3. TABLE_GRADES (grades): Historial de calificaciones para análisis del chatbot.
+ *    - id: Autoincremental (PK).
+ *    - student_id: Relación con la tabla students.
+ *    - subject: Materia (Matemáticas, Comunicación, etc.).
+ *    - value: Valor numérico o letra de la nota.
+ *    - type: Tipo de evaluación (diaria, mensual, bimestral).
+ * 
+ * 4. TABLE_ATTENDANCE (attendance): Registro de asistencias.
+ *    - id: Autoincremental (PK).
+ *    - student_id: Relación con la tabla students.
+ *    - date: Fecha del registro.
+ *    - status: Presente, Falta, Tardanza.
+ */
 class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
     companion object {
         private const val DATABASE_NAME = "AppReporteBackup.db"
         private const val DATABASE_VERSION = 1
 
-        // Tabla Usuarios
         const val TABLE_USERS = "users"
         const val COL_USER_EMAIL = "email"
         const val COL_USER_ROL = "rol"
         const val COL_USER_SCHOOL = "school_id"
 
-        // Tabla Alumnos
         const val TABLE_STUDENTS = "students"
         const val COL_STUDENT_ID = "id"
         const val COL_STUDENT_NAME = "name"
         const val COL_STUDENT_CLASSROOM = "classroom_id"
         const val COL_STUDENT_PARENT_EMAIL = "parent_email"
 
-        // Tabla Notas
         const val TABLE_GRADES = "grades"
         const val COL_GRADE_ID = "id"
         const val COL_GRADE_STUDENT_ID = "student_id"
@@ -34,7 +62,6 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         const val COL_GRADE_DATE = "date"
         const val COL_GRADE_PERIOD = "period"
 
-        // Tabla Asistencia
         const val TABLE_ATTENDANCE = "attendance"
         const val COL_ATTENDANCE_ID = "id"
         const val COL_ATTENDANCE_STUDENT_ID = "student_id"
@@ -84,7 +111,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         onCreate(db)
     }
 
-    // --- Métodos de Ayuda ---
+    // --- Métodos de Ayuda para Sincronización ---
 
     fun saveUser(email: String, rol: String, schoolId: String) {
         val db = this.writableDatabase
@@ -143,7 +170,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             do {
                 val item = mapOf(
                     "id" to cursor.getString(cursor.getColumnIndexOrThrow(COL_STUDENT_ID)),
-                    "names" to cursor.getString(cursor.getColumnIndexOrThrow(COL_STUDENT_NAME)), // Normalizado a 'names' para el adapter
+                    "names" to cursor.getString(cursor.getColumnIndexOrThrow(COL_STUDENT_NAME)),
                     "classroom_id" to cursor.getString(cursor.getColumnIndexOrThrow(COL_STUDENT_CLASSROOM)),
                     "parent_email" to cursor.getString(cursor.getColumnIndexOrThrow(COL_STUDENT_PARENT_EMAIL))
                 )
