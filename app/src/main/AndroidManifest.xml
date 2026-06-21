@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.appreporte">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+
+    <application
+        android:name=".AppReporteApplication"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.AppReporte">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".LoadingActivity"
+            android:exported="false" />
+            
+        <activity
+            android:name=".SuperAdminDashboardActivity"
+            android:exported="false"
+            android:label="Panel Súper Administrador" />
+
+        <activity
+            android:name=".DirectChatActivity"
+            android:exported="false"
+            android:label="Chat" />
+
+        <activity
+            android:name=".PadreDashboardActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".AdminDashboardActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".InicioActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".DocenteDashboardActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ForoSalonesActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ForoDetalleActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".PostDetalleActivity"
+            android:exported="false"
+            android:label="Comentarios"
+            android:theme="@style/Theme.AppReporte" />
+
+        <!-- Pantalla del Chatbot con su nombre oficial -->
+        <activity
+            android:name=".ChatbotPadreActivity"
+            android:exported="false"
+            android:label="Asistente EduConnect" />
+
+        <activity
+            android:name=".ForoActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".AsistenteActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".GestionAlumnosSalonesActivity"
+            android:exported="false"
+            android:label="Seleccionar Salón" />
+
+        <activity
+            android:name=".AlumnosListaActivity"
+            android:exported="false"
+            android:label="Lista de Alumnos" />
+
+        <activity
+            android:name=".GestionReportesSalonesActivity"
+            android:exported="false"
+            android:label="Reportes por Salón" />
+
+        <activity
+            android:name=".AlumnosReporteListaActivity"
+            android:exported="false"
+            android:label="Asignar Notas" />
+
+        <activity
+            android:name=".MapSelectionActivity"
+            android:exported="false"
+            android:label="Seleccionar Ubicación" />
+
+        <activity
+            android:name=".PerfilActivity"
+            android:exported="false"
+            android:label="Mi Perfil" />
+
+        <activity
+            android:name=".PadreReporteActivity"
+            android:exported="false"
+            android:label="Mis Reportes" />
+
+        <activity
+            android:name=".ComplaintsActivity"
+            android:exported="false"
+            android:label="Gestión de Quejas" />
+
+        <activity
+            android:name=".DocenteHorarioActivity"
+            android:exported="false"
+            android:label="Mi Horario" />
+
+        <activity
+            android:name=".DocenteAsistenciaActivity"
+            android:exported="false"
+            android:label="Tomar Asistencia" />
+
+        <activity
+            android:name=".PadreHorarioActivity"
+            android:exported="false"
+            android:label="Horario del Alumno" />
+
+        <activity
+            android:name=".PadreAsistenciaActivity"
+            android:exported="false"
+            android:label="Historial de Asistencia" />
+
+        <service
+            android:name=".MyFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyC44CgQz3e3zl2eKi3Rm6s-xRnutAAzasY" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+    </application>
+
+</manifest>
