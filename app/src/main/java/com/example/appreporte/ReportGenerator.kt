@@ -16,7 +16,7 @@ class ReportGenerator(private val context: Context) {
 
     private val dbHelper = DatabaseHelper(context)
 
-    fun generateStudentReport(studentId: Int, studentName: String, period: String): File? {
+    fun generateStudentReport(studentId: String, studentName: String, period: String): File? {
         val pdfDocument = PdfDocument()
         val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create() // A4 Size
         val page = pdfDocument.startPage(pageInfo)

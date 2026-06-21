@@ -12,7 +12,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     companion object {
         private const val DATABASE_NAME = "AppReporte.db"
-        private const val DATABASE_VERSION = 10 // Incremented for user gmail column
+        private const val DATABASE_VERSION = 11
         private const val TABLE_USERS = "users"
         private const val COLUMN_ID = "id"
         private const val COLUMN_EMAIL = "email"
@@ -25,12 +25,12 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         private const val TABLE_CLASSROOMS = "classrooms"
         private const val COLUMN_CLASSROOM_ID = "id"
         private const val COLUMN_CLASSROOM_NAME = "name"
+        private const val COLUMN_CLASSROOM_FIRESTORE_ID = "firestore_id"
 
         private const val TABLE_USER_CLASSROOMS = "user_classrooms"
         private const val COLUMN_UC_USER_EMAIL = "user_email"
         private const val COLUMN_UC_CLASSROOM_ID = "classroom_id"
 
-        // Forum Tables
         private const val TABLE_POSTS = "posts"
         private const val COLUMN_POST_ID = "id"
         private const val COLUMN_POST_SALON = "salon_name"
@@ -46,9 +46,9 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         private const val COLUMN_COMMENT_CONTENT = "content"
         private const val COLUMN_COMMENT_TIME = "time"
 
-        // Students Table
         private const val TABLE_STUDENTS = "students"
         private const val COLUMN_STUDENT_ID = "id"
+        private const val COLUMN_STUDENT_FIRESTORE_ID = "firestore_id"
         private const val COLUMN_STUDENT_NAMES = "names"
         private const val COLUMN_STUDENT_LASTNAMES = "lastnames"
         private const val COLUMN_STUDENT_DNI = "dni"
@@ -56,28 +56,26 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         private const val COLUMN_STUDENT_PARENT_EMAIL = "parent_email"
         private const val COLUMN_STUDENT_GMAIL = "correo"
 
-        // Grades Table
         private const val TABLE_GRADES = "grades"
         private const val COLUMN_GRADE_ID = "id"
-        private const val COLUMN_GRADE_STUDENT_ID = "student_id"
-        private const val COLUMN_GRADE_TYPE = "type" // diaria, mensual, bimestral
+        private const val COLUMN_GRADE_STUDENT_ID = "student_id" // Will store Firestore ID
+        private const val COLUMN_GRADE_TYPE = "type"
         private const val COLUMN_GRADE_VALUE = "value"
         private const val COLUMN_GRADE_SUBJECT = "subject"
         private const val COLUMN_GRADE_DATE = "date"
+        private const val COLUMN_GRADE_PERIOD = "period"
 
-        // Complaints Table
         private const val TABLE_COMPLAINTS = "complaints"
         private const val COLUMN_COMPLAINT_ID = "id"
         private const val COLUMN_COMPLAINT_POST_ID = "post_id"
         private const val COLUMN_COMPLAINT_PARENT_EMAIL = "parent_email"
         private const val COLUMN_COMPLAINT_CONTENT = "content"
-        private const val COLUMN_COMPLAINT_STATUS = "status" // en proceso, rechazado, atendido
+        private const val COLUMN_COMPLAINT_STATUS = "status"
         private const val COLUMN_COMPLAINT_DATE = "date"
 
-        // Attendance Table
         private const val TABLE_ATTENDANCE = "attendance"
         private const val COLUMN_ATTENDANCE_ID = "id"
-        private const val COLUMN_ATTENDANCE_STUDENT_ID = "student_id"
+        private const val COLUMN_ATTENDANCE_STUDENT_ID = "student_id" // Will store Firestore ID
         private const val COLUMN_ATTENDANCE_STATUS = "status"
         private const val COLUMN_ATTENDANCE_DATE = "date"
     }
@@ -95,7 +93,8 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
         val createClassroomsTable = ("CREATE TABLE " + TABLE_CLASSROOMS + "("
                 + COLUMN_CLASSROOM_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
-                + COLUMN_CLASSROOM_NAME + " TEXT UNIQUE" + ")")
+                + COLUMN_CLASSROOM_NAME + " TEXT UNIQUE,"
+                + COLUMN_CLASSROOM_FIRESTORE_ID + " TEXT" + ")")
         db.execSQL(createClassroomsTable)
 
         val createUserClassroomsTable = ("CREATE TABLE " + TABLE_USER_CLASSROOMS + "("
@@ -126,24 +125,24 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
         val createStudentsTable = ("CREATE TABLE " + TABLE_STUDENTS + "("
                 + COLUMN_STUDENT_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + COLUMN_STUDENT_FIRESTORE_ID + " TEXT UNIQUE,"
                 + COLUMN_STUDENT_NAMES + " TEXT,"
                 + COLUMN_STUDENT_LASTNAMES + " TEXT,"
-                + COLUMN_STUDENT_DNI + " TEXT UNIQUE,"
-                + COLUMN_STUDENT_CLASSROOM_ID + " INTEGER,"
+                + COLUMN_STUDENT_DNI + " TEXT,"
+                + COLUMN_STUDENT_CLASSROOM_ID + " TEXT,"
                 + COLUMN_STUDENT_PARENT_EMAIL + " TEXT,"
                 + COLUMN_STUDENT_GMAIL + " TEXT,"
-                + "FOREIGN KEY($COLUMN_STUDENT_CLASSROOM_ID) REFERENCES $TABLE_CLASSROOMS($COLUMN_CLASSROOM_ID),"
                 + "FOREIGN KEY($COLUMN_STUDENT_PARENT_EMAIL) REFERENCES $TABLE_USERS($COLUMN_EMAIL))")
         db.execSQL(createStudentsTable)
 
         val createGradesTable = ("CREATE TABLE " + TABLE_GRADES + "("
                 + COLUMN_GRADE_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
-                + COLUMN_GRADE_STUDENT_ID + " INTEGER,"
+                + COLUMN_GRADE_STUDENT_ID + " TEXT,"
                 + COLUMN_GRADE_TYPE + " TEXT,"
                 + COLUMN_GRADE_VALUE + " TEXT,"
                 + COLUMN_GRADE_SUBJECT + " TEXT,"
                 + COLUMN_GRADE_DATE + " TEXT,"
-                + "FOREIGN KEY($COLUMN_GRADE_STUDENT_ID) REFERENCES $TABLE_STUDENTS($COLUMN_STUDENT_ID))")
+                + COLUMN_GRADE_PERIOD + " TEXT" + ")")
         db.execSQL(createGradesTable)
 
         val createComplaintsTable = ("CREATE TABLE " + TABLE_COMPLAINTS + "("
@@ -159,18 +158,15 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
         val createAttendanceTable = ("CREATE TABLE " + TABLE_ATTENDANCE + "("
                 + COLUMN_ATTENDANCE_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
-                + COLUMN_ATTENDANCE_STUDENT_ID + " INTEGER,"
+                + COLUMN_ATTENDANCE_STUDENT_ID + " TEXT,"
                 + COLUMN_ATTENDANCE_STATUS + " TEXT,"
-                + COLUMN_ATTENDANCE_DATE + " TEXT,"
-                + "FOREIGN KEY($COLUMN_ATTENDANCE_STUDENT_ID) REFERENCES $TABLE_STUDENTS($COLUMN_STUDENT_ID))")
+                + COLUMN_ATTENDANCE_DATE + " TEXT" + ")")
         db.execSQL(createAttendanceTable)
 
-        // Insertar usuarios iniciales
         insertUser(db, "admin@reporte.com", "admin123", "admin", "", "")
         insertUser(db, "user@reporte.com", "user123", "usuario", "912345678", "")
         insertUser(db, "docente@reporte.com", "docente123", "docente", "", "")
 
-        // Insertar salones iniciales
         insertClassroom(db, "Sala de 3 años")
         insertClassroom(db, "Sala de 4 años")
         insertClassroom(db, "Sala de 5 años")
@@ -195,13 +191,13 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         db.insert(TABLE_CLASSROOMS, null, values)
     }
 
-    fun getAllClassrooms(): List<Pair<Int, String>> {
-        val list = mutableListOf<Pair<Int, String>>()
+    fun getAllClassrooms(): List<Pair<String, String>> {
+        val list = mutableListOf<Pair<String, String>>()
         val db = this.readableDatabase
-        val cursor = db.rawQuery("SELECT $COLUMN_CLASSROOM_ID, $COLUMN_CLASSROOM_NAME FROM $TABLE_CLASSROOMS", null)
+        val cursor = db.rawQuery("SELECT $COLUMN_CLASSROOM_FIRESTORE_ID, $COLUMN_CLASSROOM_NAME FROM $TABLE_CLASSROOMS", null)
         if (cursor.moveToFirst()) {
             do {
-                list.add(Pair(cursor.getInt(0), cursor.getString(1)))
+                list.add(Pair(cursor.getString(0) ?: "", cursor.getString(1)))
             } while (cursor.moveToNext())
         }
         cursor.close()
@@ -214,6 +210,14 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         values.put(COLUMN_CLASSROOM_NAME, name)
         val result = db.insert(TABLE_CLASSROOMS, null, values)
         return result != -1L
+    }
+
+    fun updateClassroom(id: Int, newName: String): Boolean {
+        val db = this.writableDatabase
+        val values = ContentValues()
+        values.put(COLUMN_CLASSROOM_NAME, newName)
+        val result = db.update(TABLE_CLASSROOMS, values, "$COLUMN_CLASSROOM_ID = ?", arrayOf(id.toString()))
+        return result > 0
     }
 
     fun deleteClassroom(id: Int): Boolean {
@@ -251,19 +255,19 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         return list
     }
 
-    fun getUserClassroomsWithNames(email: String): List<Pair<Int, String>> {
-        val list = mutableListOf<Pair<Int, String>>()
+    fun getUserClassroomsWithNames(email: String): List<Pair<String, String>> {
+        val list = mutableListOf<Pair<String, String>>()
         val db = this.readableDatabase
         val query = """
-            SELECT c.$COLUMN_CLASSROOM_ID, c.$COLUMN_CLASSROOM_NAME 
+            SELECT c.$COLUMN_CLASSROOM_FIRESTORE_ID, c.$COLUMN_CLASSROOM_NAME 
             FROM $TABLE_CLASSROOMS c
-            JOIN $TABLE_USER_CLASSROOMS uc ON c.$COLUMN_CLASSROOM_ID = uc.$COLUMN_UC_CLASSROOM_ID
+            JOIN $TABLE_USER_CLASSROOMS uc ON c.$COLUMN_CLASSROOM_FIRESTORE_ID = uc.$COLUMN_UC_CLASSROOM_ID
             WHERE uc.$COLUMN_UC_USER_EMAIL = ?
         """.trimIndent()
         val cursor = db.rawQuery(query, arrayOf(email))
         if (cursor.moveToFirst()) {
             do {
-                list.add(Pair(cursor.getInt(0), cursor.getString(1)))
+                list.add(Pair(cursor.getString(0) ?: "", cursor.getString(1)))
             } while (cursor.moveToNext())
         }
         cursor.close()
@@ -381,8 +385,6 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         return result > 0
     }
 
-    // --- Forum Methods ---
-
     fun addPost(salon: String, author: String, title: String, content: String, time: String): Long {
         val db = this.writableDatabase
         val values = ContentValues()
@@ -436,35 +438,28 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         return list
     }
 
-    // --- Student Methods ---
-
-    fun addStudent(names: String, lastnames: String, dni: String, classroomId: Int, parentEmail: String, gmail: String): Boolean {
+    fun addStudent(firestoreId: String, names: String, lastnames: String, dni: String, classroomId: String, parentEmail: String, gmail: String): Boolean {
         val db = this.writableDatabase
         val values = ContentValues()
+        values.put(COLUMN_STUDENT_FIRESTORE_ID, firestoreId)
         values.put(COLUMN_STUDENT_NAMES, names)
         values.put(COLUMN_STUDENT_LASTNAMES, lastnames)
         values.put(COLUMN_STUDENT_DNI, dni)
         values.put(COLUMN_STUDENT_CLASSROOM_ID, classroomId)
         values.put(COLUMN_STUDENT_PARENT_EMAIL, parentEmail)
         values.put(COLUMN_STUDENT_GMAIL, gmail)
-        val result = db.insert(TABLE_STUDENTS, null, values)
-
-        // Vincular automáticamente al padre con el salón para que pueda verlo en el foro
-        if (result != -1L && parentEmail.isNotEmpty()) {
-            assignUserToClassroom(parentEmail, classroomId)
-        }
-
+        val result = db.insertWithOnConflict(TABLE_STUDENTS, null, values, SQLiteDatabase.CONFLICT_REPLACE)
         return result != -1L
     }
 
-    fun getStudentsByClassroom(classroomId: Int): List<Map<String, String>> {
+    fun getStudentsByClassroom(classroomId: String): List<Map<String, String>> {
         val list = mutableListOf<Map<String, String>>()
         val db = this.readableDatabase
-        val cursor = db.rawQuery("SELECT $COLUMN_STUDENT_ID, $COLUMN_STUDENT_NAMES, $COLUMN_STUDENT_LASTNAMES, $COLUMN_STUDENT_DNI, $COLUMN_STUDENT_PARENT_EMAIL, $COLUMN_STUDENT_GMAIL FROM $TABLE_STUDENTS WHERE $COLUMN_STUDENT_CLASSROOM_ID = ?", arrayOf(classroomId.toString()))
+        val cursor = db.rawQuery("SELECT $COLUMN_STUDENT_FIRESTORE_ID, $COLUMN_STUDENT_NAMES, $COLUMN_STUDENT_LASTNAMES, $COLUMN_STUDENT_DNI, $COLUMN_STUDENT_PARENT_EMAIL, $COLUMN_STUDENT_GMAIL FROM $TABLE_STUDENTS WHERE $COLUMN_STUDENT_CLASSROOM_ID = ?", arrayOf(classroomId))
         if (cursor.moveToFirst()) {
             do {
                 val map = mutableMapOf<String, String>()
-                map["id"] = cursor.getInt(0).toString()
+                map["id"] = cursor.getString(0)
                 map["names"] = cursor.getString(1)
                 map["lastnames"] = cursor.getString(2)
                 map["dni"] = cursor.getString(3)
@@ -477,7 +472,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         return list
     }
 
-    fun updateStudent(id: Int, names: String, lastnames: String, dni: String, parentEmail: String, gmail: String, classroomId: Int): Boolean {
+    fun updateStudent(firestoreId: String, names: String, lastnames: String, dni: String, parentEmail: String, gmail: String, classroomId: String): Boolean {
         val db = this.writableDatabase
         val values = ContentValues()
         values.put(COLUMN_STUDENT_NAMES, names)
@@ -485,37 +480,30 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         values.put(COLUMN_STUDENT_DNI, dni)
         values.put(COLUMN_STUDENT_PARENT_EMAIL, parentEmail)
         values.put(COLUMN_STUDENT_GMAIL, gmail)
-        val result = db.update(TABLE_STUDENTS, values, "$COLUMN_STUDENT_ID = ?", arrayOf(id.toString()))
-
-        // Asegurar que el padre esté vinculado al salón al actualizar los datos
-        if (result > 0 && parentEmail.isNotEmpty()) {
-            assignUserToClassroom(parentEmail, classroomId)
-        }
-
+        values.put(COLUMN_STUDENT_CLASSROOM_ID, classroomId)
+        val result = db.update(TABLE_STUDENTS, values, "$COLUMN_STUDENT_FIRESTORE_ID = ?", arrayOf(firestoreId))
         return result > 0
     }
 
-    fun deleteStudent(id: Int): Boolean {
+    fun deleteStudent(firestoreId: String): Boolean {
         val db = this.writableDatabase
-        val result = db.delete(TABLE_STUDENTS, "$COLUMN_ID = ?", arrayOf(id.toString()))
+        val result = db.delete(TABLE_STUDENTS, "$COLUMN_STUDENT_FIRESTORE_ID = ?", arrayOf(firestoreId))
         return result > 0
     }
 
-    fun getStudentById(id: Int): Map<String, String> {
+    fun getStudentById(firestoreId: String): Map<String, String> {
         val db = this.readableDatabase
         val map = mutableMapOf<String, String>()
-        val cursor = db.rawQuery("SELECT * FROM $TABLE_STUDENTS WHERE $COLUMN_ID = ?", arrayOf(id.toString()))
+        val cursor = db.rawQuery("SELECT * FROM $TABLE_STUDENTS WHERE $COLUMN_STUDENT_FIRESTORE_ID = ?", arrayOf(firestoreId))
         if (cursor.moveToFirst()) {
-            map["id"] = cursor.getInt(0).toString()
-            map["names"] = cursor.getString(1)
-            map["lastnames"] = cursor.getString(2)
-            map["dni"] = cursor.getString(3)
-            map["classroom_id"] = cursor.getInt(4).toString()
-            map["parent_email"] = cursor.getString(5)
-            map["correo"] = cursor.getString(6) ?: ""
-            // Usamos el DNI como firestore_id si no hay una columna específica, 
-            // pero lo más seguro es que en el sistema sea el DNI el identificador.
-            map["firestore_id"] = cursor.getString(3) 
+            map["id"] = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_STUDENT_FIRESTORE_ID))
+            map["names"] = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_STUDENT_NAMES))
+            map["lastnames"] = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_STUDENT_LASTNAMES))
+            map["dni"] = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_STUDENT_DNI))
+            map["classroom_id"] = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_STUDENT_CLASSROOM_ID))
+            map["parent_email"] = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_STUDENT_PARENT_EMAIL))
+            map["correo"] = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_STUDENT_GMAIL)) ?: ""
+            map["firestore_id"] = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_STUDENT_FIRESTORE_ID))
         }
         cursor.close()
         return map
@@ -541,13 +529,13 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         if (cursor.moveToFirst()) {
             do {
                 val map = mutableMapOf<String, String>()
-                map["id"] = cursor.getInt(0).toString()
-                map["names"] = cursor.getString(1)
-                map["lastnames"] = cursor.getString(2)
-                map["dni"] = cursor.getString(3)
-                map["classroom_id"] = cursor.getInt(4).toString()
-                map["parent_email"] = cursor.getString(5)
-                map["correo"] = cursor.getString(6) ?: ""
+                map["id"] = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_STUDENT_FIRESTORE_ID))
+                map["names"] = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_STUDENT_NAMES))
+                map["lastnames"] = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_STUDENT_LASTNAMES))
+                map["dni"] = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_STUDENT_DNI))
+                map["classroom_id"] = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_STUDENT_CLASSROOM_ID))
+                map["parent_email"] = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_STUDENT_PARENT_EMAIL))
+                map["correo"] = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_STUDENT_GMAIL)) ?: ""
                 list.add(map)
             } while (cursor.moveToNext())
         }
@@ -555,29 +543,20 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         return list
     }
 
-    fun updateClassroom(id: Int, newName: String): Boolean {
-        val db = this.writableDatabase
-        val values = ContentValues()
-        values.put(COLUMN_CLASSROOM_NAME, newName)
-        val result = db.update(TABLE_CLASSROOMS, values, "$COLUMN_CLASSROOM_ID = ?", arrayOf(id.toString()))
-        return result > 0
-    }
-
-    // --- Grades Methods ---
-
-    fun addGrade(studentId: Int, subject: String, value: Double, date: String, type: String): Boolean {
+    fun addGrade(studentId: String, subject: String, value: String, date: String, type: String, period: String = ""): Boolean {
         val db = this.writableDatabase
         val values = ContentValues()
         values.put(COLUMN_GRADE_STUDENT_ID, studentId)
         values.put(COLUMN_GRADE_TYPE, type)
-        values.put(COLUMN_GRADE_VALUE, value.toString())
+        values.put(COLUMN_GRADE_VALUE, value)
         values.put(COLUMN_GRADE_SUBJECT, subject)
         values.put(COLUMN_GRADE_DATE, date)
+        values.put(COLUMN_GRADE_PERIOD, period)
         val result = db.insert(TABLE_GRADES, null, values)
         return result != -1L
     }
 
-    fun getGradesByStudent(studentId: Int, startDate: String? = null): List<Triple<String, String, String>> {
+    fun getGradesByStudent(studentId: String, startDate: String? = null): List<Triple<String, String, String>> {
         val list = mutableListOf<Triple<String, String, String>>()
         val db = this.readableDatabase
         val query = if (startDate != null) {
@@ -585,7 +564,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         } else {
             "SELECT $COLUMN_GRADE_SUBJECT, $COLUMN_GRADE_VALUE, $COLUMN_GRADE_DATE FROM $TABLE_GRADES WHERE $COLUMN_GRADE_STUDENT_ID = ?"
         }
-        val args = if (startDate != null) arrayOf(studentId.toString(), startDate) else arrayOf(studentId.toString())
+        val args = if (startDate != null) arrayOf(studentId, startDate) else arrayOf(studentId)
         
         val cursor = db.rawQuery(query, args)
         if (cursor.moveToFirst()) {
@@ -607,8 +586,6 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         cursor.close()
         return phone
     }
-
-    // --- COMPLAINTS METHODS ---
 
     fun addComplaint(postId: Int, parentEmail: String, content: String): Boolean {
         val db = this.writableDatabase
@@ -664,9 +641,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         return result > 0
     }
 
-    // --- Attendance Methods ---
-
-    fun addAttendance(studentId: Int, status: String, date: String): Boolean {
+    fun addAttendance(studentId: String, status: String, date: String): Boolean {
         val db = this.writableDatabase
         val values = ContentValues()
         values.put(COLUMN_ATTENDANCE_STUDENT_ID, studentId)
@@ -676,11 +651,11 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         return result != -1L
     }
 
-    fun getAttendanceStats(studentId: Int, startDate: String): Map<String, Int> {
+    fun getAttendanceStats(studentId: String, startDate: String): Map<String, Int> {
         val stats = mutableMapOf("present" to 0, "absent" to 0, "late" to 0)
         val db = this.readableDatabase
         val query = "SELECT $COLUMN_ATTENDANCE_STATUS, COUNT(*) FROM $TABLE_ATTENDANCE WHERE $COLUMN_ATTENDANCE_STUDENT_ID = ? AND $COLUMN_ATTENDANCE_DATE >= ? GROUP BY $COLUMN_ATTENDANCE_STATUS"
-        val cursor = db.rawQuery(query, arrayOf(studentId.toString(), startDate))
+        val cursor = db.rawQuery(query, arrayOf(studentId, startDate))
         if (cursor.moveToFirst()) {
             do {
                 val status = cursor.getString(0)
@@ -690,5 +665,61 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         }
         cursor.close()
         return stats
+    }
+
+    // --- Offline Wrapper Methods ---
+
+    fun getOfflineStudents(parentEmail: String): List<Map<String, String>> {
+        return getStudentsByParent(parentEmail)
+    }
+
+    fun getOfflineGrades(studentId: String): List<Map<String, String>> {
+        val list = mutableListOf<Map<String, String>>()
+        val db = this.readableDatabase
+        val cursor = db.rawQuery("SELECT $COLUMN_GRADE_SUBJECT, $COLUMN_GRADE_VALUE, $COLUMN_GRADE_DATE FROM $TABLE_GRADES WHERE $COLUMN_GRADE_STUDENT_ID = ?", arrayOf(studentId))
+        if (cursor.moveToFirst()) {
+            do {
+                val map = mutableMapOf<String, String>()
+                map["subject"] = cursor.getString(0)
+                map["value"] = cursor.getString(1)
+                map["date"] = cursor.getString(2)
+                list.add(map)
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        return list
+    }
+
+    fun getOfflineAttendance(studentId: String): List<Map<String, String>> {
+        val list = mutableListOf<Map<String, String>>()
+        val db = this.readableDatabase
+        val cursor = db.rawQuery("SELECT $COLUMN_ATTENDANCE_STATUS, $COLUMN_ATTENDANCE_DATE FROM $TABLE_ATTENDANCE WHERE $COLUMN_ATTENDANCE_STUDENT_ID = ?", arrayOf(studentId))
+        if (cursor.moveToFirst()) {
+            do {
+                val map = mutableMapOf<String, String>()
+                map["status"] = cursor.getString(0)
+                map["date"] = cursor.getString(1)
+                list.add(map)
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        return list
+    }
+
+    fun saveStudent(firestoreId: String, name: String, classroomId: String, parentEmail: String): Boolean {
+        // Simple version for quick sync
+        return addStudent(firestoreId, name, "", "", classroomId, parentEmail, "")
+    }
+
+    fun saveGrade(studentId: String, subject: String, value: String, type: String, date: String, period: String = ""): Boolean {
+        return addGrade(studentId, subject, value, date, type, period)
+    }
+
+    fun saveAttendance(studentId: String, status: String, date: String): Boolean {
+        return addAttendance(studentId, status, date)
+    }
+
+    fun saveUser(email: String, pass: String, rol: String, phone: String = "", address: String = ""): Boolean {
+        return addUser(email, pass, rol, phone, address)
     }
 }

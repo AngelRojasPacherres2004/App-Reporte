@@ -40,9 +40,8 @@ class PadreAsistenciaActivity : AppCompatActivity() {
                         // Respaldo en SQLite para uso offline
                         dbHelper.saveAttendance(
                             studentId,
-                            data["date"]?.toString() ?: "",
                             data["status"]?.toString() ?: "",
-                            data["course_name"]?.toString() ?: ""
+                            data["date"]?.toString() ?: ""
                         )
                     }
                     data

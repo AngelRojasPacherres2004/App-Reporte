@@ -15,12 +15,12 @@ class ReportWorker(context: Context, workerParams: WorkerParameters) : Worker(co
         for (classroom in classrooms) {
             val students = dbHelper.getStudentsByClassroom(classroom.first)
             for (student in students) {
-                val studentId = student["id"]?.toInt() ?: -1
+                val studentId = student["id"] ?: ""
                 val studentName = "${student["names"]} ${student["lastnames"]}"
                 val parentEmail = student["parent_email"] ?: ""
                 val phone = dbHelper.getParentPhone(parentEmail)
 
-                if (studentId != -1 && !phone.isNullOrEmpty()) {
+                if (studentId.isNotEmpty() && !phone.isNullOrEmpty()) {
                     val reportFile = reportGenerator.generateStudentReport(studentId, studentName, period)
                     // In a production environment with WhatsApp Business API, the sending would happen here.
                     // For this project, the report is generated and saved in the internal storage.

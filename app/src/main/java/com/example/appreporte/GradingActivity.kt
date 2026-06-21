@@ -18,7 +18,7 @@ class GradingActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityGradingBinding
     private lateinit var dbHelper: DatabaseHelper
-    private var selectedClassroomId: Int = -1
+    private var selectedClassroomId: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,7 +42,7 @@ class GradingActivity : AppCompatActivity() {
         }
     }
 
-    private fun loadStudents(classroomId: Int) {
+    private fun loadStudents(classroomId: String) {
         val students = dbHelper.getStudentsByClassroom(classroomId)
         binding.rvStudentsGrades.layoutManager = LinearLayoutManager(this)
         binding.rvStudentsGrades.adapter = GradeAdapter(students) { studentId, grade ->
@@ -50,7 +50,7 @@ class GradingActivity : AppCompatActivity() {
         }
     }
 
-    private fun saveGrade(studentId: Int, gradeStr: String) {
+    private fun saveGrade(studentId: String, gradeStr: String) {
         val grade = gradeStr.toDoubleOrNull()
         if (grade == null) {
             Toast.makeText(this, "Ingrese una nota válida", Toast.LENGTH_SHORT).show()
@@ -58,7 +58,7 @@ class GradingActivity : AppCompatActivity() {
         }
 
         val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        val success = dbHelper.addGrade(studentId, "General", grade, date, "Diario")
+        val success = dbHelper.addGrade(studentId, "General", gradeStr, date, "Diario")
         
         if (success) {
             Toast.makeText(this, "Nota guardada correctamente", Toast.LENGTH_SHORT).show()
@@ -69,7 +69,7 @@ class GradingActivity : AppCompatActivity() {
         }
     }
 
-    private fun triggerEmailNotification(studentId: Int, grade: String) {
+    private fun triggerEmailNotification(studentId: String, grade: String) {
         val studentData = dbHelper.getStudentById(studentId)
         val firestoreId = studentData["firestore_id"] ?: ""
         val studentFullName = "${studentData["names"]} ${studentData["lastnames"]}"
@@ -113,7 +113,7 @@ class GradingActivity : AppCompatActivity() {
 
     class GradeAdapter(
         private val students: List<Map<String, String>>,
-        private val onSave: (Int, String) -> Unit
+        private val onSave: (String, String) -> Unit
     ) : RecyclerView.Adapter<GradeAdapter.ViewHolder>() {
 
         class ViewHolder(val binding: ItemStudentGradeBinding) : RecyclerView.ViewHolder(binding.root)
@@ -125,10 +125,10 @@ class GradingActivity : AppCompatActivity() {
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val student = students[position]
-            val studentId = student["id"]?.toInt() ?: -1
+            val studentId = student["id"] ?: ""
             holder.binding.tvStudentName.text = "${student["names"]} ${student["lastnames"]}"
             holder.binding.btnSaveGrade.setOnClickListener {
-                if (studentId != -1) onSave(studentId, holder.binding.etGrade.text.toString())
+                if (studentId.isNotEmpty()) onSave(studentId, holder.binding.etGrade.text.toString())
             }
         }
 

@@ -17,9 +17,9 @@ class AttendanceActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityAttendanceBinding
     private lateinit var dbHelper: DatabaseHelper
-    private var selectedClassroomId: Int = -1
+    private var selectedClassroomId: String = ""
     private var studentList: List<Map<String, String>> = emptyList()
-    private val attendanceMap = mutableMapOf<Int, String>()
+    private val attendanceMap = mutableMapOf<String, String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,13 +47,13 @@ class AttendanceActivity : AppCompatActivity() {
         }
     }
 
-    private fun loadStudents(classroomId: Int) {
+    private fun loadStudents(classroomId: String) {
         studentList = dbHelper.getStudentsByClassroom(classroomId)
         attendanceMap.clear()
         // Default to present
         studentList.forEach { 
-            val id = it["id"]?.toInt() ?: -1
-            if (id != -1) attendanceMap[id] = "present" 
+            val id = it["id"] ?: ""
+            if (id.isNotEmpty()) attendanceMap[id] = "present" 
         }
 
         binding.rvStudentsAttendance.layoutManager = LinearLayoutManager(this)
@@ -63,7 +63,7 @@ class AttendanceActivity : AppCompatActivity() {
     }
 
     private fun saveAllAttendance() {
-        if (selectedClassroomId == -1) {
+        if (selectedClassroomId.isEmpty()) {
             Toast.makeText(this, "Seleccione un salón primero", Toast.LENGTH_SHORT).show()
             return
         }
@@ -86,7 +86,7 @@ class AttendanceActivity : AppCompatActivity() {
 
     class AttendanceAdapter(
         private val students: List<Map<String, String>>,
-        private val onStatusChanged: (Int, String) -> Unit
+        private val onStatusChanged: (String, String) -> Unit
     ) : RecyclerView.Adapter<AttendanceAdapter.ViewHolder>() {
 
         class ViewHolder(val binding: ItemStudentAttendanceBinding) : RecyclerView.ViewHolder(binding.root)
@@ -98,7 +98,7 @@ class AttendanceActivity : AppCompatActivity() {
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val student = students[position]
-            val studentId = student["id"]?.toInt() ?: -1
+            val studentId = student["id"] ?: ""
             holder.binding.tvStudentName.text = "${student["names"]} ${student["lastnames"]}"
             
             // Set initial state
@@ -111,7 +111,7 @@ class AttendanceActivity : AppCompatActivity() {
                     R.id.rbAbsent -> "absent"
                     else -> "present"
                 }
-                if (studentId != -1) onStatusChanged(studentId, status)
+                if (studentId.isNotEmpty()) onStatusChanged(studentId, status)
             }
         }
 

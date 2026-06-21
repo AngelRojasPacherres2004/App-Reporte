@@ -14,7 +14,7 @@ class GestionAlumnosActivity : AppCompatActivity() {
     private lateinit var binding: ActivityGestionAlumnosBinding
     private lateinit var dbHelper: DatabaseHelper
     private lateinit var studentAdapter: StudentAdapter
-    private var selectedClassroomId: Int = -1
+    private var selectedClassroomId: String = ""
     private var userEmail: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -75,7 +75,7 @@ class GestionAlumnosActivity : AppCompatActivity() {
         })
     }
 
-    private fun showReportPeriodDialog(studentId: Int, studentName: String, parentEmail: String) {
+    private fun showReportPeriodDialog(studentId: String, studentName: String, parentEmail: String) {
         val periods = arrayOf("Diario", "Mensual", "Bimestral")
         androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("Seleccionar Periodo de Reporte")
@@ -86,7 +86,7 @@ class GestionAlumnosActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun generateAndSendReport(studentId: Int, studentName: String, parentEmail: String, period: String) {
+    private fun generateAndSendReport(studentId: String, studentName: String, parentEmail: String, period: String) {
         val phone = dbHelper.getParentPhone(parentEmail)
         if (phone.isNullOrEmpty()) {
             Toast.makeText(this, "El padre no tiene un teléfono registrado", Toast.LENGTH_SHORT).show()
@@ -118,7 +118,7 @@ class GestionAlumnosActivity : AppCompatActivity() {
             return
         }
 
-        if (selectedClassroomId == -1) {
+        if (selectedClassroomId.isEmpty()) {
             Toast.makeText(this, "Seleccione un salón", Toast.LENGTH_SHORT).show()
             return
         }
@@ -132,18 +132,20 @@ class GestionAlumnosActivity : AppCompatActivity() {
         val firstName = names.getOrElse(0) { "" }
         val lastName = if (names.size > 1) names.subList(1, names.size).joinToString(" ") else ""
 
-        if (dbHelper.addStudent(firstName, lastName, "", selectedClassroomId, parentEmail, gmail)) {
+        // Generate a firestore ID
+        val firestoreId = "${firstName}_${lastName}_${System.currentTimeMillis()}".replace(" ", "_")
+
+        if (dbHelper.addStudent(firestoreId, firstName, lastName, "", selectedClassroomId, parentEmail, gmail)) {
             // Sincronizar con Firestore
             val studentData = hashMapOf(
                 "names" to firstName,
                 "lastnames" to lastName,
-                "classroom_id" to selectedClassroomId.toString(),
+                "classroom_id" to selectedClassroomId,
                 "parent_email" to parentEmail,
                 "correo" to gmail,
                 "school_id" to (intent.getStringExtra("SCHOOL_ID") ?: "Colegio San José")
             )
-            // Usamos un ID único o el nombre para el documento en Firestore
-            val firestoreId = "${firstName}_${lastName}_${System.currentTimeMillis()}".replace(" ", "_")
+            
             com.google.firebase.firestore.FirebaseFirestore.getInstance()
                 .collection("students")
                 .document(firestoreId)
@@ -159,7 +161,7 @@ class GestionAlumnosActivity : AppCompatActivity() {
     }
 
     private fun updateStudentList() {
-        if (selectedClassroomId != -1) {
+        if (selectedClassroomId.isNotEmpty()) {
             val students = dbHelper.getStudentsByClassroom(selectedClassroomId)
             studentAdapter.updateList(students)
         }

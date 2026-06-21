@@ -25,6 +25,8 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 import java.util.Date
 import java.util.Locale
 import com.google.firebase.firestore.FirebaseFirestore
@@ -80,11 +82,14 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
                     data?.put("id", doc.id)
                     
                     // Respaldo en SQLite para uso offline
-                    dbHelper.saveStudent(
+                    dbHelper.addStudent(
                         doc.id, 
                         data?.get("name") ?: data?.get("names") ?: "Sin Nombre", 
+                        data?.get("lastnames") ?: "",
+                        data?.get("dni") ?: "",
                         classroomId,
-                        data?.get("parent_email") ?: ""
+                        data?.get("parent_email") ?: "",
+                        data?.get("correo") ?: ""
                     )
 
                     data
@@ -183,7 +188,7 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
                 val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
 
                 if (value.isNotEmpty() && subject.isNotEmpty()) {
-                    val gradeData = hashMapOf("student_id" to studentId, "type" to type, "value" to value, "subject" to subject, "date" to date)
+                    val gradeData = hashMapOf("student_id" to studentId, "type" to type, "value" to value, "subject" to subject, "date" to date, "period" to period)
                     FirebaseFirestore.getInstance().collection("grades").add(gradeData)
                         .addOnSuccessListener {
                             // Respaldo en SQLite

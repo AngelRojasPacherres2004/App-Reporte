@@ -168,12 +168,8 @@ class PadreReporteActivity : AppCompatActivity() {
     private fun loadGrades() {
         FirebaseFirestore.getInstance().collection("grades")
             .whereEqualTo("student_id", studentId)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    Toast.makeText(this, "Error al cargar notas: ${error.message}", Toast.LENGTH_SHORT).show()
-                    return@addSnapshotListener
-                }
-
+            .get() // Usamos get() en lugar de snapshot listener para el fallback más limpio en este contexto de reporte
+            .addOnSuccessListener { snapshot ->
                 if (snapshot != null) {
                     gradesList = snapshot.documents.mapNotNull { doc ->
                         doc.data?.mapValues { it.value.toString() }

@@ -93,7 +93,6 @@ class PerfilActivity : AppCompatActivity() {
                     val navIntent = Intent(this, targetActivity)
                     navIntent.putExtra("USER_EMAIL", tvEmail.text.toString())
                     navIntent.putExtra("USER_ROL", currentRole)
-                    navIntent.putExtra("SCHOOL_ID", currentSchoolId)
                     navIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
                     startActivity(navIntent)
                     finish()
@@ -103,7 +102,6 @@ class PerfilActivity : AppCompatActivity() {
                     val gestionIntent = Intent(this, AdminDashboardActivity::class.java)
                     gestionIntent.putExtra("USER_EMAIL", tvEmail.text.toString())
                     gestionIntent.putExtra("USER_ROL", currentRole)
-                    gestionIntent.putExtra("SCHOOL_ID", currentSchoolId)
                     startActivity(gestionIntent)
                     finish()
                     true
@@ -112,7 +110,6 @@ class PerfilActivity : AppCompatActivity() {
                     val foroIntent = Intent(this, ForoSalonesActivity::class.java)
                     foroIntent.putExtra("USER_EMAIL", tvEmail.text.toString())
                     foroIntent.putExtra("USER_ROL", currentRole)
-                    foroIntent.putExtra("SCHOOL_ID", currentSchoolId)
                     startActivity(foroIntent)
                     finish()
                     true
@@ -121,7 +118,6 @@ class PerfilActivity : AppCompatActivity() {
                     val asistenteIntent = Intent(this, AsistenteActivity::class.java)
                     asistenteIntent.putExtra("USER_EMAIL", tvEmail.text.toString())
                     asistenteIntent.putExtra("USER_ROL", currentRole)
-                    asistenteIntent.putExtra("SCHOOL_ID", currentSchoolId)
                     startActivity(asistenteIntent)
                     finish()
                     true
@@ -134,7 +130,6 @@ class PerfilActivity : AppCompatActivity() {
                     val navIntent = Intent(this, targetActivity)
                     navIntent.putExtra("USER_EMAIL", tvEmail.text.toString())
                     navIntent.putExtra("USER_ROL", currentRole)
-                    navIntent.putExtra("SCHOOL_ID", currentSchoolId)
                     startActivity(navIntent)
                     finish()
                     true

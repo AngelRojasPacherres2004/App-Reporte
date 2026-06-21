@@ -8,8 +8,8 @@ import androidx.recyclerview.widget.RecyclerView
 
 class StudentAdapter(
     private var students: List<Map<String, String>>,
-    private val onDeleteClick: (Int) -> Unit,
-    private val onSendReportClick: (Int, String, String) -> Unit
+    private val onDeleteClick: (String) -> Unit,
+    private val onSendReportClick: (String, String, String) -> Unit
 ) : RecyclerView.Adapter<StudentAdapter.StudentViewHolder>() {
 
     class StudentViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -27,7 +27,7 @@ class StudentAdapter(
 
     override fun onBindViewHolder(holder: StudentViewHolder, position: Int) {
         val student = students[position]
-        val studentId = student["id"]?.toInt() ?: -1
+        val studentId = student["id"] ?: ""
         val studentName = "${student["names"]} ${student["lastnames"]}"
         val parentEmail = student["parent_email"] ?: ""
         
@@ -35,11 +35,11 @@ class StudentAdapter(
         holder.tvParent.text = "Padre: $parentEmail"
         
         holder.btnDelete.setOnClickListener {
-            if (studentId != -1) onDeleteClick(studentId)
+            if (studentId.isNotEmpty()) onDeleteClick(studentId)
         }
 
         holder.btnSendReport.setOnClickListener {
-            if (studentId != -1) onSendReportClick(studentId, studentName, parentEmail)
+            if (studentId.isNotEmpty()) onSendReportClick(studentId, studentName, parentEmail)
         }
     }
 

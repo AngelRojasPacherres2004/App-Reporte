@@ -122,7 +122,7 @@ class DocenteAsistenciaActivity : AppCompatActivity() {
         batch.commit().addOnSuccessListener {
             // Respaldo en SQLite
             for ((studentId, status) in results) {
-                dbHelper.saveAttendance(studentId, currentDateStr, status, selectedClassroom)
+                dbHelper.saveAttendance(studentId, status, currentDateStr)
             }
 
             Toast.makeText(this, "Asistencia guardada exitosamente", Toast.LENGTH_SHORT).show()

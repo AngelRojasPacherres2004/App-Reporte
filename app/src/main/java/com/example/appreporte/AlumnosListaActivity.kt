@@ -39,7 +39,7 @@ class AlumnosListaActivity : AppCompatActivity() {
     private fun setupRecyclerView() {
         adapter = AlumnosAdapter(emptyList(), 
             onEdit = { alumno -> showAlumnoDialog(alumno) },
-            onDelete = { id -> confirmDelete(id.toInt()) },
+            onDelete = { id -> confirmDelete(id) },
             onItemClick = null
         )
         binding.rvAlumnos.layoutManager = LinearLayoutManager(this)
@@ -52,7 +52,7 @@ class AlumnosListaActivity : AppCompatActivity() {
 
     private fun loadStudents() {
         if (classroomId != -1) {
-            val students = dbHelper.getStudentsByClassroom(classroomId)
+            val students = dbHelper.getStudentsByClassroom(classroomId.toString())
             adapter.updateData(students)
         }
     }
@@ -85,12 +85,15 @@ class AlumnosListaActivity : AppCompatActivity() {
 
             if (names.isNotEmpty() && lastnames.isNotEmpty() && dni.isNotEmpty()) {
                 if (alumno == null) {
-                    if (dbHelper.addStudent(names, lastnames, dni, classroomId, parentEmail, gmail)) {
+                    // Using DNI as a placeholder for firestoreId if not available, 
+                    // or better, generate a simple unique ID for local-only students.
+                    val firestoreId = "local_$dni"
+                    if (dbHelper.addStudent(firestoreId, names, lastnames, dni, classroomId.toString(), parentEmail, gmail)) {
                         loadStudents()
                         Toast.makeText(this, "Alumno guardado", Toast.LENGTH_SHORT).show()
                     }
                 } else {
-                    if (dbHelper.updateStudent(alumno["id"]!!.toInt(), names, lastnames, dni, parentEmail, gmail, classroomId)) {
+                    if (dbHelper.updateStudent(alumno["id"]!!, names, lastnames, dni, parentEmail, gmail, classroomId.toString())) {
                         loadStudents()
                         Toast.makeText(this, "Datos actualizados", Toast.LENGTH_SHORT).show()
                     }
@@ -103,7 +106,7 @@ class AlumnosListaActivity : AppCompatActivity() {
         builder.show()
     }
 
-    private fun confirmDelete(id: Int) {
+    private fun confirmDelete(id: String) {
         AlertDialog.Builder(this)
             .setTitle("Eliminar Alumno")
             .setMessage("¿Estás seguro de eliminar este alumno?")

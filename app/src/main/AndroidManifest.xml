@@ -142,6 +142,11 @@
             android:exported="false"
             android:label="Historial de Asistencia" />
 
+        <activity
+            android:name=".AttendanceActivity"
+            android:exported="true"
+            android:label="Asistencia" />
+
         <service
             android:name=".MyFirebaseMessagingService"
             android:exported="false">
