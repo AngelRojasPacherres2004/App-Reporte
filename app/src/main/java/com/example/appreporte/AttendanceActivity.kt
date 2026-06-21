@@ -10,6 +10,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.appreporte.databinding.ActivityAttendanceBinding
 import com.example.appreporte.databinding.ItemStudentAttendanceBinding
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FieldValue
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -69,18 +71,34 @@ class AttendanceActivity : AppCompatActivity() {
         }
 
         val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        val firestore = FirebaseFirestore.getInstance()
         var allSuccess = true
 
         attendanceMap.forEach { (studentId, status) ->
+            // 1. Guardar localmente en SQLite (Motor secundario)
             if (!dbHelper.addAttendance(studentId, status, date)) {
                 allSuccess = false
             }
+
+            // 2. Sincronizar con Firebase (Motor principal)
+            val attendanceData = hashMapOf(
+                "studentId" to studentId,
+                "status" to status,
+                "date" to date,
+                "classroomId" to selectedClassroomId,
+                "timestamp" to FieldValue.serverTimestamp()
+            )
+
+            // Firebase gestiona la cola de envío automáticamente si estás offline
+            firestore.collection("attendance")
+                .document("${studentId}_$date")
+                .set(attendanceData)
         }
 
         if (allSuccess) {
-            Toast.makeText(this, "Asistencia guardada correctamente", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Asistencia guardada. Sincronizando con la nube...", Toast.LENGTH_SHORT).show()
         } else {
-            Toast.makeText(this, "Hubo errores al guardar algunas asistencias", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Error al guardar en el teléfono", Toast.LENGTH_SHORT).show()
         }
     }
 

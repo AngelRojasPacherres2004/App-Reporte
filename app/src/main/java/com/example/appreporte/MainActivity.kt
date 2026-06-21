@@ -62,7 +62,7 @@ class MainActivity : AppCompatActivity() {
             // --- BYPASS DE LOGIN DE PRUEBA REACTIVADO PARA VERIFICACIÓN ---
             if (email == "padre@sanjose.com" && password == "padre123") {
                 binding.btnIngresar.isEnabled = true
-                dbHelper.saveUser(email, "usuario", "Colegio San José")
+                dbHelper.saveUser(email, password, "usuario") // Guardamos la clave correcta para offline
                 navigateToSplash("usuario", email, "Colegio San José")
                 return@setOnClickListener
             }
@@ -82,8 +82,8 @@ class MainActivity : AppCompatActivity() {
                         val role = document.getString("rol") ?: "usuario"
                         val schoolId = document.getString("school_id") ?: "Colegio San José"
                         
-                        // Respaldo en SQLite
-                        dbHelper.saveUser(email, role, schoolId)
+                        // Respaldo en SQLite para acceso offline futuro
+                        dbHelper.saveUser(email, password, role)
 
                         navigateToSplash(role, email, schoolId)
                     } else {
@@ -134,8 +134,16 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
                 .addOnFailureListener {
-                    binding.btnIngresar.isEnabled = true
-                    Toast.makeText(this@MainActivity, "Error conectando a Firebase", Toast.LENGTH_SHORT).show()
+                    // --- FALLBACK OFFLINE ---
+                    val localRole = dbHelper.checkUser(email, password)
+                    if (localRole != null) {
+                        binding.btnIngresar.isEnabled = true
+                        Toast.makeText(this@MainActivity, "Modo Offline: Iniciando con datos locales", Toast.LENGTH_SHORT).show()
+                        navigateToSplash(localRole, email, "Colegio San José")
+                    } else {
+                        binding.btnIngresar.isEnabled = true
+                        Toast.makeText(this@MainActivity, "Sin conexión y usuario no encontrado localmente", Toast.LENGTH_LONG).show()
+                    }
                 }
         }
     }
