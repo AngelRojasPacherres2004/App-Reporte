@@ -178,14 +178,46 @@ class PostDetalleActivity : AppCompatActivity() {
         builder.show()
     }
 
+    private fun triggerCommentNotification(authorEmail: String, content: String) {
+        val postTitle = intent.getStringExtra("POST_TITLE") ?: "Tu publicación"
+        
+        // Notificación en Firestore
+        val notifData = hashMapOf(
+            "recipient_email" to authorEmail,
+            "subject" to "Nuevo comentario en: $postTitle",
+            "message" to "El usuario $userEmail comentó: \"$content\"",
+            "timestamp" to com.google.firebase.Timestamp.now(),
+            "type" to "comentario",
+            "sender" to userEmail
+        )
+        firestore.collection("notifications").add(notifData)
+
+        // Opcional: También enviar correo electrónico al autor
+        val data = androidx.work.Data.Builder()
+            .putString("student_name", "Usuario EduConnect")
+            .putString("subject", "Nuevo comentario en el foro")
+            .putString("message", "Hola, han respondido a tu publicación \"$postTitle\".\n\nComentario: $content\n\nRevisa la app para más detalles.")
+            .putString("recipient_email", authorEmail)
+            .build()
+
+        val workRequest = androidx.work.OneTimeWorkRequestBuilder<EmailNotificationWorker>()
+            .setInputData(data)
+            .build()
+
+        androidx.work.WorkManager.getInstance(applicationContext).enqueue(workRequest)
+    }
+
     private fun triggerComplaintNotification(content: String) {
         // Notificar al administrador sobre la nueva queja
         val adminEmail = "admin@reporte.com" 
-        
+        val subject = "Nueva Queja Recibida"
+        val message = "Se ha recibido una nueva queja del usuario $userEmail.\n\nContenido: $content\n\nSaludos,\nSistema de Gestión"
+        val postAuthor = intent.getStringExtra("POST_AUTHOR") ?: ""
+
         val data = androidx.work.Data.Builder()
             .putString("student_name", "ADMINISTRADOR")
-            .putString("subject", "Nueva Queja Recibida")
-            .putString("message", "Se ha recibido una nueva queja del usuario $userEmail.\n\nContenido: $content\n\nSaludos,\nSistema de Gestión")
+            .putString("subject", subject)
+            .putString("message", message)
             .putString("recipient_email", adminEmail)
             .build()
 
@@ -194,6 +226,43 @@ class PostDetalleActivity : AppCompatActivity() {
             .build()
 
         androidx.work.WorkManager.getInstance(applicationContext).enqueue(workRequest)
+
+        // Sincronizar con Firestore notifications para el espejo en la app (del admin)
+        val notifDataAdmin = hashMapOf(
+            "recipient_email" to adminEmail,
+            "subject" to subject,
+            "message" to content,
+            "timestamp" to com.google.firebase.Timestamp.now(),
+            "type" to "queja",
+            "sender" to userEmail
+        )
+        firestore.collection("notifications").add(notifDataAdmin)
+
+        // TAMBIÉN NOTIFICAR AL DOCENTE (Autor de la publicación)
+        if (postAuthor.isNotEmpty() && postAuthor != adminEmail) {
+            val teacherNotif = hashMapOf(
+                "recipient_email" to postAuthor,
+                "subject" to "Aviso de Queja - Foro",
+                "message" to "Un padre de familia ha realizado una observación sobre tu publicación: \"$content\"",
+                "timestamp" to com.google.firebase.Timestamp.now(),
+                "type" to "queja",
+                "sender" to "Sistema de Calidad"
+            )
+            firestore.collection("notifications").add(teacherNotif)
+
+            // Enviar correo al docente también
+            val teacherData = androidx.work.Data.Builder()
+                .putString("student_name", "DOCENTE")
+                .putString("subject", "Aviso de Queja - Foro")
+                .putString("message", "Estimado Docente, se ha registrado una observación en su publicación del foro.\n\nDetalle: $content\n\nPor favor revise la sección de quejas para más información.")
+                .putString("recipient_email", postAuthor)
+                .build()
+            
+            val teacherWork = androidx.work.OneTimeWorkRequestBuilder<EmailNotificationWorker>()
+                .setInputData(teacherData)
+                .build()
+            androidx.work.WorkManager.getInstance(applicationContext).enqueue(teacherWork)
+        }
     }
 
     private fun loadComments() {
@@ -246,6 +315,13 @@ class PostDetalleActivity : AppCompatActivity() {
                 binding.etComment.text?.clear()
                 
                 firestore.collection("comments").add(commentMap)
+                    .addOnSuccessListener {
+                        // Si el comentario no es del autor del post, notificar al autor
+                        val postAuthor = intent.getStringExtra("POST_AUTHOR") ?: ""
+                        if (postAuthor.isNotEmpty() && postAuthor != userEmail) {
+                            triggerCommentNotification(postAuthor, text)
+                        }
+                    }
                     .addOnFailureListener {
                         Toast.makeText(this, "Error al enviar", Toast.LENGTH_SHORT).show()
                     }

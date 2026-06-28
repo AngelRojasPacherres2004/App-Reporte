@@ -145,6 +145,16 @@ class DocenteAsistenciaActivity : AppCompatActivity() {
 
                                 androidx.work.WorkManager.getInstance(applicationContext).enqueue(workRequest)
                                 Log.d("Asistencia", "Notificación encolada para $targetGmail")
+
+                                // Guardar en Firestore para que aparezca en la app (Sincronizado con Gmail)
+                                val notifData = hashMapOf(
+                                    "recipient_email" to targetGmail,
+                                    "subject" to "Aviso de Asistencia - $studentName",
+                                    "message" to "Estimado Padre de Familia, le informamos que el alumno $studentName registra $status hoy $currentDateStr.",
+                                    "timestamp" to com.google.firebase.Timestamp.now(),
+                                    "type" to "asistencia"
+                                )
+                                db.collection("notifications").add(notifData)
                             }
                         }
                     }

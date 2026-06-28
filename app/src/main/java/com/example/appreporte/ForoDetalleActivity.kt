@@ -365,18 +365,22 @@ class ForoDetalleActivity : AppCompatActivity() {
             .addOnSuccessListener { snapshot ->
                 snapshot.documents.forEach { doc ->
                     val studentName = doc.getString("names") ?: "Su hijo(a)"
-                    val parentEmail = doc.getString("parent_email") ?: ""
+                    val parentAppEmail = doc.getString("parent_email") ?: ""
                     
-                    if (parentEmail.isNotEmpty()) {
-                        firestore.collection("users").document(parentEmail).get()
+                    if (parentAppEmail.isNotEmpty()) {
+                        firestore.collection("users").document(parentAppEmail).get()
                             .addOnSuccessListener { userSnap ->
-                                val phone = userSnap.getString("phone") ?: ""
-                                if (parentEmail.isNotEmpty()) {
+                                if (userSnap.exists()) {
+                                    val targetGmail = userSnap.getString("correo_reportes") ?: parentAppEmail
+                                    
+                                    val emailSubject = "Nueva Publicación en el Foro"
+                                    val emailMessage = "Estimado Padre de Familia, hay una nueva publicación en el foro del salón: $title\n\nContenido: $content\n\nSaludos,\nEduConnect"
+
                                     val data = androidx.work.Data.Builder()
                                         .putString("student_name", studentName)
-                                        .putString("subject", "Nueva Publicación en el Foro")
-                                        .putString("message", "Estimado Padre de Familia, hay una nueva publicación en el foro del salón: $title\n\nContenido: $content\n\nSaludos,\nEduConnect")
-                                        .putString("recipient_email", parentEmail)
+                                        .putString("subject", emailSubject)
+                                        .putString("message", emailMessage)
+                                        .putString("recipient_email", targetGmail)
                                         .build()
 
                                     val workRequest = androidx.work.OneTimeWorkRequestBuilder<EmailNotificationWorker>()
@@ -384,6 +388,17 @@ class ForoDetalleActivity : AppCompatActivity() {
                                         .build()
 
                                     androidx.work.WorkManager.getInstance(applicationContext).enqueue(workRequest)
+
+                                    // Sincronizar con Firestore notifications para el espejo en la app
+                                    val notifData = hashMapOf(
+                                        "recipient_email" to targetGmail,
+                                        "subject" to "FORO: $title",
+                                        "message" to content,
+                                        "timestamp" to com.google.firebase.Timestamp.now(),
+                                        "type" to "foro",
+                                        "sender" to "Profesor - Comunicado"
+                                    )
+                                    firestore.collection("notifications").add(notifData)
                                 }
                             }
                     }

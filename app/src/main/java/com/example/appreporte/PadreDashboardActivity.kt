@@ -161,24 +161,13 @@ class PadreDashboardActivity : AppCompatActivity() {
             }
         }
 
-        binding.root.findViewById<android.view.View>(R.id.btnPadreHorario)?.setOnClickListener {
-            if (selectedStudentId.isNotEmpty()) {
-                val intent = Intent(this, PadreHorarioActivity::class.java)
-                intent.putExtra("STUDENT_ID", selectedStudentId)
-                intent.putExtra("CLASSROOM_ID", selectedClassroomId)
+        binding.btnVerNotificaciones.setOnClickListener {
+            if (userEmail.isNotEmpty()) {
+                val intent = Intent(this, NotificacionesActivity::class.java)
+                intent.putExtra("USER_EMAIL", userEmail)
                 startActivity(intent)
             } else {
-                Toast.makeText(this, "Seleccione un hijo primero", Toast.LENGTH_SHORT).show()
-            }
-        }
-
-        binding.root.findViewById<android.view.View>(R.id.btnPadreAsistencia)?.setOnClickListener {
-            if (selectedStudentId.isNotEmpty()) {
-                val intent = Intent(this, PadreAsistenciaActivity::class.java)
-                intent.putExtra("STUDENT_ID", selectedStudentId)
-                startActivity(intent)
-            } else {
-                Toast.makeText(this, "Seleccione un hijo primero", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Email de usuario no disponible", Toast.LENGTH_SHORT).show()
             }
         }
 

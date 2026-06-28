@@ -2,6 +2,8 @@ package com.example.appreporte
 
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import com.google.firebase.Timestamp
+import java.util.Date
 
 object MockDataInjector {
     fun injectData() {
@@ -96,6 +98,18 @@ object MockDataInjector {
         // 3. USUARIOS DOCENTES Y PADRES DE FAMILIA
         // ────────────────────────────────────────────────────────────
         // Docente demo para probar salones
+        val defaultDocente = "notificacioneseduconnect2026@gmail.com"
+        db.collection("users").document(defaultDocente).set(
+            hashMapOf(
+                "email" to defaultDocente,
+                "password" to "docente123",
+                "rol" to "docente",
+                "school_id" to "Colegio San José",
+                "phone" to "+51999999999",
+                "correo_reportes" to defaultDocente
+            ), SetOptions.merge()
+        )
+
         db.collection("users").document("docente@reporte.com").set(
             hashMapOf(
                 "email" to "docente@reporte.com",
@@ -254,6 +268,76 @@ object MockDataInjector {
                             "timestamp" to com.google.firebase.Timestamp.now()
                         ), SetOptions.merge()
                     )
+            }
+        }
+
+        // ────────────────────────────────────────────────────────────
+        // 6. INYECTAR NOTIFICACIONES DE PRUEBA (GMAIL SIMULADO)
+        // ────────────────────────────────────────────────────────────
+        val notifications = listOf(
+            mapOf(
+                "recipient_email" to "user@reporte.com",
+                "sender" to "EduConnect - Tesorería",
+                "subject" to "Recordatorio de Pago - Pensión Mayo",
+                "message" to "Estimado padre, le recordamos que el plazo para el pago de la pensión del mes de mayo vence este viernes 30.",
+                "timestamp" to Timestamp(Date(System.currentTimeMillis() - 86400000)), // Ayer
+                "type" to "pago"
+            ),
+            mapOf(
+                "recipient_email" to "user@reporte.com",
+                "sender" to "EduConnect - Dirección",
+                "subject" to "Circular: Suspensión de Clases por Feriado",
+                "message" to "Se comunica que el día lunes no habrá actividades académicas por conmemorarse el día del trabajador.",
+                "timestamp" to Timestamp(Date(System.currentTimeMillis() - 172800000)), // Hace 2 días
+                "type" to "circular"
+            ),
+            mapOf(
+                "recipient_email" to "user@reporte.com",
+                "sender" to "EduConnect - Control de Asistencia",
+                "subject" to "Aviso de Asistencia - Juanito",
+                "message" to "Le informamos que el alumno Juanito registra Tardanza hoy 2026-05-21.",
+                "timestamp" to Timestamp(Date(System.currentTimeMillis() - 3600000)), // Hace 1 hora
+                "type" to "asistencia"
+            )
+        )
+
+        for ((index, notif) in notifications.withIndex()) {
+            db.collection("notifications").document("notif_mock_$index").set(notif, SetOptions.merge())
+        }
+
+        // Notificaciones de prueba para el Docente
+        val docentesEmails = listOf("docente@reporte.com", "notificacioneseduconnect2026@gmail.com")
+        
+        for (email in docentesEmails) {
+            val docenteNotifs = listOf(
+                mapOf(
+                    "recipient_email" to email,
+                    "sender" to "Sistema de Calidad",
+                    "subject" to "Aviso de Queja - Foro",
+                    "message" to "Un padre de familia ha realizado una observación sobre tu publicación en el Foro: \"Por favor, brinden más detalles sobre el link de Zoom.\"",
+                    "timestamp" to Timestamp.now(),
+                    "type" to "queja"
+                ),
+                mapOf(
+                    "recipient_email" to email,
+                    "sender" to "EduConnect - Administración",
+                    "subject" to "Carga de Notas Pendiente",
+                    "message" to "Recuerde que el plazo para subir las notas bimestrales finaliza este viernes. Por favor revise el sistema.",
+                    "timestamp" to Timestamp(Date(System.currentTimeMillis() - 43200000)), // Hace 12 horas
+                    "type" to "general"
+                ),
+                mapOf(
+                    "recipient_email" to email,
+                    "sender" to "Dirección Académica",
+                    "subject" to "Nueva Circular Docente",
+                    "message" to "Se adjuntan las pautas para el próximo desfile escolar y las responsabilidades de cada aula.",
+                    "timestamp" to Timestamp(Date(System.currentTimeMillis() - 86400000)), // Hace 24 horas
+                    "type" to "circular"
+                )
+            )
+
+            for ((index, notif) in docenteNotifs.withIndex()) {
+                db.collection("notifications").document("notif_${email.replace("@", "_")}_$index").set(notif, SetOptions.merge())
             }
         }
     }

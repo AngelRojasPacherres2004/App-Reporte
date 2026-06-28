@@ -109,6 +109,16 @@ class GradingActivity : AppCompatActivity() {
             .build()
 
         androidx.work.WorkManager.getInstance(this).enqueue(workRequest)
+
+        // Sincronizar con la App (Bandeja de Notificaciones Gmail)
+        val notifData = hashMapOf(
+            "recipient_email" to email,
+            "subject" to "Notificación de Nota - $studentName",
+            "message" to "Estimado padre de familia, acabamos de subir la nota (diaria) de su hijo $studentName y ya está cargado en su sección de reportes.\n\nCalificación: $grade",
+            "timestamp" to com.google.firebase.Timestamp.now(),
+            "type" to "nota"
+        )
+        com.google.firebase.firestore.FirebaseFirestore.getInstance().collection("notifications").add(notifData)
     }
 
     class GradeAdapter(

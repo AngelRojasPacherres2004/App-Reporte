@@ -245,8 +245,9 @@
                 android:orientation="vertical"
                 android:visibility="gone">
 
-                <!-- Card: Horario y Asistencia -->
+                <!-- Card: Notificaciones -->
                 <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardNotificaciones"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="24dp"
@@ -264,7 +265,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Horario y Asistencia"
+                            android:text="Notificaciones"
                             android:textColor="@color/white"
                             android:textSize="22sp"
                             android:textStyle="bold" />
@@ -273,46 +274,24 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="8dp"
-                            android:text="Consulta qué clases le tocan esta semana y su récord de asistencias."
+                            android:text="Revisa los correos y avisos importantes de la institución."
                             android:textColor="#E0E0E0"
                             android:textSize="14sp"
                             android:lineSpacingExtra="4dp"/>
 
-                        <LinearLayout
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnVerNotificaciones"
+                            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
+                            android:layout_height="56dp"
                             android:layout_marginTop="20dp"
-                            android:orientation="horizontal">
-
-                            <com.google.android.material.button.MaterialButton
-                                android:id="@+id/btnPadreHorario"
-                                style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
-                                android:layout_width="0dp"
-                                android:layout_height="56dp"
-                                android:layout_weight="1"
-                                android:layout_marginEnd="8dp"
-                                android:backgroundTint="@color/white"
-                                android:text="Horario"
-                                android:textAllCaps="false"
-                                android:textColor="@color/primary"
-                                app:cornerRadius="16dp"
-                                app:icon="@android:drawable/ic_menu_today"
-                                app:iconTint="@color/primary" />
-
-                            <com.google.android.material.button.MaterialButton
-                                android:id="@+id/btnPadreAsistencia"
-                                style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
-                                android:layout_width="0dp"
-                                android:layout_height="56dp"
-                                android:layout_weight="1"
-                                android:backgroundTint="@color/white"
-                                android:text="Asistencia"
-                                android:textAllCaps="false"
-                                android:textColor="@color/primary"
-                                app:cornerRadius="16dp"
-                                app:icon="@android:drawable/ic_menu_recent_history"
-                                app:iconTint="@color/primary" />
-                        </LinearLayout>
+                            android:backgroundTint="@color/white"
+                            android:text="Ver Notificaciones"
+                            android:textAllCaps="false"
+                            android:textColor="@color/primary"
+                            app:cornerRadius="16dp"
+                            app:icon="@android:drawable/ic_dialog_email"
+                            app:iconTint="@color/primary" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 

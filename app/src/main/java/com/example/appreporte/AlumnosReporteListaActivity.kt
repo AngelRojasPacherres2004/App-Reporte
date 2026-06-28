@@ -235,6 +235,16 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
                     val workRequest = OneTimeWorkRequestBuilder<EmailNotificationWorker>().setInputData(data).build()
                     WorkManager.getInstance(applicationContext).enqueue(workRequest)
                     Log.d("AlumnosReporte", "Reporte PDF encolado para $targetGmail")
+
+                    // Registro para la App (Simulación de "Recibido en Gmail")
+                    val notifData = hashMapOf(
+                        "recipient_email" to targetGmail,
+                        "subject" to "Reporte Académico PDF - $studentName",
+                        "message" to "Estimado Padre de Familia, adjunto encontrará el reporte académico detallado de $studentName.",
+                        "timestamp" to com.google.firebase.Timestamp.now(),
+                        "type" to "pdf_report"
+                    )
+                    FirebaseFirestore.getInstance().collection("notifications").add(notifData)
                 }
 
                 if (phone.isNotEmpty()) {
@@ -272,6 +282,16 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
                     val workRequest = OneTimeWorkRequestBuilder<EmailNotificationWorker>().setInputData(data).build()
                     WorkManager.getInstance(applicationContext).enqueue(workRequest)
                     Log.d("AlumnosReporte", "Notificación de nota encolada para $targetGmail")
+
+                    // Registro para la App (Simulación de "Recibido en Gmail")
+                    val notifData = hashMapOf(
+                        "recipient_email" to targetGmail,
+                        "subject" to "Nueva Nota Registrada - $studentName",
+                        "message" to "Materia: $subject\nTipo: ${type.uppercase()}\nCalificación: $value\n\nEl reporte actualizado ya está disponible.",
+                        "timestamp" to com.google.firebase.Timestamp.now(),
+                        "type" to "nota"
+                    )
+                    FirebaseFirestore.getInstance().collection("notifications").add(notifData)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()

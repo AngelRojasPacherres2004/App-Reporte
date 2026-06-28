@@ -5,11 +5,18 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.example.appreporte.databinding.ActivityDashboardDocenteBinding
 
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+
 class DocenteDashboardActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityDashboardDocenteBinding
     private var userRole: String = "docente"
     private var schoolId: String = "Colegio San José"
+    private var userEmail: String = ""
+    private val db = FirebaseFirestore.getInstance()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -18,10 +25,69 @@ class DocenteDashboardActivity : AppCompatActivity() {
 
         userRole = intent.getStringExtra("USER_ROL") ?: "docente"
         schoolId = intent.getStringExtra("SCHOOL_ID") ?: "Colegio San José"
+        userEmail = intent.getStringExtra("USER_EMAIL") ?: ""
 
         setupBottomNavigation()
         setupClickListeners()
         setupDocenteProfile()
+        loadRealTimeData()
+        syncGmailNotifications()
+    }
+
+    private fun syncGmailNotifications() {
+        lifecycleScope.launch {
+            GmailSyncManager.syncReplies(this@DocenteDashboardActivity)
+        }
+    }
+
+    private fun loadRealTimeData() {
+        if (userEmail.isEmpty()) return
+
+        // 1. Cargar conteo de quejas pendientes
+        db.collection("complaints")
+            .whereEqualTo("status", "en proceso")
+            .addSnapshotListener { snapshot, _ ->
+                val count = snapshot?.size() ?: 0
+                binding.tvPendingComplaintsCount.text = count.toString()
+            }
+
+        // 2. Cargar conteo de notificaciones sin leer
+        db.collection("users").document(userEmail).get().addOnSuccessListener { doc ->
+            val schoolEmail = "notificacioneseduconnect2026@gmail.com"
+            val gmailReportes = (doc.getString("correo_reportes") ?: userEmail).lowercase()
+            val primaryEmail = userEmail.lowercase()
+            
+            val emails = mutableListOf(gmailReportes)
+            if (primaryEmail != gmailReportes) emails.add(primaryEmail)
+            if (!emails.contains(schoolEmail)) emails.add(schoolEmail)
+
+            db.collection("notifications")
+                .whereIn("recipient_email", emails)
+                .addSnapshotListener { snapshot, _ ->
+                    val count = snapshot?.size() ?: 0
+                    binding.tvNotifPreviewCount.text = if (count > 0) {
+                        "Tienes $count alertas y comunicados nuevos."
+                    } else {
+                        "No hay nuevas notificaciones."
+                    }
+                }
+        }
+
+        // 3. Cargar última publicación del foro
+        db.collection("posts")
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .limit(1)
+            .addSnapshotListener { snapshot, _ ->
+                val doc = snapshot?.documents?.firstOrNull()
+                if (doc != null) {
+                    binding.tvForumPostTitle.text = doc.getString("title") ?: "Sin título"
+                    val author = doc.getString("author") ?: "Docente"
+                    binding.tvForumPostMeta.text = "Publicado por $author"
+                } else {
+                    binding.tvForumPostTitle.text = "Sin publicaciones"
+                    binding.tvForumPostMeta.text = "El foro está vacío"
+                }
+            }
     }
 
     private fun setupDocenteProfile() {
@@ -46,16 +112,10 @@ class DocenteDashboardActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
-        // Botones de Horario y Asistencia
-        binding.root.findViewById<android.view.View>(R.id.btnDocenteHorario)?.setOnClickListener {
-            val intent = Intent(this, DocenteHorarioActivity::class.java)
+        // Botón de Notificaciones
+        binding.root.findViewById<android.view.View>(R.id.btnVerNotificacionesDocente)?.setOnClickListener {
+            val intent = Intent(this, NotificacionesActivity::class.java)
             intent.putExtra("USER_EMAIL", userEmail)
-            startActivity(intent)
-        }
-
-        binding.root.findViewById<android.view.View>(R.id.btnDocenteAsistencia)?.setOnClickListener {
-            val intent = Intent(this, DocenteAsistenciaActivity::class.java)
-            intent.putExtra("SCHOOL_ID", schoolId)
             startActivity(intent)
         }
 
