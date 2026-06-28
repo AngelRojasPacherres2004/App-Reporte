@@ -2,7 +2,7 @@
     <string name="app_name">App Reporte</string>
     <string name="brand_name">EduConnect</string>
     <string name="access_portal">Acceso al Portal Educativo</string>
-    <string name="select_profile">SELECCIONE SU PERFIL</string>
+    <string name="select_profile">Seleccione su perfil</string>
     <string name="admin">Administrativo</string>
     <string name="user">Usuario</string>
     <string name="parent">Padre</string>
@@ -12,17 +12,17 @@
     <string name="forgot_password">¿Olvidó su contraseña?</string>
     <string name="error_password">Contraseña incorrecta. Inténtelo de nuevo.</string>
     <string name="remember_me">Recordarme</string>
-    <string name="or_continue_with">O CONTINUAR CON</string>
+    <string name="or_continue_with">O continuar con</string>
     <string name="continue_with_google">Continuar con Google</string>
     <string name="login">Ingresar</string>
     <string name="need_help">¿Necesita ayuda? </string>
     <string name="support">Soporte Académico</string>
-    <string name="loading_environment">CARGANDO ENTORNO ESCOLAR</string>
+    <string name="loading_environment">Cargando entorno escolar</string>
 
     <string name="welcome_user">¡Hola de nuevo, MIGUEL!</string>
     <string name="welcome_desc">Hoy es un gran día para seguir el progreso de Lucas. Tienes 2 nuevas actualizaciones esperándote.</string>
     <string name="view_weekly_progress">Ver progreso semanal</string>
-    <string name="weekly_average">PROMEDIO SEMANAL</string>
+    <string name="weekly_average">Promedio semanal</string>
     <string name="daily_report">Reporte Diario</string>
     <string name="view_all_reports">Ver todos los reportes</string>
     <string name="today_performance">Desempeño de Hoy</string>
@@ -42,7 +42,7 @@
     <string name="project_delivery">Entrega de Maqueta</string>
     <string name="project_delivery_desc">Ciencias Naturales - Ecosistemas</string>
     <string name="school_forum">Foro Escolar</string>
-    <string name="last_notice">ÚLTIMO AVISO</string>
+    <string name="last_notice">Último aviso</string>
     <string name="meeting_title">Reunión Trimestral de Padres de Familia</string>
     <string name="meeting_desc">Se invita a todos los padres al auditorio principal este viernes para discutir los avances del programa EduConnect 2024.</string>
     <string name="confirm_attendance">Confirmar Asistencia</string>
@@ -66,7 +66,7 @@
     <string name="pending_complaints">Quejas Pendientes</string>
     <string name="stable">Estable</string>
     <string name="whatsapp_sent">Envíos de WhatsApp de Hoy</string>
-    <string name="last_forum_post">ÚLTIMA PUBLICACIÓN DEL FORO</string>
+    <string name="last_forum_post">Última publicación del foro</string>
     <string name="forum_post_title">"Nuevos protocolos para los exámenes finales del próximo trimestre..."</string>
     <string name="forum_post_meta">Publicado hace 14m por la Decana Sarah</string>
     <string name="create_post">Crear Publicación</string>
@@ -78,7 +78,7 @@
     <string name="complaint_2_desc">Incidente vial en la Av. Principal. Requiere comunicación masiva.</string>
     <string name="attend_all">Atender Todas</string>
     <string name="report_and_grades">Reportes y Notas</string>
-    <string name="assign_grades_desc">Asigna calificaciones diarias, mensuales o bimestrales a los alumnos.</string>
+    <string name="assign_grades_desc">Asigne calificaciones diarias, mensuales o bimestrales a los alumnos.</string>
     <string name="assign_grades_btn">Asignar Notas</string>
     <string name="select_grade_type">Seleccione tipo de nota:</string>
     <string name="subject_hint">Curso / Materia</string>

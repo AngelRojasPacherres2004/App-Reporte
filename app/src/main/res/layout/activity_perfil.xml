@@ -75,11 +75,11 @@
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
-                <com.google.android.material.chip.Chip
+                    <com.google.android.material.chip.Chip
                     android:id="@+id/chipProfileRole"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="USUARIO"
+                    android:text="Usuario"
                     android:textColor="@color/primary"
                     app:chipBackgroundColor="@color/card_blue_light"
                     app:chipStrokeWidth="0dp" />
@@ -105,7 +105,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="INSTITUCIÓN"
+                        android:text="Institución"
                         android:textColor="@color/on_surface_variant"
                         android:textSize="11sp"
                         android:textStyle="bold" />
@@ -131,7 +131,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="MI DOMICILIO"
+                            android:text="Mi domicilio"
                             android:textColor="@color/primary"
                             android:textSize="11sp"
                             android:textStyle="bold" />
@@ -160,7 +160,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="8dp"
-                            android:text="ACTUALIZAR MI DOMICILIO"
+                            android:text="Actualizar mi domicilio"
                             android:textSize="14sp"
                             app:icon="@drawable/ic_location"
                             app:iconSize="20dp" />
@@ -172,7 +172,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="TELÉFONO"
+                        android:text="Teléfono"
                         android:textColor="@color/on_surface_variant"
                         android:textSize="11sp"
                         android:textStyle="bold" />
@@ -192,7 +192,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="GMAIL PARA REPORTES"
+                        android:text="Gmail para reportes"
                         android:textColor="@color/on_surface_variant"
                         android:textSize="11sp"
                         android:textStyle="bold" />

@@ -58,7 +58,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="FOROS POR SALÓN"
+            android:text="Foros por salón"
             android:textColor="@color/primary"
             android:textSize="12sp"
             android:textStyle="bold" />
@@ -67,7 +67,7 @@
             android:id="@+id/tvTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Selecciona un Salón"
+            android:text="Seleccione un salón"
             android:textColor="@color/on_surface"
             android:textSize="32sp"
             android:textStyle="bold" />
