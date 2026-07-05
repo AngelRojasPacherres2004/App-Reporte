@@ -15,8 +15,10 @@ import androidx.core.content.FileProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.appreporte.databinding.ActivityAlumnosListaBinding
 import com.example.appreporte.databinding.DialogAddGradeBinding
+import com.itextpdf.kernel.pdf.CompressionConstants
 import com.itextpdf.kernel.pdf.PdfDocument
 import com.itextpdf.kernel.pdf.PdfWriter
+import com.itextpdf.kernel.pdf.WriterProperties
 import com.itextpdf.layout.Document
 import com.itextpdf.layout.element.Paragraph
 import com.itextpdf.layout.element.Table
@@ -190,12 +192,10 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
                 val parentAppEmail = studentSnap.getString("parent_email") ?: ""
                 
                 var targetGmail = ""
-                var phone = ""
                 if (parentAppEmail.isNotEmpty()) {
                     val parentSnap = FirebaseFirestore.getInstance().collection("users").document(parentAppEmail).get().await()
                     if (parentSnap.exists()) {
                         targetGmail = parentSnap.getString("correo_reportes") ?: ""
-                        phone = parentSnap.getString("phone") ?: ""
                     }
                 }
 
@@ -203,7 +203,11 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
                 val grades = gradesSnap.documents.mapNotNull { doc -> doc.data?.mapValues { it.value.toString() } }
 
                 val pdfFile = File(cacheDir, "Reporte_${studentName.replace(" ", "_")}.pdf")
-                val writer = PdfWriter(FileOutputStream(pdfFile))
+                val writerProperties = WriterProperties()
+                    .setCompressionLevel(CompressionConstants.BEST_COMPRESSION)
+                    .setFullCompressionMode(true)
+                
+                val writer = PdfWriter(FileOutputStream(pdfFile), writerProperties)
                 val pdf = PdfDocument(writer)
                 val document = Document(pdf)
 
@@ -245,10 +249,6 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
                         "type" to "pdf_report"
                     )
                     FirebaseFirestore.getInstance().collection("notifications").add(notifData)
-                }
-
-                if (phone.isNotEmpty()) {
-                    withContext(Dispatchers.Main) { sendToWhatsApp(pdfFile, phone, studentName) }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
