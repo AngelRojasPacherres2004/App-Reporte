@@ -6,7 +6,6 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
-
     <application
         android:name=".AppReporteApplication"
         android:allowBackup="true"
@@ -20,7 +19,7 @@
         android:theme="@style/Theme.AppReporte">
 
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.activities.common.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -29,130 +28,121 @@
         </activity>
 
         <activity
-            android:name=".LoadingActivity"
+            android:name=".ui.activities.common.LoadingActivity"
             android:exported="false" />
             
         <activity
-            android:name=".SuperAdminDashboardActivity"
+            android:name=".ui.activities.admin.SuperAdminDashboardActivity"
             android:exported="false"
             android:label="Panel Súper Administrador" />
 
         <activity
-            android:name=".DirectChatActivity"
+            android:name=".ui.activities.common.DirectChatActivity"
             android:exported="false"
             android:label="Chat" />
 
         <activity
-            android:name=".PadreDashboardActivity"
+            android:name=".ui.activities.padre.PadreDashboardActivity"
             android:exported="false" />
 
         <activity
-            android:name=".AdminDashboardActivity"
+            android:name=".ui.activities.admin.AdminDashboardActivity"
             android:exported="false" />
 
         <activity
-            android:name=".InicioActivity"
+            android:name=".ui.activities.common.InicioActivity"
             android:exported="false" />
 
         <activity
-            android:name=".DocenteDashboardActivity"
+            android:name=".ui.activities.docente.DocenteDashboardActivity"
             android:exported="false" />
 
         <activity
-            android:name=".ForoSalonesActivity"
+            android:name=".ui.activities.foro.ForoSalonesActivity"
             android:exported="false" />
 
         <activity
-            android:name=".ForoDetalleActivity"
+            android:name=".ui.activities.foro.ForoDetalleActivity"
             android:exported="false" />
 
         <activity
-            android:name=".PostDetalleActivity"
+            android:name=".ui.activities.foro.PostDetalleActivity"
             android:exported="false"
             android:label="Comentarios"
             android:theme="@style/Theme.AppReporte" />
 
-        <!-- Pantalla del Chatbot con su nombre oficial -->
         <activity
-            android:name=".ChatbotPadreActivity"
+            android:name=".ui.activities.padre.ChatbotPadreActivity"
             android:exported="false"
             android:label="Asistente EduConnect" />
 
         <activity
-            android:name=".ForoActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".AsistenteActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".GestionAlumnosSalonesActivity"
+            android:name=".ui.activities.docente.GestionAlumnosSalonesActivity"
             android:exported="false"
             android:label="Seleccionar Salón" />
 
         <activity
-            android:name=".AlumnosListaActivity"
+            android:name=".ui.activities.docente.AlumnosListaActivity"
             android:exported="false"
             android:label="Lista de Alumnos" />
 
         <activity
-            android:name=".GestionReportesSalonesActivity"
+            android:name=".ui.activities.docente.GestionReportesSalonesActivity"
             android:exported="false"
             android:label="Reportes por Salón" />
 
         <activity
-            android:name=".AlumnosReporteListaActivity"
+            android:name=".ui.activities.docente.AlumnosReporteListaActivity"
             android:exported="false"
             android:label="Asignar Notas" />
 
         <activity
-            android:name=".MapSelectionActivity"
+            android:name=".ui.activities.common.MapSelectionActivity"
             android:exported="false"
             android:label="Seleccionar Ubicación" />
 
         <activity
-            android:name=".PerfilActivity"
+            android:name=".ui.activities.common.PerfilActivity"
             android:exported="false"
             android:label="Mi Perfil" />
 
         <activity
-            android:name=".PadreReporteActivity"
+            android:name=".ui.activities.padre.PadreReporteActivity"
             android:exported="false"
             android:label="Mis Reportes" />
 
         <activity
-            android:name=".ComplaintsActivity"
+            android:name=".ui.activities.admin.ComplaintsActivity"
             android:exported="false"
             android:label="Gestión de Quejas" />
 
         <activity
-            android:name=".DocenteHorarioActivity"
+            android:name=".ui.activities.docente.DocenteHorarioActivity"
             android:exported="false"
             android:label="Mi Horario" />
 
         <activity
-            android:name=".DocenteAsistenciaActivity"
+            android:name=".ui.activities.docente.DocenteAsistenciaActivity"
             android:exported="false"
             android:label="Tomar Asistencia" />
 
         <activity
-            android:name=".PadreHorarioActivity"
+            android:name=".ui.activities.padre.PadreHorarioActivity"
             android:exported="false"
             android:label="Horario del Alumno" />
 
         <activity
-            android:name=".PadreAsistenciaActivity"
+            android:name=".ui.activities.padre.PadreAsistenciaActivity"
             android:exported="false"
             android:label="Historial de Asistencia" />
 
         <activity
-            android:name=".NotificacionesActivity"
+            android:name=".ui.activities.common.NotificacionesActivity"
             android:exported="false"
             android:label="Notificaciones" />
 
         <service
-            android:name=".MyFirebaseMessagingService"
+            android:name=".services.MyFirebaseMessagingService"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
