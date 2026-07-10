@@ -38,6 +38,7 @@ class GestionAlumnosSalonesActivity : AppCompatActivity() {
                 val intent = Intent(this, AlumnosListaActivity::class.java)
                 intent.putExtra("CLASSROOM_ID", id) // String
                 intent.putExtra("CLASSROOM_NAME", name)
+                intent.putExtra("SCHOOL_ID", currentSchoolId)
                 startActivity(intent)
             }
         )
@@ -48,13 +49,15 @@ class GestionAlumnosSalonesActivity : AppCompatActivity() {
     private fun loadClassrooms() {
         FirebaseFirestore.getInstance().collection("classrooms")
             .whereEqualTo("school_id", currentSchoolId)
-            .get()
-            .addOnSuccessListener { snapshot ->
-                val list = snapshot.documents.mapNotNull { doc ->
-                    val name = doc.getString("name") ?: return@mapNotNull null
-                    Pair(doc.id, name)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) return@addSnapshotListener
+                if (snapshot != null) {
+                    val list = snapshot.documents.mapNotNull { doc ->
+                        val name = doc.getString("name") ?: return@mapNotNull null
+                        Pair(doc.id, name)
+                    }
+                    classroomAdapter.updateClassrooms(list)
                 }
-                classroomAdapter.updateClassrooms(list)
             }
     }
 }

@@ -70,6 +70,8 @@ class AdminDashboardActivity : AppCompatActivity() {
             val userEmail = intent.getStringExtra("USER_EMAIL")
             val intent = Intent(this, PerfilActivity::class.java)
             intent.putExtra("USER_EMAIL", userEmail)
+            intent.putExtra("USER_ROL", "admin")
+            intent.putExtra("SCHOOL_ID", currentSchoolId)
             startActivity(intent)
         }
     }
@@ -162,11 +164,13 @@ class AdminDashboardActivity : AppCompatActivity() {
 
         binding.btnViewStudents.setOnClickListener {
             val intent = Intent(this, GestionAlumnosSalonesActivity::class.java)
+            intent.putExtra("SCHOOL_ID", currentSchoolId)
             startActivity(intent)
         }
 
         binding.btnAddStudentDirect.setOnClickListener {
             val intent = Intent(this, GestionAlumnosSalonesActivity::class.java)
+            intent.putExtra("SCHOOL_ID", currentSchoolId)
             intent.putExtra("OPEN_ADD_DIALOG", true)
             startActivity(intent)
         }
@@ -240,7 +244,14 @@ class AdminDashboardActivity : AppCompatActivity() {
                     } else {
                         "$grado - $nivel"
                     }
-                    val map = hashMapOf("name" to name, "school_id" to currentSchoolId)
+                    val map = hashMapOf(
+                        "name" to name,
+                        "school_id" to currentSchoolId,
+                        "grade" to grado,
+                        "section" to if (seccion == "Sin Sección") "" else seccion,
+                        "level" to nivel,
+                        "tutor" to "" // Inicialmente sin tutor
+                    )
                     FirebaseFirestore.getInstance().collection("classrooms").add(map)
                         .addOnSuccessListener {
                             Toast.makeText(this, "Salón añadido: $name", Toast.LENGTH_SHORT).show()

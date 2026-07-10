@@ -28,6 +28,8 @@ class ChatbotPadreActivity : AppCompatActivity() {
     private var contextData: String = ""
     private val firestore = FirebaseFirestore.getInstance()
     private var studentId: String = ""
+    private var currentState = ChatState.NORMAL
+    private enum class ChatState { NORMAL, AWAITING_CONFIRMATION, AWAITING_COMPLAINT_TEXT }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -195,54 +197,98 @@ class ChatbotPadreActivity : AppCompatActivity() {
             val query = userInput.lowercase().trim()
             delay(600) // Simulación de pensamiento
 
-            val response = when {
-                // Prioridad 1: Notas y Calificaciones (incluyendo posibles errores de dedo como "totas")
-                query.contains("nota") || query.contains("tota") || query.contains("califica") || 
-                query.contains("promedio") || query.contains("curso") || query.contains("materia") -> {
-                    val data = extract("Notas")
-                    if (data.isNotEmpty() && !data.contains("Sin notas", true)) {
-                        "He revisado los registros de **notas** para tus hijos:\n\n$data"
+            when (currentState) {
+                ChatState.AWAITING_CONFIRMATION -> {
+                    if (query.contains("si") || query.contains("sì") || query.contains("claro") || query.contains("acepto") || query.contains("vale")) {
+                        currentState = ChatState.AWAITING_COMPLAINT_TEXT
+                        addBotMessage("Entendido. Por favor, escribe a continuación el detalle de tu queja o reporte. Lo registraré en el sistema.")
                     } else {
-                        "He buscado en el sistema y actualmente **no hay notas publicadas** todavía. Te recomiendo consultar con el docente en unos días."
+                        currentState = ChatState.NORMAL
+                        addBotMessage("Está bien. Si necesitas consultar notas o saber más sobre tus hijos, solo dímelo.")
                     }
                 }
-                
-                // Prioridad 2: Reportes y Asistencia/Conducta
-                query.contains("reporte") || query.contains("queja") || query.contains("conducta") || 
-                query.contains("comportamiento") || query.contains("incidencia") -> {
-                    val data = extract("Reportes")
-                    if (data.isNotEmpty() && !data.contains("Sin reportes", true)) {
-                        "He encontrado los siguientes **reportes**:\n\n$data"
-                    } else {
-                        "¡Buenas noticias! **No hay reportes ni incidencias** registradas. Tus hijos están teniendo un excelente comportamiento."
-                    }
+                ChatState.AWAITING_COMPLAINT_TEXT -> {
+                    saveComplaintToFirestore(userInput)
+                    currentState = ChatState.NORMAL
                 }
-                
-                // Prioridad 3: Información sobre los hijos (nombres, quiénes son)
-                query.contains("hijo") || query.contains("alumno") || query.contains("quien") || 
-                query.contains("nombre") || query.contains("llaman") -> {
-                    val data = extract("Alumno")
-                    if (data.isNotEmpty()) {
-                        "Tienes registrado(s) a:\n$data\n\n¿Deseas saber sus notas o ver si tienen algún reporte?"
-                    } else {
-                        "No logro encontrar el nombre de tus hijos en mi base de datos actual. Por favor, contacta a soporte."
-                    }
-                }
-                
-                // Saludos
-                query.contains("hola") || query.contains("buen") || query.contains("tal") -> {
-                    "¡Hola! Soy tu asistente de EduConnect. Puedo darte información sobre **notas**, **reportes de conducta** o recordarte los datos de tus **hijos**. ¿En qué te ayudo?"
-                }
-                
-                // Despedidas
-                query.contains("gracias") || query.contains("adios") || query.contains("chau") -> {
-                    "¡De nada! Estoy aquí para ayudarte. Que tengas un excelente día."
-                }
+                ChatState.NORMAL -> {
+                    val response = when {
+                        // Prioridad 1: Notas y Calificaciones
+                        query.contains("nota") || query.contains("tota") || query.contains("califica") || 
+                        query.contains("promedio") || query.contains("curso") || query.contains("materia") -> {
+                            val data = extract("Notas")
+                            if (data.isNotEmpty() && !data.contains("Sin notas", true)) {
+                                "He revisado los registros de **notas** para tus hijos:\n\n$data"
+                            } else {
+                                "He buscado en el sistema y actualmente **no hay notas publicadas** todavía. Te recomiendo consultar con el docente en unos días."
+                            }
+                        }
+                        
+                        // Prioridad 2: Reportes y Asistencia/Conducta
+                        query.contains("reporte") || query.contains("queja") || query.contains("conducta") || 
+                        query.contains("comportamiento") || query.contains("incidencia") -> {
+                            val data = extract("Reportes")
+                            val baseMsg = if (data.isNotEmpty() && !data.contains("Sin reportes", true)) {
+                                "He encontrado los siguientes **reportes** registrados:\n\n$data"
+                            } else {
+                                "¡Buenas noticias! **No hay reportes ni incidencias** registradas actualmente."
+                            }
+                            
+                            currentState = ChatState.AWAITING_CONFIRMATION
+                            "$baseMsg\n\n¿Deseas redactar y enviar una **nueva queja o reporte** formal a la institución? (Responde Si/No)"
+                        }
+                        
+                        // Prioridad 3: Información sobre los hijos
+                        query.contains("hijo") || query.contains("alumno") || query.contains("quien") || 
+                        query.contains("nombre") || query.contains("llaman") -> {
+                            val data = extract("Alumno")
+                            if (data.isNotEmpty()) {
+                                "Tienes registrado(s) a:\n$data\n\n¿Deseas saber sus notas o ver si tienen algún reporte?"
+                            } else {
+                                "No logro encontrar el nombre de tus hijos en mi base de datos actual. Por favor, contacta a soporte."
+                            }
+                        }
+                        
+                        // Saludos
+                        query.contains("hola") || query.contains("buen") || query.contains("tal") -> {
+                            "¡Hola! Soy tu asistente de EduConnect. Puedo darte información sobre **notas**, **reportes de conducta** o recordarte los datos de tus **hijos**. ¿En qué te ayudo?"
+                        }
+                        
+                        // Despedidas
+                        query.contains("gracias") || query.contains("adios") || query.contains("chau") -> {
+                            "¡De nada! Estoy aquí para ayudarte. Que tengas un excelente día."
+                        }
 
-                else -> "Entiendo que me preguntas por '$userInput', pero mi conocimiento actual se limita a **notas**, **reportes** y datos de tus **hijos**. ¿Te gustaría que revise alguno de esos temas?"
+                        else -> "Entiendo que me preguntas por '$userInput', pero mi conocimiento actual se limita a **notas**, **reportes** y datos de tus **hijos**. ¿Te gustaría que revise alguno de esos temas?"
+                    }
+                    addBotMessage(response)
+                }
             }
-            addBotMessage(response)
         }
+    }
+
+    private fun saveComplaintToFirestore(text: String) {
+        val userEmail = intent.getStringExtra("USER_EMAIL") ?: ""
+        if (studentId.isEmpty()) {
+            addBotMessage("Lo siento, no puedo enviar la queja porque no hay un estudiante seleccionado. Por favor, selecciona a tu hijo en la pantalla de inicio.")
+            return
+        }
+
+        val complaint = hashMapOf(
+            "student_id" to studentId,
+            "parentEmail" to userEmail,
+            "content" to text,
+            "status" to "Pendiente",
+            "date" to SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date())
+        )
+
+        firestore.collection("complaints").add(complaint)
+            .addOnSuccessListener {
+                addBotMessage("Tu reporte ha sido enviado exitosamente. Se le dará seguimiento a la brevedad. ¿Algo más en lo que pueda ayudarte?")
+            }
+            .addOnFailureListener {
+                addBotMessage("Hubo un error al enviar el reporte. Por favor, intenta más tarde.")
+            }
     }
 
     private fun extract(type: String): String {

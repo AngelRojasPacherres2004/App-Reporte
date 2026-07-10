@@ -65,24 +65,42 @@ class ComplaintsActivity : AppCompatActivity() {
     }
 
     private fun refreshList() {
-        var query: Query = firestore.collection("complaints").orderBy("timestamp", Query.Direction.DESCENDING)
-        if (salonName != null) {
-            // Note: Si salonName es necesario, habria que agregar el salonName al crear queja
-            // Omitido para mantener simplicidad si no esta en firebase
-        }
-        query.addSnapshotListener { snapshot, error ->
-            if (error != null) return@addSnapshotListener
+        // Se ha detectado que el orderBy con campos inexistentes o nulos puede filtrar resultados.
+        // Consultamos la colección completa y ordenamos en memoria para asegurar que se vean todas las quejas.
+        firestore.collection("complaints").addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                Toast.makeText(this, "Error al cargar quejas", Toast.LENGTH_SHORT).show()
+                return@addSnapshotListener
+            }
+            
             val list = mutableListOf<Map<String, String>>()
             snapshot?.documents?.forEach { doc ->
                 val map = mutableMapOf<String, String>()
                 map["id"] = doc.id
-                map["post_title"] = doc.getString("postId") ?: ""
-                map["parent_email"] = doc.getString("parentEmail") ?: ""
+                
+                // Intentar obtener un origen descriptivo según los campos disponibles
+                val postId = doc.getString("postId")
+                val studentId = doc.getString("student_id")
+                map["post_title"] = when {
+                    !postId.isNullOrEmpty() -> "Post: $postId"
+                    !studentId.isNullOrEmpty() -> "Chatbot (Estudiante: $studentId)"
+                    else -> "General / Otros"
+                }
+                
+                map["parent_email"] = doc.getString("parentEmail") ?: "Anónimo"
                 map["content"] = doc.getString("content") ?: ""
-                map["status"] = doc.getString("status") ?: ""
+                map["status"] = doc.getString("status") ?: "en proceso"
+                
+                // Guardar el timestamp para ordenar localmente (soporta tanto Long como Timestamp)
+                val ts = doc.get("timestamp") ?: doc.get("date") ?: 0L
+                map["ts_raw"] = ts.toString()
+                
                 list.add(map)
             }
-            adapter.updateData(list)
+            
+            // Ordenar localmente para evitar problemas de índices en Firestore
+            val sortedList = list.sortedByDescending { it["ts_raw"] }
+            adapter.updateData(sortedList)
         }
     }
 
@@ -106,7 +124,7 @@ class ComplaintsActivity : AppCompatActivity() {
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = items[position]
-            holder.tvTitle.text = "Post: ${item["post_title"]}"
+            holder.tvTitle.text = item["post_title"]
             holder.tvParent.text = "De: ${item["parent_email"]}"
             holder.tvContent.text = item["content"]
             holder.tvStatus.text = "Estado: ${item["status"]}"

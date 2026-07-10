@@ -10,14 +10,16 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.appreporte.databinding.ActivityAlumnosListaBinding
+import com.google.firebase.firestore.FirebaseFirestore
 
 class AlumnosListaActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityAlumnosListaBinding
     private lateinit var adapter: AlumnosAdapter
     private lateinit var dbHelper: DatabaseHelper
-    private var classroomId: Int = -1
+    private var classroomId: String = ""
     private var parentEmails: List<String> = emptyList()
+    private val firestore = FirebaseFirestore.getInstance()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,7 +27,7 @@ class AlumnosListaActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         dbHelper = DatabaseHelper(this)
-        classroomId = intent.getIntExtra("CLASSROOM_ID", -1)
+        classroomId = intent.getStringExtra("CLASSROOM_ID") ?: ""
         val classroomName = intent.getStringExtra("CLASSROOM_NAME") ?: "Salón"
 
         binding.tvTituloSalon.text = "Alumnos: $classroomName"
@@ -42,7 +44,7 @@ class AlumnosListaActivity : AppCompatActivity() {
     private fun setupRecyclerView() {
         adapter = AlumnosAdapter(emptyList(), 
             onEdit = { alumno -> showAlumnoDialog(alumno) },
-            onDelete = { id -> confirmDelete(id.toInt()) },
+            onDelete = { id -> confirmDelete(id) },
             onItemClick = null
         )
         binding.rvAlumnos.layoutManager = LinearLayoutManager(this)
@@ -50,13 +52,36 @@ class AlumnosListaActivity : AppCompatActivity() {
     }
 
     private fun loadParents() {
-        parentEmails = dbHelper.getParents()
+        firestore.collection("users")
+            .whereIn("rol", listOf("usuario", "padre"))
+            .get()
+            .addOnSuccessListener { snapshot ->
+                parentEmails = snapshot.documents.mapNotNull { it.getString("email") }
+            }
+            .addOnFailureListener {
+                // Fallback to SQLite if Firestore fails, though we prefer Firestore
+                parentEmails = dbHelper.getParents()
+            }
     }
 
     private fun loadStudents() {
-        if (classroomId != -1) {
-            val students = dbHelper.getStudentsByClassroom(classroomId)
-            adapter.updateData(students)
+        if (classroomId.isNotEmpty()) {
+            firestore.collection("students")
+                .whereEqualTo("classroom_id", classroomId)
+                .get()
+                .addOnSuccessListener { result ->
+                    val students = result.map { doc ->
+                        mapOf(
+                            "id" to doc.id,
+                            "names" to (doc.getString("names") ?: ""),
+                            "lastnames" to (doc.getString("lastnames") ?: ""),
+                            "dni" to (doc.getString("dni") ?: ""),
+                            "correo" to (doc.getString("correo") ?: ""),
+                            "parent_email" to (doc.getString("parent_email") ?: "")
+                        )
+                    }
+                    adapter.updateData(students)
+                }
         }
     }
 
@@ -87,16 +112,27 @@ class AlumnosListaActivity : AppCompatActivity() {
             val parentEmail = dialogBinding.spinnerPadres.selectedItem?.toString() ?: ""
 
             if (names.isNotEmpty() && lastnames.isNotEmpty() && dni.isNotEmpty()) {
+                val data = hashMapOf(
+                    "names" to names,
+                    "lastnames" to lastnames,
+                    "dni" to dni,
+                    "classroom_id" to classroomId,
+                    "parent_email" to parentEmail,
+                    "correo" to gmail
+                )
+
                 if (alumno == null) {
-                    if (dbHelper.addStudent(names, lastnames, dni, classroomId, parentEmail, gmail)) {
-                        loadStudents()
-                        Toast.makeText(this, "Alumno guardado", Toast.LENGTH_SHORT).show()
-                    }
+                    firestore.collection("students").add(data)
+                        .addOnSuccessListener {
+                            loadStudents()
+                            Toast.makeText(this, "Alumno guardado", Toast.LENGTH_SHORT).show()
+                        }
                 } else {
-                    if (dbHelper.updateStudent(alumno["id"]!!.toInt(), names, lastnames, dni, parentEmail, gmail, classroomId)) {
-                        loadStudents()
-                        Toast.makeText(this, "Datos actualizados", Toast.LENGTH_SHORT).show()
-                    }
+                    firestore.collection("students").document(alumno["id"]!!).set(data)
+                        .addOnSuccessListener {
+                            loadStudents()
+                            Toast.makeText(this, "Datos actualizados", Toast.LENGTH_SHORT).show()
+                        }
                 }
             } else {
                 Toast.makeText(this, "Completa todos los campos", Toast.LENGTH_SHORT).show()
@@ -106,15 +142,16 @@ class AlumnosListaActivity : AppCompatActivity() {
         builder.show()
     }
 
-    private fun confirmDelete(id: Int) {
+    private fun confirmDelete(id: String) {
         AlertDialog.Builder(this)
             .setTitle("Eliminar Alumno")
             .setMessage("¿Estás seguro de eliminar este alumno?")
             .setPositiveButton("Eliminar") { _, _ ->
-                if (dbHelper.deleteStudent(id)) {
-                    loadStudents()
-                    Toast.makeText(this, "Eliminado", Toast.LENGTH_SHORT).show()
-                }
+                firestore.collection("students").document(id).delete()
+                    .addOnSuccessListener {
+                        loadStudents()
+                        Toast.makeText(this, "Eliminado", Toast.LENGTH_SHORT).show()
+                    }
             }
             .setNegativeButton("Cancelar", null)
             .show()

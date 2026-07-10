@@ -11,6 +11,25 @@ object MockDataInjector {
     fun injectData() {
         val db = FirebaseFirestore.getInstance()
 
+        // Verificar si ya se inyectaron los datos para evitar duplicados o recrear datos eliminados
+        db.collection("system_config").document("injection_status").get()
+            .addOnSuccessListener { document ->
+                if (document.exists() && document.getBoolean("injected") == true) {
+                    // Ya se inyectaron los datos, pero podríamos querer actualizar el formato de los existentes
+                    updateExistingClassroomsFormat(db)
+                    return@addOnSuccessListener
+                }
+                
+                // Si no se han inyectado, proceder
+                performInjection(db)
+            }
+    }
+
+    private fun performInjection(db: FirebaseFirestore) {
+        // Marcar como inyectado inmediatamente para evitar ejecuciones concurrentes
+        db.collection("system_config").document("injection_status")
+            .set(hashMapOf("injected" to true, "last_injection" to Timestamp.now()))
+
         // ────────────────────────────────────────────────────────────
         // 1. INYECTAR 10 COLEGIOS ORDENADOS
         // ────────────────────────────────────────────────────────────
@@ -342,6 +361,42 @@ object MockDataInjector {
                 db.collection("notifications").document("notif_${email.replace("@", "_")}_$index").set(notif, SetOptions.merge())
             }
         }
+    }
+
+    private fun updateExistingClassroomsFormat(db: FirebaseFirestore) {
+        db.collection("classrooms").get()
+            .addOnSuccessListener { snapshot ->
+                for (doc in snapshot.documents) {
+                    val name = doc.getString("name") ?: ""
+                    // Si ya tiene grade y level, no hacemos nada
+                    if (doc.contains("grade") && doc.contains("level")) continue
+
+                    // Intentar parsear el nombre para extraer grade, section y level
+                    // Formato esperado: "1er Grado A - Primaria" o "3 Años - Inicial"
+                    try {
+                        val parts = name.split(" - ")
+                        if (parts.size == 2) {
+                            val level = parts[1].trim()
+                            val gradeAndSection = parts[0].trim()
+                            
+                            val gradeParts = gradeAndSection.split(" ")
+                            val grade = if (gradeParts.size >= 2) "${gradeParts[0]} ${gradeParts[1]}" else gradeAndSection
+                            val section = if (gradeParts.size >= 3) gradeParts[2] else ""
+
+                            db.collection("classrooms").document(doc.id).update(
+                                mapOf(
+                                    "grade" to grade,
+                                    "level" to level,
+                                    "section" to section
+                                )
+                            )
+                        }
+                    } catch (e: Exception) {
+                        // Si falla el parseo, al menos marcamos como procesado para no reintentar
+                        db.collection("classrooms").document(doc.id).update("format_updated", true)
+                    }
+                }
+            }
     }
 }
 
