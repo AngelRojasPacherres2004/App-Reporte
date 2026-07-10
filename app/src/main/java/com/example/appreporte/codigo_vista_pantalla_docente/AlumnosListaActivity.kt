@@ -31,6 +31,7 @@ class AlumnosListaActivity : AppCompatActivity() {
         val classroomName = intent.getStringExtra("CLASSROOM_NAME") ?: "Salón"
 
         binding.tvTituloSalon.text = "Alumnos: $classroomName"
+        binding.ivBackAlumnos.setOnClickListener { finish() }
 
         setupRecyclerView()
         loadParents()

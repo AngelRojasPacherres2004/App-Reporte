@@ -36,6 +36,9 @@ class GestionAlumnosActivity : AppCompatActivity() {
         binding.btnAddStudent.setOnClickListener {
             addStudent()
         }
+        binding.ivBackGestionAlumnos.setOnClickListener {
+            onBackPressedDispatcher.onBackPressed()
+        }
     }
 
     private fun setupSpinners() {

@@ -57,6 +57,7 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
         val classroomName = intent.getStringExtra("CLASSROOM_NAME") ?: "Salón"
 
         binding.tvTituloSalon.text = getString(R.string.students_of, classroomName)
+        binding.ivBackAlumnos.setOnClickListener { finish() }
         binding.fabAddAlumno.hide()
 
         setupRecyclerView()

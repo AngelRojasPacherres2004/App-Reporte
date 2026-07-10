@@ -24,10 +24,13 @@
 
             <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/ivAuthor"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:src="@android:drawable/ic_menu_myplaces"
-                app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:padding="2dp"
+                android:src="@drawable/admin_avatar"
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
+                app:strokeColor="@color/outline"
+                app:strokeWidth="1dp" />
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -42,15 +45,16 @@
                     android:layout_height="wrap_content"
                     android:text="Nombre del Autor"
                     android:textColor="@color/on_surface"
+                    android:textSize="14sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/tvTime"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="HACE 10 MIN"
+                    android:text="hace 10 min"
                     android:textColor="@color/on_surface_variant"
-                    android:textSize="10sp" />
+                    android:textSize="12sp" />
             </LinearLayout>
 
             <com.google.android.material.chip.Chip
@@ -62,7 +66,8 @@
                 android:textSize="10sp"
                 app:chipBackgroundColor="@color/priority_red_light"
                 app:chipCornerRadius="8dp"
-                app:chipStrokeWidth="0dp" />
+                app:chipStrokeWidth="0dp"
+                android:visibility="gone" />
         </LinearLayout>
 
         <TextView
@@ -79,10 +84,11 @@
             android:id="@+id/tvContent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="¿Podrían confirmarme si el examen de matemáticas se mantiene para el lunes?"
+            android:layout_marginTop="8dp"
+            android:text="Contenido de la publicación..."
             android:textColor="@color/on_surface"
-            android:textSize="14sp" />
+            android:textSize="14sp"
+            android:lineSpacingExtra="2dp" />
 
         <View
             android:layout_width="match_parent"
@@ -90,15 +96,31 @@
             android:layout_marginTop="16dp"
             android:background="@color/outline" />
 
-        <TextView
-            android:id="@+id/tvCommentsCount"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="3 comentarios"
-            android:textColor="@color/primary"
-            android:textSize="12sp"
-            android:textStyle="bold" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tvCommentsCount"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="3 comentarios"
+                android:textColor="@color/primary"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@android:drawable/ic_menu_send"
+                app:tint="@color/primary"
+                android:layout_marginStart="8dp"
+                android:alpha="0.7" />
+        </LinearLayout>
 
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

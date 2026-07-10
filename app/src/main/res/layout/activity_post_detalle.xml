@@ -16,7 +16,9 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            app:navigationIcon="@android:drawable/ic_menu_revert"
+            app:titleTextColor="@color/primary"
+            app:navigationIcon="?attr/homeAsUpIndicator"
+            app:navigationIconTint="@color/primary"
             app:title="Comentarios" />
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -29,7 +31,8 @@
         <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1">
+            android:layout_weight="1"
+            android:clipToPadding="false">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -44,24 +47,25 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnQueja"
-                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    style="@style/Widget.Material3.Button.TextButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="end"
                     android:text="Realizar Queja"
-                    android:textColor="#F44336"
+                    android:textColor="@color/error"
                     android:visibility="gone"
                     app:icon="@android:drawable/ic_menu_report_image"
-                    app:iconTint="#F44336" />
+                    app:iconTint="@color/error" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
-                    android:layout_marginBottom="8dp"
+                    android:layout_marginBottom="12dp"
                     android:text="Respuestas"
                     android:textStyle="bold"
-                    android:textColor="@color/on_surface" />
+                    android:textColor="@color/primary"
+                    android:textSize="16sp" />
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rvComments"
@@ -76,24 +80,28 @@
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardElevation="8dp"
-            app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.None">
+            app:cardElevation="12dp"
+            app:cardBackgroundColor="@color/surface"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.None"
+            app:strokeWidth="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:padding="8dp">
+                android:padding="12dp">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etComment"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:background="@null"
+                    android:background="@drawable/bg_profile_item"
                     android:hint="Escribe un comentario..."
                     android:padding="12dp"
+                    android:textColor="@color/on_surface"
+                    android:textColorHint="@color/on_surface_variant"
                     android:textSize="14sp" />
 
                 <com.google.android.material.button.MaterialButton
@@ -101,9 +109,11 @@
                     style="@style/Widget.Material3.Button.IconButton.Filled"
                     android:layout_width="48dp"
                     android:layout_height="48dp"
+                    android:layout_marginStart="8dp"
                     app:icon="@android:drawable/ic_menu_send"
-                    app:iconGravity="textStart"
-                    app:iconPadding="0dp" />
+                    app:iconSize="24dp"
+                    app:backgroundTint="@color/primary"
+                    app:iconTint="@color/white" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -112,6 +122,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@color/surface"
+            app:elevation="8dp"
             app:labelVisibilityMode="labeled" />
 
     </LinearLayout>

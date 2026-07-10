@@ -84,7 +84,9 @@ class PostDetalleActivity : AppCompatActivity() {
             else -> R.menu.bottom_nav_menu_docente
         }
         binding.bottomNavigation.inflateMenu(menuRes)
-        binding.bottomNavigation.selectedItemId = R.id.nav_foro
+        if (userRole != "admin") {
+            binding.bottomNavigation.selectedItemId = R.id.nav_foro
+        }
 
         // Ajuste de icono de asistente si es padre
         if (userRole == "usuario") {

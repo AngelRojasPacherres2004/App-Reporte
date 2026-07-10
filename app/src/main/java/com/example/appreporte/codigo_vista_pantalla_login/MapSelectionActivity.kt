@@ -14,6 +14,10 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Locale
 
 class MapSelectionActivity : AppCompatActivity(), OnMapReadyCallback {
@@ -62,19 +66,25 @@ class MapSelectionActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun updateAddressText(lat: Double, lng: Double) {
-        try {
-            val geocoder = Geocoder(this, Locale.getDefault())
-            val addresses = geocoder.getFromLocation(lat, lng, 1)
-            if (!addresses.isNullOrEmpty()) {
-                selectedAddress = addresses[0].getAddressLine(0)
-                tvSelectedAddress.text = selectedAddress
-            } else {
-                selectedAddress = "Lat: $lat, Lng: $lng"
-                tvSelectedAddress.text = selectedAddress
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val geocoder = Geocoder(this@MapSelectionActivity, Locale.getDefault())
+                val addresses = geocoder.getFromLocation(lat, lng, 1)
+                withContext(Dispatchers.Main) {
+                    if (!addresses.isNullOrEmpty()) {
+                        selectedAddress = addresses[0].getAddressLine(0)
+                        tvSelectedAddress.text = selectedAddress
+                    } else {
+                        selectedAddress = "Lat: $lat, Lng: $lng"
+                        tvSelectedAddress.text = selectedAddress
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    selectedAddress = "Lat: $lat, Lng: $lng"
+                    tvSelectedAddress.text = selectedAddress
+                }
             }
-        } catch (e: Exception) {
-            selectedAddress = "Lat: $lat, Lng: $lng"
-            tvSelectedAddress.text = selectedAddress
         }
     }
 }

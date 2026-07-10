@@ -169,7 +169,9 @@ class ForoDetalleActivity : AppCompatActivity() {
             else -> R.menu.bottom_nav_menu_docente
         }
         binding.bottomNavigation.inflateMenu(menuRes)
-        binding.bottomNavigation.selectedItemId = R.id.nav_foro
+        if (userRole != "admin") {
+            binding.bottomNavigation.selectedItemId = R.id.nav_foro
+        }
 
         // Ajuste de icono de asistente si es padre
         if (userRole == "usuario") {
@@ -422,6 +424,7 @@ class ForoDetalleActivity : AppCompatActivity() {
             val tvTitle: TextView = view.findViewById(R.id.tvTitle)
             val tvContent: TextView = view.findViewById(R.id.tvContent)
             val tvTime: TextView = view.findViewById(R.id.tvTime)
+            val tvCommentsCount: TextView = view.findViewById(R.id.tvCommentsCount)
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -435,6 +438,10 @@ class ForoDetalleActivity : AppCompatActivity() {
             holder.tvTitle.text = post.title
             holder.tvContent.text = post.content
             holder.tvTime.text = post.time
+
+            // Cargar conteo de comentarios de forma dinámica si es posible, 
+            // por ahora mantenemos el texto descriptivo o un placeholder
+            holder.tvCommentsCount.text = "Ver comentarios"
             
             holder.itemView.setOnClickListener {
                 val context = holder.itemView.context

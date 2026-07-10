@@ -426,19 +426,9 @@ class AdminDashboardActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_gestion -> true
-                R.id.nav_foro -> {
-                    val forumIntent = Intent(this, com.example.appreporte.codigo_vista_pantalla_padre.ForoSalonesActivity::class.java)
-                    forumIntent.putExtra("USER_EMAIL", userEmail)
-                    forumIntent.putExtra("USER_ROL", "admin")
-                    forumIntent.putExtra("SCHOOL_ID", currentSchoolId)
-                    startActivity(forumIntent)
-                    finish()
-                    true
-                }
-                R.id.nav_asistente -> {
-                    val intent = Intent(this, AsistenteActivity::class.java)
-                    intent.putExtra("USER_EMAIL", userEmail)
-                    intent.putExtra("USER_ROL", "admin")
+                R.id.nav_alumnos -> {
+                    val intent = Intent(this, GestionAlumnosSalonesActivity::class.java)
+                    intent.putExtra("SCHOOL_ID", currentSchoolId)
                     startActivity(intent)
                     finish()
                     true

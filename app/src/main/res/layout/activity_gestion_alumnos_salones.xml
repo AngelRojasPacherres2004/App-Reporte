@@ -11,47 +11,61 @@
         android:background="@color/background"
         app:elevation="0dp">
 
-        <androidx.appcompat.widget.Toolbar
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize">
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="20dp"
+            android:paddingVertical="16dp">
+
+            <ImageView
+                android:id="@+id/ivBackSalones"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_back"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:tint="@color/primary" />
+
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-                
-                <ImageView
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:src="@android:drawable/ic_menu_sort_by_size"
-                    android:background="@drawable/bg_dot_gray"
-                    android:backgroundTint="@color/stable_green_light"
-                    android:padding="6dp"
-                    android:layout_marginEnd="12dp"
-                    app:tint="@color/stable_green" />
-                
-                <LinearLayout
+                android:layout_marginStart="16dp"
+                android:orientation="vertical"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/ivBackSalones"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical">
-                    
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Gestión de Salones"
-                        android:textColor="@color/on_surface"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
-                        
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Seleccione un salón"
-                        android:textColor="@color/on_surface_variant"
-                        android:textSize="12sp" />
-                </LinearLayout>
+                    android:text="Gestión de Salones"
+                    android:textColor="@color/primary"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Seleccione un salón para ver alumnos"
+                    android:textColor="@color/on_surface_variant"
+                    android:textSize="12sp" />
             </LinearLayout>
-        </androidx.appcompat.widget.Toolbar>
+
+            <com.google.android.material.imageview.ShapeableImageView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:scaleType="centerCrop"
+                android:src="@android:drawable/ic_menu_sort_by_size"
+                android:padding="8dp"
+                android:background="@color/stable_green_light"
+                app:tint="@color/stable_green"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.recyclerview.widget.RecyclerView

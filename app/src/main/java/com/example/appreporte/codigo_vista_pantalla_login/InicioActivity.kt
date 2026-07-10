@@ -37,34 +37,30 @@ class InicioActivity : AppCompatActivity() {
 
         binding.bottomNavigation.selectedItemId = R.id.nav_inicio
         binding.bottomNavigation.setOnItemSelectedListener { item ->
+            val userEmail = intent.getStringExtra("USER_EMAIL") ?: ""
             when (item.itemId) {
+                R.id.nav_inicio -> true
                 R.id.nav_gestion -> {
                     val intent = Intent(this, AdminDashboardActivity::class.java)
                     intent.putExtra("SCHOOL_ID", currentSchoolId)
+                    intent.putExtra("USER_EMAIL", userEmail)
                     startActivity(intent)
                     overridePendingTransition(0, 0)
                     finish()
                     true
                 }
-                R.id.nav_foro -> {
-                    val userEmail = intent.getStringExtra("USER_EMAIL") ?: ""
-                    val chatIntent = Intent(this, DirectChatActivity::class.java)
-                    chatIntent.putExtra("CURRENT_EMAIL", userEmail)
-                    chatIntent.putExtra("TARGET_EMAIL", "superadmin@reporte.com")
-                    startActivity(chatIntent)
-                    overridePendingTransition(0, 0)
-                    finish()
-                    true
-                }
-                R.id.nav_asistente -> {
-                    startActivity(Intent(this, AsistenteActivity::class.java))
+                R.id.nav_alumnos -> {
+                    val intent = Intent(this, com.example.appreporte.codigo_vista_pantalla_docente.GestionAlumnosSalonesActivity::class.java)
+                    intent.putExtra("SCHOOL_ID", currentSchoolId)
+                    intent.putExtra("USER_EMAIL", userEmail)
+                    startActivity(intent)
                     overridePendingTransition(0, 0)
                     finish()
                     true
                 }
                 R.id.nav_perfil -> {
                     val perfilIntent = Intent(this, PerfilActivity::class.java)
-                    perfilIntent.putExtra("USER_EMAIL", intent.getStringExtra("USER_EMAIL") ?: "")
+                    perfilIntent.putExtra("USER_EMAIL", userEmail)
                     perfilIntent.putExtra("USER_ROL", "admin")
                     perfilIntent.putExtra("SCHOOL_ID", currentSchoolId)
                     startActivity(perfilIntent)

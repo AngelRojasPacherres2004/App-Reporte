@@ -26,6 +26,8 @@ class GestionAlumnosSalonesActivity : AppCompatActivity() {
 
         currentSchoolId = intent.getStringExtra("SCHOOL_ID") ?: "Colegio San José"
         
+        binding.ivBackSalones.setOnClickListener { finish() }
+
         setupRecyclerView()
         loadClassrooms()
     }

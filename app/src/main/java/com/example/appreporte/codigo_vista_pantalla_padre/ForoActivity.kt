@@ -16,7 +16,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import android.widget.EditText
-import android.widget.ImageButton
+import com.google.android.material.button.MaterialButton
 
 class ForoActivity : AppCompatActivity() {
 
@@ -26,6 +26,11 @@ class ForoActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_foro)
+
+        val toolbar = findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar)
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        toolbar.setNavigationOnClickListener { finish() }
 
         val rv = findViewById<RecyclerView>(R.id.rvForumMessages)
         chatAdapter = ChatAdapter(messages)
@@ -38,7 +43,7 @@ class ForoActivity : AppCompatActivity() {
         messages.add(UIMessage("Tú", "Perfecto, gracias por la confirmación.", true))
         chatAdapter.notifyDataSetChanged()
 
-        findViewById<ImageButton>(R.id.btnSend).setOnClickListener {
+        findViewById<MaterialButton>(R.id.btnSend).setOnClickListener {
             val et = findViewById<EditText>(R.id.etMessage)
             val txt = et.text.toString()
             if (txt.isNotEmpty()) {
@@ -50,37 +55,68 @@ class ForoActivity : AppCompatActivity() {
         }
 
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavigation)
-        bottomNav.selectedItemId = R.id.nav_foro
+        
+        val userRole = intent.getStringExtra("USER_ROL")?.lowercase() ?: "usuario"
+        val userEmail = intent.getStringExtra("USER_EMAIL") ?: ""
+        val schoolId = intent.getStringExtra("SCHOOL_ID") ?: ""
+
+        bottomNav.menu.clear()
+        when (userRole) {
+            "admin", "superadmin" -> bottomNav.inflateMenu(R.menu.bottom_nav_menu_admin)
+            "docente" -> bottomNav.inflateMenu(R.menu.bottom_nav_menu_docente)
+            else -> bottomNav.inflateMenu(R.menu.bottom_nav_menu_padre)
+        }
+
+        if (userRole != "admin" && userRole != "superadmin") {
+            bottomNav.selectedItemId = R.id.nav_foro
+        }
+
         bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_inicio -> {
-                    startActivity(Intent(this, InicioActivity::class.java))
+                    val targetActivity = when (userRole) {
+                        "admin" -> InicioActivity::class.java
+                        "docente" -> com.example.appreporte.codigo_vista_pantalla_docente.DocenteDashboardActivity::class.java
+                        else -> PadreDashboardActivity::class.java
+                    }
+                    val intent = Intent(this, targetActivity)
+                    intent.putExtra("USER_EMAIL", userEmail)
+                    intent.putExtra("USER_ROL", userRole)
+                    intent.putExtra("SCHOOL_ID", schoolId)
+                    startActivity(intent)
                     overridePendingTransition(0, 0)
                     finish()
                     true
                 }
                 R.id.nav_gestion -> {
-                    startActivity(Intent(this, AdminDashboardActivity::class.java))
+                    val intent = Intent(this, AdminDashboardActivity::class.java)
+                    intent.putExtra("USER_EMAIL", userEmail)
+                    intent.putExtra("SCHOOL_ID", schoolId)
+                    startActivity(intent)
                     overridePendingTransition(0, 0)
                     finish()
                     true
                 }
                 R.id.nav_asistente -> {
-                    startActivity(Intent(this, AsistenteActivity::class.java))
+                    val intent = Intent(this, AsistenteActivity::class.java)
+                    intent.putExtra("USER_EMAIL", userEmail)
+                    intent.putExtra("USER_ROL", userRole)
+                    startActivity(intent)
                     overridePendingTransition(0, 0)
                     finish()
                     true
                 }
                 R.id.nav_perfil -> {
                     val perfilIntent = Intent(this, PerfilActivity::class.java)
-                    perfilIntent.putExtra("USER_EMAIL", intent.getStringExtra("USER_EMAIL") ?: "")
-                    perfilIntent.putExtra("USER_ROL", intent.getStringExtra("USER_ROL") ?: "admin")
-                    perfilIntent.putExtra("SCHOOL_ID", intent.getStringExtra("SCHOOL_ID") ?: "")
+                    perfilIntent.putExtra("USER_EMAIL", userEmail)
+                    perfilIntent.putExtra("USER_ROL", userRole)
+                    perfilIntent.putExtra("SCHOOL_ID", schoolId)
                     startActivity(perfilIntent)
                     overridePendingTransition(0, 0)
                     finish()
                     true
                 }
+                R.id.nav_foro -> true
                 else -> true
             }
         }

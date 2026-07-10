@@ -4,6 +4,7 @@ import com.example.appreporte.codigo_logica_login.DatabaseHelper
 import com.example.appreporte.codigo_vista_pantalla_docente.DocenteDashboardActivity
 import com.example.appreporte.codigo_vista_pantalla_padre.PadreDashboardActivity
 import com.example.appreporte.codigo_vista_pantalla_padre.ForoActivity
+import com.example.appreporte.codigo_vista_pantalla_padre.ForoSalonesActivity
 import com.example.appreporte.codigo_vista_pantalla_padre.AsistenteActivity
 import com.example.appreporte.R
 import android.Manifest
@@ -19,6 +20,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.material.bottomnavigation.BottomNavigationView
@@ -26,7 +28,11 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.GeoPoint
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.SetOptions
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Locale
 
 class PerfilActivity : AppCompatActivity() {
@@ -49,6 +55,7 @@ class PerfilActivity : AppCompatActivity() {
 
     private var currentRole: String = "usuario"
     private var hasPromptedForAddress = false
+    private var userListener: ListenerRegistration? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -114,7 +121,12 @@ class PerfilActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_foro -> {
-                    val foroIntent = Intent(this, ForoActivity::class.java)
+                    val targetClass = if (currentRole == "docente" || currentRole == "admin" || currentRole == "superadmin") {
+                        ForoSalonesActivity::class.java
+                    } else {
+                        ForoActivity::class.java
+                    }
+                    val foroIntent = Intent(this, targetClass)
                     foroIntent.putExtra("USER_EMAIL", tvEmail.text.toString())
                     foroIntent.putExtra("USER_ROL", currentRole)
                     foroIntent.putExtra("SCHOOL_ID", tvSchool.text.toString())
@@ -175,6 +187,11 @@ class PerfilActivity : AppCompatActivity() {
         }
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        userListener?.remove()
+    }
+
     private fun loadProfileData() {
         val intentEmail = intent.getStringExtra("USER_EMAIL") ?: ""
         val dbHelper = DatabaseHelper(this)
@@ -184,13 +201,15 @@ class PerfilActivity : AppCompatActivity() {
             tvInitials.text = intentEmail.take(1).uppercase()
 
             if (intentEmail == "padre1@reporte.com") {
-                val lat = -12.036438
-                val lng = -76.961094
-                val addressText = getAddressFromCoords(lat, lng)
-                updateAddressInFirestore(addressText, lat, lng)
+                lifecycleScope.launch {
+                    val lat = -12.036438
+                    val lng = -76.961094
+                    val addressText = getAddressFromCoords(lat, lng)
+                    updateAddressInFirestore(addressText, lat, lng)
+                }
             }
             
-            FirebaseFirestore.getInstance().collection("users").document(intentEmail)
+            userListener = FirebaseFirestore.getInstance().collection("users").document(intentEmail)
                 .addSnapshotListener { snapshot, e ->
                     if (e != null) return@addSnapshotListener
 
@@ -201,29 +220,31 @@ class PerfilActivity : AppCompatActivity() {
                         
                         val direccionField = snapshot.get("direccion")
 
-                        val displayAddress = when (direccionField) {
-                            is GeoPoint -> getAddressFromCoords(direccionField.latitude, direccionField.longitude)
-                            is String -> if (direccionField.isNotEmpty()) direccionField else "No registrado"
-                            else -> "No registrado"
+                        lifecycleScope.launch {
+                            val displayAddress = when (direccionField) {
+                                is GeoPoint -> getAddressFromCoords(direccionField.latitude, direccionField.longitude)
+                                is String -> if (direccionField.isNotEmpty()) direccionField else "No registrado"
+                                else -> "No registrado"
+                            }
+
+                            tvRole.text = role.uppercase()
+                            tvSchool.text = school
+                            tvPhone.text = phone
+                            tvAddress.text = displayAddress
+                            
+                            val gmailReportes = snapshot.getString("correo_reportes") ?: ""
+                            tvGmail.text = if (gmailReportes.isNotEmpty()) gmailReportes else "No registrado"
+
+                            val normalizedRole = role.lowercase()
+                            if (normalizedRole == "padre" || normalizedRole == "usuario") {
+                                llAddressSection.visibility = android.view.View.VISIBLE
+                            } else {
+                                llAddressSection.visibility = android.view.View.GONE
+                            }
+
+                            dbHelper.syncUserProfile(intentEmail, role, phone, displayAddress, gmailReportes)
+                            checkMissingData(displayAddress)
                         }
-
-                        tvRole.text = role.uppercase()
-                        tvSchool.text = school
-                        tvPhone.text = phone
-                        tvAddress.text = displayAddress
-                        
-                        val gmailReportes = snapshot.getString("correo_reportes") ?: ""
-                        tvGmail.text = if (gmailReportes.isNotEmpty()) gmailReportes else "No registrado"
-
-                        val normalizedRole = role.lowercase()
-                        if (normalizedRole == "padre" || normalizedRole == "usuario") {
-                            llAddressSection.visibility = android.view.View.VISIBLE
-                        } else {
-                            llAddressSection.visibility = android.view.View.GONE
-                        }
-
-                        dbHelper.syncUserProfile(intentEmail, role, phone, displayAddress, gmailReportes)
-                        checkMissingData(displayAddress)
                     } else {
                         val localData = dbHelper.getUserData(intentEmail)
                         localData?.let {
@@ -264,17 +285,9 @@ class PerfilActivity : AppCompatActivity() {
 
         fusedLocationClient.lastLocation.addOnSuccessListener { location ->
             if (location != null) {
-                val geocoder = Geocoder(this, Locale.getDefault())
-                try {
-                    val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
-                    if (addresses != null && addresses.isNotEmpty()) {
-                        val address = addresses[0].getAddressLine(0)
-                        updateAddressInFirestore(address, location.latitude, location.longitude)
-                    } else {
-                        Toast.makeText(this, "No se pudo determinar la dirección", Toast.LENGTH_SHORT).show()
-                    }
-                } catch (e: Exception) {
-                    Toast.makeText(this, "Error al obtener dirección: ${e.message}", Toast.LENGTH_SHORT).show()
+                lifecycleScope.launch {
+                    val address = getAddressFromCoords(location.latitude, location.longitude)
+                    updateAddressInFirestore(address, location.latitude, location.longitude)
                 }
             } else {
                 Toast.makeText(this, "No se pudo obtener la ubicación actual", Toast.LENGTH_SHORT).show()
@@ -307,9 +320,9 @@ class PerfilActivity : AppCompatActivity() {
         }
     }
 
-    private fun getAddressFromCoords(lat: Double, lng: Double): String {
-        return try {
-            val geocoder = Geocoder(this, Locale.getDefault())
+    private suspend fun getAddressFromCoords(lat: Double, lng: Double): String = withContext(Dispatchers.IO) {
+        try {
+            val geocoder = Geocoder(this@PerfilActivity, Locale.getDefault())
             val addresses = geocoder.getFromLocation(lat, lng, 1)
             if (!addresses.isNullOrEmpty()) {
                 addresses[0].getAddressLine(0)

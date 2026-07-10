@@ -37,6 +37,11 @@ class ForoSalonesActivity : AppCompatActivity() {
         userEmail = intent.getStringExtra("USER_EMAIL") ?: ""
         schoolId = intent.getStringExtra("SCHOOL_ID") ?: ""
 
+        binding.toolbar.title = "EduConnect Foros"
+        setSupportActionBar(binding.toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        binding.toolbar.setNavigationOnClickListener { finish() }
+
         setupRecyclerView()
         setupBottomNavigation()
         setupFab()
@@ -187,7 +192,10 @@ class ForoSalonesActivity : AppCompatActivity() {
         binding.bottomNavigation.menu.clear()
         binding.bottomNavigation.inflateMenu(menuRes)
         
-        binding.bottomNavigation.selectedItemId = R.id.nav_foro
+        if (userRole != "admin") {
+            binding.bottomNavigation.selectedItemId = R.id.nav_foro
+        }
+
         binding.bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_inicio -> {
@@ -273,11 +281,11 @@ class ForoSalonesActivity : AppCompatActivity() {
     ) : RecyclerView.Adapter<SalonesAdapter.ViewHolder>() {
 
         class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-            val tvName: TextView = view.findViewById(android.R.id.text1)
+            val tvName: TextView = view.findViewById(R.id.tvSalonName)
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            val view = LayoutInflater.from(parent.context).inflate(android.R.layout.simple_list_item_1, parent, false)
+            val view = LayoutInflater.from(parent.context).inflate(R.layout.item_salon_foro, parent, false)
             return ViewHolder(view)
         }
 

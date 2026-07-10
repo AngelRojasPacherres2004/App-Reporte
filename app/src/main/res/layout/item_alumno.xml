@@ -15,8 +15,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp"
-        android:background="?attr/selectableItemBackground">
+        android:padding="16dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -24,17 +23,16 @@
             android:orientation="horizontal"
             android:gravity="center_vertical">
 
-            <FrameLayout
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:background="@drawable/bg_gradient_purple">
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_gravity="center"
-                    android:src="@android:drawable/ic_menu_myplaces"
-                    app:tint="@color/white" />
-            </FrameLayout>
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/ivAlumnoAvatar"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:scaleType="centerCrop"
+                android:src="@android:drawable/ic_menu_myplaces"
+                android:background="@color/card_purple_light"
+                android:padding="8dp"
+                app:tint="@color/primary"
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -49,7 +47,7 @@
                     android:layout_height="wrap_content"
                     android:text="Nombre Apellido"
                     android:textColor="@color/on_surface"
-                    android:textSize="18sp"
+                    android:textSize="17sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -59,7 +57,7 @@
                     android:text="DNI: 12345678"
                     android:textColor="@color/on_surface_variant"
                     android:textSize="14sp" />
-                
+
                 <TextView
                     android:id="@+id/tvPadreAlumno"
                     android:layout_width="wrap_content"
@@ -70,7 +68,22 @@
                     android:layout_marginTop="2dp" />
 
             </LinearLayout>
+
+            <ImageButton
+                android:id="@+id/btnOptionsAlumno"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_more"
+                app:tint="@color/on_surface_variant"
+                android:visibility="gone" />
         </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="16dp"
+            android:background="@color/outline_variant" />
 
         <LinearLayout
             android:id="@+id/llAlumnoActions"
@@ -78,24 +91,27 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="end"
-            android:layout_marginTop="12dp">
+            android:paddingTop="8dp">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnEditAlumno"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
+                style="@style/Widget.Material3.Button.TextButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Editar"
-                android:textColor="@color/primary" />
+                android:textColor="@color/primary"
+                app:icon="@android:drawable/ic_menu_edit" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnDeleteAlumno"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
+                style="@style/Widget.Material3.Button.TextButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:text="Eliminar"
-                android:textColor="@color/priority_red" />
+                android:textColor="@color/error"
+                app:icon="@android:drawable/ic_menu_delete"
+                app:iconTint="@color/error" />
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
