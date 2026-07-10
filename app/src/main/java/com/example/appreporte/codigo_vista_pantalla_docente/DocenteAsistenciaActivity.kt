@@ -1,0 +1,168 @@
+package com.example.appreporte.codigo_vista_pantalla_docente
+
+import com.example.appreporte.codigo_logica_docente.EmailNotificationWorker
+import com.example.appreporte.codigo_logica_docente.AttendanceStudentAdapter
+import com.example.appreporte.R
+import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.appreporte.databinding.ActivityDocenteAsistenciaBinding
+import com.google.firebase.firestore.FirebaseFirestore
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+import android.widget.ArrayAdapter
+import android.widget.AdapterView
+import android.view.View
+
+class DocenteAsistenciaActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityDocenteAsistenciaBinding
+    private val db = FirebaseFirestore.getInstance()
+    private lateinit var adapter: AttendanceStudentAdapter
+    private var schoolId: String = ""
+    private val currentDateStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+    private var selectedClassroom: String = ""
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        binding = ActivityDocenteAsistenciaBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        schoolId = intent.getStringExtra("SCHOOL_ID") ?: ""
+        binding.tvAttendanceDateInfo.text = "Fecha: $currentDateStr"
+        
+        binding.rvAlumnosAsistencia.layoutManager = LinearLayoutManager(this)
+        
+        loadClassrooms()
+        
+        binding.btnSaveAttendance.setOnClickListener {
+            saveAttendance()
+        }
+    }
+
+    private fun loadClassrooms() {
+        if (schoolId.isEmpty()) return
+
+        db.collection("forums")
+            .whereEqualTo("schoolId", schoolId)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val classList = snapshot.documents.mapNotNull { it.getString("name") }.toMutableList()
+                if (classList.isEmpty()) {
+                    classList.add("General")
+                }
+                
+                val spinnerAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, classList)
+                binding.spinnerClassrooms.adapter = spinnerAdapter
+                
+                binding.spinnerClassrooms.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                    override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                        selectedClassroom = classList[position]
+                        loadStudents()
+                    }
+                    override fun onNothingSelected(parent: AdapterView<*>?) {}
+                }
+            }
+            .addOnFailureListener {
+                Toast.makeText(this, "Error cargando salones", Toast.LENGTH_SHORT).show()
+                loadStudents() // Fallback
+            }
+    }
+
+    private fun loadStudents() {
+        if (schoolId.isEmpty()) return
+        
+        // Carga todos los alumnos del colegio para simplificar (MVP)
+        val query = db.collection("students").whereEqualTo("school_id", schoolId)
+        // If we have selectedClassroom we might filter by it if the DB supports it, but for MVP we load and filter locally if needed
+        query.get()
+            .addOnSuccessListener { snapshot ->
+                val list = snapshot.documents.mapNotNull { doc ->
+                    val data = doc.data?.toMutableMap()
+                    data?.put("id", doc.id)
+                    data
+                }
+                adapter = AttendanceStudentAdapter(list)
+                binding.rvAlumnosAsistencia.adapter = adapter
+            }
+            .addOnFailureListener {
+                Toast.makeText(this, "Error cargando alumnos", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    private fun saveAttendance() {
+        if (!::adapter.isInitialized) return
+        
+        val batch = db.batch()
+        val results = adapter.attendanceResults
+        
+        for ((studentId, status) in results) {
+            val docRef = db.collection("attendance").document()
+            val data = hashMapOf(
+                "student_id" to studentId,
+                "date" to currentDateStr,
+                "status" to status,
+                "course_name" to selectedClassroom
+            )
+            batch.set(docRef, data)
+        }
+        
+        batch.commit().addOnSuccessListener {
+            Toast.makeText(this, "Asistencia guardada exitosamente", Toast.LENGTH_SHORT).show()
+            // CA1: Activar notificaciones para inasistencias
+            triggerAttendanceNotifications()
+            finish()
+        }.addOnFailureListener {
+            Toast.makeText(this, "Error al guardar asistencia", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun triggerAttendanceNotifications() {
+        if (!::adapter.isInitialized) return
+        val results = adapter.attendanceResults
+        
+        results.filter { it.value != "Presente" }.forEach { (studentId, status) ->
+            val student = adapter.getStudentData(studentId)
+            val studentName = student["names"]?.toString() ?: student["name"]?.toString() ?: "Su hijo(a)"
+            val parentAppEmail = student["parent_email"]?.toString() ?: ""
+            
+            if (parentAppEmail.isNotEmpty()) {
+                db.collection("users").document(parentAppEmail).get()
+                    .addOnSuccessListener { userDoc ->
+                        if (userDoc.exists()) {
+                            val targetGmail = userDoc.getString("correo_reportes") ?: ""
+                            if (targetGmail.isNotEmpty()) {
+                                val data = androidx.work.Data.Builder()
+                                    .putString("student_name", studentName)
+                                    .putString("subject", "Aviso de Asistencia - $studentName")
+                                    .putString("message", "Estimado Padre de Familia, le informamos que el alumno $studentName registra $status hoy $currentDateStr.\n\nSaludos,\nEduConnect")
+                                    .putString("recipient_email", targetGmail)
+                                    .build()
+
+                                val workRequest = androidx.work.OneTimeWorkRequestBuilder<EmailNotificationWorker>()
+                                    .setInputData(data)
+                                    .build()
+
+                                androidx.work.WorkManager.getInstance(applicationContext).enqueue(workRequest)
+                                Log.d("Asistencia", "Notificación encolada para $targetGmail")
+
+                                // Guardar en Firestore para que aparezca en la app (Sincronizado con Gmail)
+                                val notifData = hashMapOf(
+                                    "recipient_email" to targetGmail,
+                                    "subject" to "Aviso de Asistencia - $studentName",
+                                    "message" to "Estimado Padre de Familia, le informamos que el alumno $studentName registra $status hoy $currentDateStr.",
+                                    "timestamp" to com.google.firebase.Timestamp.now(),
+                                    "type" to "asistencia"
+                                )
+                                db.collection("notifications").add(notifData)
+                            }
+                        }
+                    }
+            }
+        }
+    }
+}
+

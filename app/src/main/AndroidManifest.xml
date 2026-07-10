@@ -8,7 +8,7 @@
 
 
     <application
-        android:name=".AppReporteApplication"
+        android:name=".codigo_logica_login.AppReporteApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -20,7 +20,7 @@
         android:theme="@style/Theme.AppReporte">
 
         <activity
-            android:name=".MainActivity"
+            android:name=".codigo_vista_pantalla_login.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -29,130 +29,130 @@
         </activity>
 
         <activity
-            android:name=".LoadingActivity"
+            android:name=".codigo_vista_pantalla_login.LoadingActivity"
             android:exported="false" />
             
         <activity
-            android:name=".SuperAdminDashboardActivity"
+            android:name=".codigo_vista_pantalla_login.SuperAdminDashboardActivity"
             android:exported="false"
             android:label="Panel Súper Administrador" />
 
         <activity
-            android:name=".DirectChatActivity"
+            android:name=".codigo_vista_pantalla_padre.DirectChatActivity"
             android:exported="false"
             android:label="Chat" />
 
         <activity
-            android:name=".PadreDashboardActivity"
+            android:name=".codigo_vista_pantalla_padre.PadreDashboardActivity"
             android:exported="false" />
 
         <activity
-            android:name=".AdminDashboardActivity"
+            android:name=".codigo_vista_pantalla_login.AdminDashboardActivity"
             android:exported="false" />
 
         <activity
-            android:name=".InicioActivity"
+            android:name=".codigo_vista_pantalla_login.InicioActivity"
             android:exported="false" />
 
         <activity
-            android:name=".DocenteDashboardActivity"
+            android:name=".codigo_vista_pantalla_docente.DocenteDashboardActivity"
             android:exported="false" />
 
         <activity
-            android:name=".ForoSalonesActivity"
+            android:name=".codigo_vista_pantalla_padre.ForoSalonesActivity"
             android:exported="false" />
 
         <activity
-            android:name=".ForoDetalleActivity"
+            android:name=".codigo_vista_pantalla_padre.ForoDetalleActivity"
             android:exported="false" />
 
         <activity
-            android:name=".PostDetalleActivity"
+            android:name=".codigo_vista_pantalla_padre.PostDetalleActivity"
             android:exported="false"
             android:label="Comentarios"
             android:theme="@style/Theme.AppReporte" />
 
         <!-- Pantalla del Chatbot con su nombre oficial -->
         <activity
-            android:name=".ChatbotPadreActivity"
+            android:name=".codigo_vista_pantalla_padre.ChatbotPadreActivity"
             android:exported="false"
             android:label="Asistente EduConnect" />
 
         <activity
-            android:name=".ForoActivity"
+            android:name=".codigo_vista_pantalla_padre.ForoActivity"
             android:exported="false" />
 
         <activity
-            android:name=".AsistenteActivity"
+            android:name=".codigo_vista_pantalla_padre.AsistenteActivity"
             android:exported="false" />
 
         <activity
-            android:name=".GestionAlumnosSalonesActivity"
+            android:name=".codigo_vista_pantalla_docente.GestionAlumnosSalonesActivity"
             android:exported="false"
             android:label="Seleccionar Salón" />
 
         <activity
-            android:name=".AlumnosListaActivity"
+            android:name=".codigo_vista_pantalla_docente.AlumnosListaActivity"
             android:exported="false"
             android:label="Lista de Alumnos" />
 
         <activity
-            android:name=".GestionReportesSalonesActivity"
+            android:name=".codigo_vista_pantalla_docente.GestionReportesSalonesActivity"
             android:exported="false"
             android:label="Reportes por Salón" />
 
         <activity
-            android:name=".AlumnosReporteListaActivity"
+            android:name=".codigo_vista_pantalla_docente.AlumnosReporteListaActivity"
             android:exported="false"
             android:label="Asignar Notas" />
 
         <activity
-            android:name=".MapSelectionActivity"
+            android:name=".codigo_vista_pantalla_login.MapSelectionActivity"
             android:exported="false"
             android:label="Seleccionar Ubicación" />
 
         <activity
-            android:name=".PerfilActivity"
+            android:name=".codigo_vista_pantalla_login.PerfilActivity"
             android:exported="false"
             android:label="Mi Perfil" />
 
         <activity
-            android:name=".PadreReporteActivity"
+            android:name=".codigo_vista_pantalla_padre.PadreReporteActivity"
             android:exported="false"
             android:label="Mis Reportes" />
 
         <activity
-            android:name=".ComplaintsActivity"
+            android:name=".codigo_vista_pantalla_padre.ComplaintsActivity"
             android:exported="false"
             android:label="Gestión de Quejas" />
 
         <activity
-            android:name=".DocenteHorarioActivity"
+            android:name=".codigo_vista_pantalla_docente.DocenteHorarioActivity"
             android:exported="false"
             android:label="Mi Horario" />
 
         <activity
-            android:name=".DocenteAsistenciaActivity"
+            android:name=".codigo_vista_pantalla_docente.DocenteAsistenciaActivity"
             android:exported="false"
             android:label="Tomar Asistencia" />
 
         <activity
-            android:name=".PadreHorarioActivity"
+            android:name=".codigo_vista_pantalla_padre.PadreHorarioActivity"
             android:exported="false"
             android:label="Horario del Alumno" />
 
         <activity
-            android:name=".PadreAsistenciaActivity"
+            android:name=".codigo_vista_pantalla_padre.PadreAsistenciaActivity"
             android:exported="false"
             android:label="Historial de Asistencia" />
 
         <activity
-            android:name=".NotificacionesActivity"
+            android:name=".codigo_vista_pantalla_login.NotificacionesActivity"
             android:exported="false"
             android:label="Notificaciones" />
 
         <service
-            android:name=".MyFirebaseMessagingService"
+            android:name=".codigo_logica_login.MyFirebaseMessagingService"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
