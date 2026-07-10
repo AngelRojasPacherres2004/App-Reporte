@@ -190,7 +190,19 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
                 zipFiles(listOf(pdfFile), zipFile)
 
                 saveToDownloads(pdfFile) // Opcional: seguir guardando el PDF en descargas
-                withContext(Dispatchers.Main) { sendToWhatsApp(zipFile, phone, studentName) }
+                withContext(Dispatchers.Main) { 
+                    val options = arrayOf("Enviar por WhatsApp", "Enviar por Correo")
+                    AlertDialog.Builder(this@AlumnosReporteListaActivity)
+                        .setTitle("Compartir Reporte")
+                        .setItems(options) { _, which ->
+                            if (which == 0) {
+                                sendToWhatsApp(zipFile, phone, studentName)
+                            } else {
+                                sendToEmail(pdfFile, parentEmail, studentName)
+                            }
+                        }
+                        .show()
+                }
                 
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -244,6 +256,23 @@ class AlumnosReporteListaActivity : AppCompatActivity() {
                 }, getString(R.string.share_report))
                 startActivity(chooser)
             }
+        }
+    }
+
+    private fun sendToEmail(file: File, parentEmail: String, studentName: String) {
+        val uri: Uri = FileProvider.getUriForFile(this, "${packageName}.fileprovider", file)
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "message/rfc822"
+            putExtra(Intent.EXTRA_EMAIL, arrayOf(parentEmail))
+            putExtra(Intent.EXTRA_SUBJECT, "Reporte Académico - $studentName")
+            putExtra(Intent.EXTRA_TEXT, "Adjunto el reporte académico actualizado de su hijo/a $studentName.")
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        try {
+            startActivity(Intent.createChooser(intent, "Enviar correo usando..."))
+        } catch (ex: android.content.ActivityNotFoundException) {
+            Toast.makeText(this, "No hay clientes de correo instalados.", Toast.LENGTH_SHORT).show()
         }
     }
 

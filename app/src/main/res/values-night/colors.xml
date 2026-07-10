@@ -1,28 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Fondo principal -->
-    <color name="background">#121318</color>
+    <color name="background">#0F172A</color>
 
     <!-- Color de la tarjeta contenedora -->
-    <color name="surface">#1F222B</color>
+    <color name="surface">#1E293B</color>
 
     <!-- El Azul principal -->
-    <color name="primary">#3B82F6</color>
+    <color name="primary">#818CF8</color>
 
     <!-- Color del texto sobre el azul -->
     <color name="on_primary">#FFFFFF</color>
 
     <!-- Color del texto general -->
-    <color name="on_surface">#E2E8F0</color>
+    <color name="on_surface">#F8FAFC</color>
 
     <!-- Color de la tarjeta de perfil no seleccionada -->
-    <color name="profile_unselected">#2D313F</color>
+    <color name="profile_unselected">#334155</color>
 
     <!-- Color de los bordes de los inputs -->
-    <color name="outline">#3A3F50</color>
+    <color name="outline">#475569</color>
 
     <!-- Verde para los checks -->
-    <color name="support_green">#10B981</color>
+    <color name="support_green">#34D399</color>
 
     <!-- Rojo para los errores -->
     <color name="error">#EF4444</color>

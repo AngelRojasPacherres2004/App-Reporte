@@ -18,7 +18,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         // INYECCIÓN DE DATOS DE PRUEBA DESACTIVADA POR SEGURIDAD
-        // MockDataInjector.injectData()
+        // com.example.appreporte.utils.MockDataInjector.injectData()
 
         // 1. Revisamos en qué modo está la app actualmente
         val isNightMode = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
@@ -42,6 +42,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Lógica del botón de inicio de sesión
+        
+
+
         binding.btnIngresar.setOnClickListener {
             val email = binding.etEmail.text.toString().trim()
             val password = binding.etPassword.text.toString().trim()

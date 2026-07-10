@@ -29,10 +29,10 @@ class ChatAdapter(private val messages: List<UIMessage>) : RecyclerView.Adapter<
         val msg = messages[position]
         holder.tvSenderName.text = msg.sender
         
-        // Formateo simple para que los **textos** se vean en negrita
-        val parsedContent = msg.content.replace(Regex("\\*\\*(.*?)\\*\\*"), "<b>$1</b>")
-        holder.tvMessageContent.text = androidx.core.text.HtmlCompat.fromHtml(parsedContent, androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY)
-
+        val markwon = io.noties.markwon.Markwon.builder(holder.itemView.context)
+            .usePlugin(io.noties.markwon.ext.tables.TablePlugin.create(holder.itemView.context))
+            .build()
+        markwon.setMarkdown(holder.tvMessageContent, msg.content)
 
         if (msg.isMe) {
             holder.rootLayout.gravity = Gravity.END

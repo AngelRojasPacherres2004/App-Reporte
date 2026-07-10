@@ -66,6 +66,7 @@ class PostDetalleActivity : AppCompatActivity() {
     }
 
     private fun showQuejaDialog() {
+        val author = intent.getStringExtra("POST_AUTHOR") ?: "Autor"
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Realizar Queja")
         
@@ -78,6 +79,7 @@ class PostDetalleActivity : AppCompatActivity() {
             if (contentText.isNotEmpty()) {
                 val complaintMap = hashMapOf(
                     "postId" to postId,
+                    "teacherEmail" to author,
                     "parentEmail" to userEmail,
                     "content" to contentText,
                     "status" to "en proceso",

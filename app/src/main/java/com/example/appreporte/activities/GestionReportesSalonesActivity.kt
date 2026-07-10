@@ -2,14 +2,13 @@ package com.example.appreporte
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.ArrayAdapter
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.appreporte.databinding.ActivityGestionAlumnosSalonesBinding
 
 import com.google.firebase.firestore.FirebaseFirestore
 
-class GestionAlumnosSalonesActivity : AppCompatActivity() {
+class GestionReportesSalonesActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityGestionAlumnosSalonesBinding
     private var currentSchoolId: String = ""
@@ -22,6 +21,8 @@ class GestionAlumnosSalonesActivity : AppCompatActivity() {
 
         currentSchoolId = intent.getStringExtra("SCHOOL_ID") ?: "Colegio San José"
         
+        // Reutilizamos el layout de selección de salones
+        
         setupRecyclerView()
         loadClassrooms()
     }
@@ -31,8 +32,8 @@ class GestionAlumnosSalonesActivity : AppCompatActivity() {
             emptyList(),
             onDeleteClick = {},
             onItemClick = { id, name ->
-                val intent = Intent(this, AlumnosListaActivity::class.java)
-                intent.putExtra("CLASSROOM_ID", id) // String
+                val intent = Intent(this, AlumnosReporteListaActivity::class.java)
+                intent.putExtra("CLASSROOM_ID", id) // now string
                 intent.putExtra("CLASSROOM_NAME", name)
                 startActivity(intent)
             }
@@ -46,11 +47,14 @@ class GestionAlumnosSalonesActivity : AppCompatActivity() {
             .whereEqualTo("school_id", currentSchoolId)
             .get()
             .addOnSuccessListener { snapshot ->
-                val list = snapshot.documents.mapNotNull { doc ->
-                    val name = doc.getString("name") ?: return@mapNotNull null
-                    Pair(doc.id, name)
+                val list = mutableListOf<Map<String, Any>>()
+                snapshot.documents.forEach { doc ->
+                    val map = doc.data ?: return@forEach
+                    val mutableMap = map.toMutableMap()
+                    mutableMap["id"] = doc.id
+                    list.add(mutableMap)
                 }
-                classroomAdapter.updateClassrooms(list)
+                classroomAdapter.updateClassroomsRaw(list)
             }
     }
 }

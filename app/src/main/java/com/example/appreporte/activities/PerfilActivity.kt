@@ -115,6 +115,23 @@ class PerfilActivity : AppCompatActivity() {
             startActivity(logoutIntent)
         }
 
+        val btnChangePassword = findViewById<Button>(R.id.btnChangePassword)
+        btnChangePassword.setOnClickListener {
+            val email = tvEmail.text.toString()
+            if (email.isNotEmpty()) {
+                FirebaseAuth.getInstance().sendPasswordResetEmail(email)
+                    .addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            android.widget.Toast.makeText(this, "Se ha enviado un correo para restablecer tu contraseña.", android.widget.Toast.LENGTH_LONG).show()
+                        } else {
+                            android.widget.Toast.makeText(this, "Error al enviar el correo: ${task.exception?.message}", android.widget.Toast.LENGTH_LONG).show()
+                        }
+                    }
+            } else {
+                android.widget.Toast.makeText(this, "No se pudo obtener el correo del usuario.", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
+
         loadProfileData()
     }
 
@@ -144,11 +161,19 @@ class PerfilActivity : AppCompatActivity() {
                         setupBottomMenu(currentRole)
                         
                         val schoolFromFirestore = doc.getString("school_id")
-                        if (schoolFromFirestore != null) {
+                        if (schoolFromFirestore != null && schoolFromFirestore.isNotEmpty()) {
                             currentSchoolId = schoolFromFirestore
                             tvSchool.text = schoolFromFirestore
                         } else {
                             tvSchool.text = currentSchoolId.ifEmpty { "Sin Colegio" }
+                        }
+
+                        val phoneFromFirestore = doc.getString("phone")
+                        val tvProfilePhone = findViewById<TextView>(R.id.tvProfilePhone)
+                        if (!phoneFromFirestore.isNullOrEmpty()) {
+                            tvProfilePhone.text = phoneFromFirestore
+                        } else {
+                            tvProfilePhone.text = "No registrado"
                         }
                     } else {
                         tvRole.text = currentRole.uppercase()
@@ -170,11 +195,19 @@ class PerfilActivity : AppCompatActivity() {
                             setupBottomMenu(currentRole)
                             
                             val schoolFromFirestore = doc.getString("school_id")
-                            if (schoolFromFirestore != null) {
+                            if (schoolFromFirestore != null && schoolFromFirestore.isNotEmpty()) {
                                 currentSchoolId = schoolFromFirestore
                                 tvSchool.text = schoolFromFirestore
                             } else {
                                 tvSchool.text = currentSchoolId.ifEmpty { "Sin Colegio" }
+                            }
+
+                            val phoneFromFirestore = doc.getString("phone")
+                            val tvProfilePhone = findViewById<TextView>(R.id.tvProfilePhone)
+                            if (!phoneFromFirestore.isNullOrEmpty()) {
+                                tvProfilePhone.text = phoneFromFirestore
+                            } else {
+                                tvProfilePhone.text = "No registrado"
                             }
                         }
                     }

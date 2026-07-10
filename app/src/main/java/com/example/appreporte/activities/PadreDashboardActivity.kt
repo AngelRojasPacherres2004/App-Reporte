@@ -26,6 +26,25 @@ class PadreDashboardActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        userEmail = intent.getStringExtra("USER_EMAIL") ?: ""
+        if (userEmail.isNotEmpty()) {
+            FirebaseFirestore.getInstance().collection("users").document(userEmail).get()
+                .addOnSuccessListener { doc ->
+                    val rol = doc.getString("rol") ?: ""
+                    if (rol.lowercase() != "usuario") {
+                        Toast.makeText(this, "Acceso denegado: Se requiere rol de usuario", Toast.LENGTH_LONG).show()
+                        val intent = Intent(this, MainActivity::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        startActivity(intent)
+                        finish()
+                    }
+                }
+        } else {
+            Toast.makeText(this, "Sesión inválida", Toast.LENGTH_SHORT).show()
+            finish()
+        }
+
         binding = ActivityDashboardPadreBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -100,6 +119,13 @@ class PadreDashboardActivity : AppCompatActivity() {
     }
 
     private fun setupClickListeners() {
+        binding.root.findViewById<android.view.View>(R.id.btnVerCalendario)?.setOnClickListener {
+            val intentDest = Intent(this, CalendarioActivity::class.java)
+            intentDest.putExtra("SCHOOL_ID", intent.getStringExtra("SCHOOL_ID") ?: "")
+            intentDest.putExtra("USER_ROL", userRole)
+            startActivity(intentDest)
+        }
+
         binding.btnVerForo.setOnClickListener {
             if (selectedClassroomId.isNotEmpty()) {
                 val intent = Intent(this, ForoDetalleActivity::class.java)

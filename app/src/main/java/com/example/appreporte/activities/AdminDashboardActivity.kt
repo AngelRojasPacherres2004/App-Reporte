@@ -25,6 +25,25 @@ class AdminDashboardActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        val userEmail = intent.getStringExtra("USER_EMAIL") ?: ""
+        if (userEmail.isNotEmpty()) {
+            FirebaseFirestore.getInstance().collection("users").document(userEmail).get()
+                .addOnSuccessListener { doc ->
+                    val rol = doc.getString("rol") ?: ""
+                    if (rol.lowercase() != "admin") {
+                        Toast.makeText(this, "Acceso denegado: Se requiere rol de administrador", Toast.LENGTH_LONG).show()
+                        val intent = Intent(this, MainActivity::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        startActivity(intent)
+                        finish()
+                    }
+                }
+        } else {
+            Toast.makeText(this, "Sesión inválida", Toast.LENGTH_SHORT).show()
+            finish()
+        }
+
         binding = ActivityDashboardAdminBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -345,7 +364,12 @@ class AdminDashboardActivity : AppCompatActivity() {
                 val rol = spinnerRol.text.toString()
                 val phone = etPhone.text.toString()
 
+                val passwordPattern = Regex("^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).{8,}$")
                 if (email.isNotEmpty() && pass.isNotEmpty() && rol.isNotEmpty()) {
+                    if (!passwordPattern.matches(pass)) {
+                        Toast.makeText(this, "La contraseña debe tener 8+ caracteres, mayúscula, minúscula, número y símbolo (@#$%^&+=)", Toast.LENGTH_LONG).show()
+                        return@setPositiveButton
+                    }
                     val userMap = hashMapOf(
                         "email" to email,
                         "password" to pass,
@@ -425,7 +449,12 @@ class AdminDashboardActivity : AppCompatActivity() {
                 val rol = spinnerRol.text.toString()
                 val phone = etPhone.text.toString()
 
+                val passwordPattern = Regex("^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).{8,}$")
                 if (pass.isNotEmpty() && rol.isNotEmpty()) {
+                    if (!passwordPattern.matches(pass)) {
+                        Toast.makeText(this, "La contraseña debe tener 8+ caracteres, mayúscula, minúscula, número y símbolo (@#$%^&+=)", Toast.LENGTH_LONG).show()
+                        return@setPositiveButton
+                    }
                     val updateMap = mapOf("password" to pass, "rol" to rol, "phone" to phone)
                     FirebaseFirestore.getInstance().collection("users").document(email).update(updateMap)
                         .addOnSuccessListener {
@@ -463,9 +492,14 @@ class AdminDashboardActivity : AppCompatActivity() {
             .addSnapshotListener { snapshot, error ->
                 if (error != null) return@addSnapshotListener
                 if (snapshot != null) {
-                    val list = snapshot.documents.map { Pair(it.id, it.getString("name") ?: "") }
-                        .sortedBy { it.second.lowercase() }
-                    classroomAdapter.updateClassrooms(list)
+                    val list = mutableListOf<Map<String, Any>>()
+                    snapshot.documents.forEach { doc ->
+                        val map = doc.data ?: return@forEach
+                        val mutableMap = map.toMutableMap()
+                        mutableMap["id"] = doc.id
+                        list.add(mutableMap)
+                    }
+                    classroomAdapter.updateClassroomsRaw(list)
                 }
             }
     }

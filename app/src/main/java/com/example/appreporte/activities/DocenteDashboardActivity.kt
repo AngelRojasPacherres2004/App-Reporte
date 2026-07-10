@@ -13,6 +13,25 @@ class DocenteDashboardActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        val userEmail = intent.getStringExtra("USER_EMAIL") ?: ""
+        if (userEmail.isNotEmpty()) {
+            com.google.firebase.firestore.FirebaseFirestore.getInstance().collection("users").document(userEmail).get()
+                .addOnSuccessListener { doc ->
+                    val rol = doc.getString("rol") ?: ""
+                    if (rol.lowercase() != "docente") {
+                        android.widget.Toast.makeText(this, "Acceso denegado: Se requiere rol de docente", android.widget.Toast.LENGTH_LONG).show()
+                        val intent = android.content.Intent(this, MainActivity::class.java)
+                        intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        startActivity(intent)
+                        finish()
+                    }
+                }
+        } else {
+            android.widget.Toast.makeText(this, "Sesión inválida", android.widget.Toast.LENGTH_SHORT).show()
+            finish()
+        }
+
         binding = ActivityDashboardDocenteBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -68,12 +87,21 @@ class DocenteDashboardActivity : AppCompatActivity() {
         // Botón "REVISAR QUEJAS" de la Welcome Card
         binding.root.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnReviewComplaints)?.setOnClickListener {
             val intent = Intent(this, ComplaintsActivity::class.java)
+            intent.putExtra("USER_EMAIL", userEmail)
+            intent.putExtra("USER_ROL", "docente")
             startActivity(intent)
         }
 
         // Add a listener to a potential button for Mensajes (we'll add it in XML next)
         binding.root.findViewById<android.view.View>(R.id.btnInboxDocente)?.setOnClickListener {
             showInboxDialog()
+        }
+
+        binding.root.findViewById<android.view.View>(R.id.btnVerCalendario)?.setOnClickListener {
+            val intent = Intent(this, CalendarioActivity::class.java)
+            intent.putExtra("SCHOOL_ID", schoolId)
+            intent.putExtra("USER_ROL", "docente")
+            startActivity(intent)
         }
     }
 

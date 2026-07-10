@@ -22,6 +22,8 @@ class ComplaintsActivity : AppCompatActivity() {
     private lateinit var adapter: ComplaintsAdapter
 
     private var salonName: String? = null
+    private var userEmail: String? = null
+    private var userRol: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,6 +31,8 @@ class ComplaintsActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         salonName = intent.getStringExtra("SALON_NAME")
+        userEmail = intent.getStringExtra("USER_EMAIL")
+        userRol = intent.getStringExtra("USER_ROL")
 
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -72,10 +76,18 @@ class ComplaintsActivity : AppCompatActivity() {
             if (error != null) return@addSnapshotListener
             val list = mutableListOf<Map<String, String>>()
             snapshot?.documents?.forEach { doc ->
+                val teacherEmailDoc = doc.getString("teacherEmail") ?: ""
+                
+                if (userRol == "docente" && userEmail != null) {
+                    if (teacherEmailDoc != userEmail) {
+                        return@forEach
+                    }
+                }
+
                 val map = mutableMapOf<String, String>()
                 map["id"] = doc.id
-                map["post_title"] = doc.getString("postId") ?: ""
-                map["parent_email"] = doc.getString("parentEmail") ?: ""
+                map["post_title"] = doc.getString("post_title") ?: ""
+                map["parent_email"] = doc.getString("parent_email") ?: ""
                 map["content"] = doc.getString("content") ?: ""
                 map["status"] = doc.getString("status") ?: ""
                 list.add(map)

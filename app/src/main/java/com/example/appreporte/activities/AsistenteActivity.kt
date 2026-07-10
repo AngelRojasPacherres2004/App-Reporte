@@ -9,6 +9,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.firestore.FirebaseFirestore
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Locale
 
 class AsistenteActivity : AppCompatActivity() {
@@ -160,114 +164,49 @@ class AsistenteActivity : AppCompatActivity() {
     }
 
     private fun processBotQuery(userInput: String) {
-        val query = userInput.lowercase().trim()
-        
-        val response = when {
-            query.contains("hola") || query.contains("buen") -> {
-                "¡Hola! Soy tu asistente de EduConnect IA. Puedo darte información detallada sobre los alumnos, sus notas, promedios, qué notas les faltan registrar, y más.\n\nPrueba preguntando:\n• *'notas de [Nombre del alumno]'*\n• *'qué le falta a [Nombre del alumno]'*\n• *'promedio de [Nombre]'*\n• *'lista de alumnos'*\n• *'salones'*"
-            }
-            
-            query.contains("lista de alumnos") || query.contains("listar alumnos") || query.contains("mostrar alumnos") -> {
-                if (studentsList.isEmpty()) {
-                    "No hay alumnos registrados en este colegio."
-                } else {
-                    val sb = java.lang.StringBuilder("Aquí tienes la lista de alumnos en el colegio:\n")
-                    studentsList.forEach { s ->
-                        val classroom = classroomsList.find { it["id"] == s["classroom_id"] }?.get("name") ?: "Sin salón"
-                        sb.append("• **${s["names"]} ${s["lastnames"]}** (Salón: $classroom)\n")
-                    }
-                    sb.toString()
-                }
-            }
-            
-            query.contains("salon") || query.contains("aula") -> {
-                if (classroomsList.isEmpty()) {
-                    "No hay salones registrados en este colegio."
-                } else {
-                    val sb = java.lang.StringBuilder("Lista de salones registrados:\n")
-                    classroomsList.forEach { c ->
-                        val count = studentsList.count { it["classroom_id"] == c["id"] }
-                        sb.append("• **${c["name"]}** ($count alumnos)\n")
-                    }
-                    sb.toString()
-                }
-            }
-            
-            query.contains("nota") || query.contains("califica") || query.contains("promedio") || query.contains("falta") -> {
-                val targetStudent = findStudentInQuery(query)
-                if (targetStudent == null) {
-                    "¿De qué alumno te gustaría consultar? Por favor escribe su nombre (ej: *'notas de Juanito'*)."
-                } else {
-                    val sId = targetStudent["id"] as String
-                    val sName = "${targetStudent["names"]} ${targetStudent["lastnames"]}"
-                    val sGrades = gradesList.filter { it["student_id"] == sId }
-                    
-                    when {
-                        query.contains("falta") || query.contains("debe") -> {
-                            val standardSubjects = listOf("Matemáticas", "Comunicación", "Ciencia y Tecnología", "Personal Social", "Inglés")
-                            val registeredSubjects = sGrades.mapNotNull { it["subject"]?.toString()?.lowercase() }
-                            val missing = standardSubjects.filter { !registeredSubjects.contains(it.lowercase()) }
-                            
-                            if (missing.isEmpty()) {
-                                "¡Excelente! **$sName** tiene todas sus calificaciones completas registradas en el sistema."
-                            } else {
-                                "A **$sName** le falta registrar notas en las siguientes materias:\n" + missing.joinToString("\n") { "• $it" } + "\n\nActualmente tiene notas en: " + (sGrades.joinToString(", ") { "${it["subject"]}: ${it["value"]}" }.ifEmpty { "ningún curso" })
-                            }
-                        }
-                        
-                        query.contains("promedio") -> {
-                            val values = sGrades.mapNotNull {
-                                val v = it["value"]?.toString() ?: ""
-                                v.toIntOrNull() ?: when (v.uppercase()) {
-                                    "AD" -> 20
-                                    "A" -> 17
-                                    "B" -> 13
-                                    "C" -> 9
-                                    else -> null
-                                }
-                            }
-                            if (values.isEmpty()) {
-                                "**$sName** no tiene calificaciones numéricas válidas registradas todavía para calcular un promedio."
-                            } else {
-                                val avg = values.average()
-                                val formattedAvg = String.format(Locale.US, "%.2f", avg)
-                                "El promedio ponderado de **$sName** es **$formattedAvg**.\nDetalle:\n" + 
-                                sGrades.joinToString("\n") { "• ${it["subject"]}: ${it["value"]}" }
-                            }
-                        }
-                        
-                        else -> {
-                            if (sGrades.isEmpty()) {
-                                "**$sName** no tiene calificaciones registradas en el sistema en este momento."
-                            } else {
-                                val sb = java.lang.StringBuilder("Aquí tienes las calificaciones de **$sName**:\n")
-                                sGrades.forEach { g ->
-                                    sb.append("• **${g["subject"]}**: ${g["value"]}\n")
-                                }
-                                sb.toString()
-                            }
-                        }
+        val apiKey = BuildConfig.GEMINI_API_KEY
+        if (apiKey.isEmpty() || apiKey == "\"\"" || apiKey == "TU_API_KEY_AQUI") {
+            addBotMessage("⚠️ La API de Gemini no está configurada. Por favor, agrega GEMINI_API_KEY en tu archivo local.properties y sincroniza el proyecto para habilitar la Inteligencia Artificial.")
+            return
+        }
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                // Build dynamic context string from current data
+                val sb = java.lang.StringBuilder()
+                sb.append("Eres un asistente escolar experto llamado EduConnect IA. Responde de forma muy concisa y amable.\nContexto actual del colegio:\n")
+                studentsList.forEach { s ->
+                    val sName = "${s["names"]} ${s["lastnames"]}"
+                    sb.append("- Alumno: $sName. ")
+                    val sGrades = gradesList.filter { it["student_id"] == s["id"] }
+                    if (sGrades.isNotEmpty()) {
+                        sb.append("Notas: " + sGrades.joinToString(", ") { "${it["subject"]}: ${it["value"]}" } + ".\n")
+                    } else {
+                        sb.append("Sin notas.\n")
                     }
                 }
-            }
-            
-            else -> {
-                val targetStudent = findStudentInQuery(query)
-                if (targetStudent != null) {
-                    val sId = targetStudent["id"] as String
-                    val sName = "${targetStudent["names"]} ${targetStudent["lastnames"]}"
-                    val sGrades = gradesList.filter { it["student_id"] == sId }
-                    val classroom = classroomsList.find { it["id"] == targetStudent["classroom_id"] }?.get("name") ?: "Sin salón"
-                    val gradesStr = sGrades.joinToString(", ") { "${it["subject"]}: ${it["value"]}" }.ifEmpty { "Sin notas aún" }
-                    
-                    "Información de **$sName**:\n• **Salón:** $classroom\n• **Notas:** $gradesStr\n\n¿Deseas saber el promedio o qué notas le faltan registrar?"
-                } else {
-                    "No entiendo la consulta. Puedes preguntarme por:\n• Notas de un alumno (ej: *'notas de Juanito'*)\n• Lo que le falta a un alumno (ej: *'que le falta a Juanito'*)\n• Promedio de un alumno (ej: *'promedio de Juanito'*)\n• Lista de alumnos del colegio\n• Lista de salones"
+
+                val model = com.google.ai.client.generativeai.GenerativeModel(
+                    modelName = "gemini-flash-latest",
+                    apiKey = apiKey.replace("\"", "")
+                )
+
+                val prompt = "$sb\nPregunta del usuario: $userInput\nTu respuesta concisa (usa tablas de Markdown si te piden mostrar notas):"
+                val response = model.generateContent(prompt)
+                
+                withContext(Dispatchers.Main) {
+                    addBotMessage(response.text ?: "No pude generar una respuesta.")
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    if (e.message?.contains("404") == true || e.message?.contains("NOT_FOUND") == true) {
+                        addBotMessage("⚠️ Error 404: No pude acceder al modelo. Esto significa que tu GEMINI_API_KEY no es válida, o que no tienes habilitada la API de Gemini en tu cuenta de Google Cloud (Google AI Studio). ¡Crea una clave gratis en aistudio.google.com!")
+                    } else {
+                        addBotMessage("Hubo un error de conexión con la IA. Error: ${e.message}")
+                    }
                 }
             }
         }
-        
-        addBotMessage(response)
     }
 
     private fun findStudentInQuery(query: String): Map<String, Any>? {

@@ -31,7 +31,10 @@ class AttendanceStudentAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val student = studentList[position]
         val studentId = student["id"].toString()
-        holder.tvName.text = student["name"]?.toString() ?: "Alumno"
+        val names = student["names"]?.toString() ?: ""
+        val lastnames = student["lastnames"]?.toString() ?: ""
+        val fullName = if (names.isNotEmpty()) "$names $lastnames" else "Alumno"
+        holder.tvName.text = fullName
 
         // Por defecto todos presentes
         if (!attendanceResults.containsKey(studentId)) {

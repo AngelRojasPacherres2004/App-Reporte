@@ -107,57 +107,34 @@ class ChatbotPadreActivity : AppCompatActivity() {
     }
 
     private fun processLocalQuery(userInput: String) {
-        lifecycleScope.launch {
-            val query = userInput.lowercase().trim()
-            delay(600) // Simulación de pensamiento
+        val apiKey = BuildConfig.GEMINI_API_KEY
+        if (apiKey.isEmpty() || apiKey == "\"\"" || apiKey == "TU_API_KEY_AQUI") {
+            addBotMessage("⚠️ La API de Gemini no está configurada. Por favor, agrega GEMINI_API_KEY en tu archivo local.properties y sincroniza el proyecto para habilitar la Inteligencia Artificial.")
+            return
+        }
 
-            val response = when {
-                // Prioridad 1: Notas y Calificaciones (incluyendo posibles errores de dedo como "totas")
-                query.contains("nota") || query.contains("tota") || query.contains("califica") || 
-                query.contains("promedio") || query.contains("curso") || query.contains("materia") -> {
-                    val data = extract("Notas")
-                    if (data.isNotEmpty() && !data.contains("Sin notas", true)) {
-                        "He revisado los registros de **notas** para tus hijos:\n\n$data"
-                    } else {
-                        "He buscado en el sistema y actualmente **no hay notas publicadas** todavía. Te recomiendo consultar con el docente en unos días."
-                    }
-                }
-                
-                // Prioridad 2: Reportes y Asistencia/Conducta
-                query.contains("reporte") || query.contains("queja") || query.contains("conducta") || 
-                query.contains("comportamiento") || query.contains("incidencia") -> {
-                    val data = extract("Reportes")
-                    if (data.isNotEmpty() && !data.contains("Sin reportes", true)) {
-                        "He encontrado los siguientes **reportes**:\n\n$data"
-                    } else {
-                        "¡Buenas noticias! **No hay reportes ni incidencias** registradas. Tus hijos están teniendo un excelente comportamiento."
-                    }
-                }
-                
-                // Prioridad 3: Información sobre los hijos (nombres, quiénes son)
-                query.contains("hijo") || query.contains("alumno") || query.contains("quien") || 
-                query.contains("nombre") || query.contains("llaman") -> {
-                    val data = extract("Alumno")
-                    if (data.isNotEmpty()) {
-                        "Tienes registrado(s) a:\n$data\n\n¿Deseas saber sus notas o ver si tienen algún reporte?"
-                    } else {
-                        "No logro encontrar el nombre de tus hijos en mi base de datos actual. Por favor, contacta a soporte."
-                    }
-                }
-                
-                // Saludos
-                query.contains("hola") || query.contains("buen") || query.contains("tal") -> {
-                    "¡Hola! Soy tu asistente de EduConnect. Puedo darte información sobre **notas**, **reportes de conducta** o recordarte los datos de tus **hijos**. ¿En qué te ayudo?"
-                }
-                
-                // Despedidas
-                query.contains("gracias") || query.contains("adios") || query.contains("chau") -> {
-                    "¡De nada! Estoy aquí para ayudarte. Que tengas un excelente día."
-                }
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val model = com.google.ai.client.generativeai.GenerativeModel(
+                    modelName = "gemini-flash-latest",
+                    apiKey = apiKey.replace("\"", "")
+                )
 
-                else -> "Entiendo que me preguntas por '$userInput', pero mi conocimiento actual se limita a **notas**, **reportes** y datos de tus **hijos**. ¿Te gustaría que revise alguno de esos temas?"
+                val prompt = "Eres un asistente escolar experto llamado EduConnect IA. Tus respuestas deben ser amables y muy concisas. Usa tablas de Markdown para mostrar las notas de los alumnos.\nContexto actual de tus hijos:\n$contextData\nPregunta del usuario: $userInput\nRespuesta:"
+                val response = model.generateContent(prompt)
+                
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    addBotMessage(response.text ?: "No pude generar una respuesta. Intenta de nuevo.")
+                }
+            } catch (e: Exception) {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    if (e.message?.contains("404") == true || e.message?.contains("NOT_FOUND") == true) {
+                        addBotMessage("⚠️ Error 404: No pude acceder al modelo. Esto significa que tu GEMINI_API_KEY no es válida, o que no tienes habilitada la API de Gemini en tu cuenta de Google Cloud (Google AI Studio). ¡Crea una clave gratis en aistudio.google.com!")
+                    } else {
+                        addBotMessage("Hubo un error de conexión con la IA. Error: ${e.message}")
+                    }
+                }
             }
-            addBotMessage(response)
         }
     }
 

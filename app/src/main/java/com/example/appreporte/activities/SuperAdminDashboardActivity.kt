@@ -25,6 +25,25 @@ class SuperAdminDashboardActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        val userEmail = intent.getStringExtra("USER_EMAIL") ?: auth.currentUser?.email ?: ""
+        if (userEmail.isNotEmpty()) {
+            firestore.collection("users").document(userEmail).get()
+                .addOnSuccessListener { doc ->
+                    val rol = doc.getString("rol") ?: ""
+                    if (rol.lowercase() != "superadmin") {
+                        android.widget.Toast.makeText(this, "Acceso denegado: Se requiere rol de súper administrador", android.widget.Toast.LENGTH_LONG).show()
+                        val intent = Intent(this, MainActivity::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        startActivity(intent)
+                        finish()
+                    }
+                }
+        } else {
+            android.widget.Toast.makeText(this, "Sesión inválida", android.widget.Toast.LENGTH_SHORT).show()
+            finish()
+        }
+
         setContentView(R.layout.activity_super_admin_dashboard)
 
         rvSchools = findViewById(R.id.rvSchools)
@@ -376,7 +395,7 @@ class SuperAdminDashboardActivity : AppCompatActivity() {
         dialogView.findViewById<CheckBox>(R.id.cbPrimaria).visibility = View.GONE
         dialogView.findViewById<CheckBox>(R.id.cbSecundaria).visibility = View.GONE
         dialogView.findViewById<TextInputEditText>(R.id.etSecciones).visibility = View.GONE
-        etPassword.setText("admin123")
+        etPassword.setText("")
 
         AlertDialog.Builder(this)
             .setTitle("Crear Admin para $schoolName")
@@ -388,8 +407,9 @@ class SuperAdminDashboardActivity : AppCompatActivity() {
                     Toast.makeText(this, "Ingresa el correo", Toast.LENGTH_SHORT).show()
                     return@setPositiveButton
                 }
-                if (password.length < 6) {
-                    Toast.makeText(this, "La contraseña debe tener al menos 6 caracteres", Toast.LENGTH_SHORT).show()
+                val passwordPattern = Regex("^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).{8,}$")
+                if (!passwordPattern.matches(password)) {
+                    Toast.makeText(this, "La contraseña debe tener 8+ caracteres, mayúscula, minúscula, número y símbolo (@#$%^&+=)", Toast.LENGTH_LONG).show()
                     return@setPositiveButton
                 }
                 createAdminInFirebase(email, password, schoolDocId, schoolName)
@@ -466,9 +486,9 @@ class SuperAdminDashboardActivity : AppCompatActivity() {
                                         startActivity(intent)
                                     }
                                     1 -> firestore.collection("users").document(email)
-                                        .update("password", "admin123")
+                                        .update("password", "Temporal@123")
                                         .addOnSuccessListener {
-                                            Toast.makeText(this, "Contraseña restablecida a admin123", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(this, "Contraseña restablecida a Temporal@123", Toast.LENGTH_SHORT).show()
                                         }
                                     2 -> firestore.collection("users").document(email).delete()
                                         .addOnSuccessListener {
@@ -495,7 +515,7 @@ class SuperAdminDashboardActivity : AppCompatActivity() {
         val cbPrimaria = dialogView.findViewById<CheckBox>(R.id.cbPrimaria)
         val cbSecundaria = dialogView.findViewById<CheckBox>(R.id.cbSecundaria)
 
-        etAdminPassword.setText("admin123")
+        etAdminPassword.setText("")
 
         AlertDialog.Builder(this)
             .setTitle("Registrar Nuevo Colegio")
@@ -505,8 +525,13 @@ class SuperAdminDashboardActivity : AppCompatActivity() {
                 val adminEmail = etAdminEmail.text.toString().trim()
                 val adminPassword = etAdminPassword.text.toString().trim()
 
+                val passwordPattern = Regex("^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).{8,}$")
                 if (name.isEmpty()) {
                     Toast.makeText(this, "Ingresa el nombre del colegio", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+                if (adminEmail.isNotEmpty() && !passwordPattern.matches(adminPassword)) {
+                    Toast.makeText(this, "La contraseña debe tener 8+ caracteres, mayúscula, minúscula, número y símbolo (@#$%^&+=)", Toast.LENGTH_LONG).show()
                     return@setPositiveButton
                 }
 
@@ -535,8 +560,7 @@ class SuperAdminDashboardActivity : AppCompatActivity() {
 
                         // Create admin if email provided
                         if (adminEmail.isNotEmpty()) {
-                            val pwd = if (adminPassword.length >= 6) adminPassword else "admin123"
-                            createAdminInFirebase(adminEmail, pwd, schoolRef.id, name)
+                            createAdminInFirebase(adminEmail, adminPassword, schoolRef.id, name)
                         }
                     }
                     .addOnFailureListener {

@@ -21,7 +21,40 @@ class PadreAsistenciaActivity : AppCompatActivity() {
         
         binding.rvPadreAsistencia.layoutManager = LinearLayoutManager(this)
         
+        binding.fabJustify.setOnClickListener {
+            showJustifyDialog()
+        }
+
         loadAttendance()
+    }
+
+    private fun showJustifyDialog() {
+        val builder = androidx.appcompat.app.AlertDialog.Builder(this)
+        builder.setTitle("Justificar Inasistencia")
+        
+        val input = android.widget.EditText(this)
+        input.hint = "Escriba el motivo de la falta o tardanza..."
+        builder.setView(input)
+
+        builder.setPositiveButton("Enviar") { _, _ ->
+            val justificationText = input.text.toString().trim()
+            if (justificationText.isNotEmpty()) {
+                val data = hashMapOf(
+                    "student_id" to studentId,
+                    "reason" to justificationText,
+                    "timestamp" to System.currentTimeMillis(),
+                    "status" to "en revisión"
+                )
+                db.collection("justifications").add(data)
+                    .addOnSuccessListener {
+                        Toast.makeText(this, "Justificación enviada al docente.", Toast.LENGTH_SHORT).show()
+                    }
+            } else {
+                Toast.makeText(this, "Debe ingresar un motivo.", Toast.LENGTH_SHORT).show()
+            }
+        }
+        builder.setNegativeButton("Cancelar", null)
+        builder.show()
     }
 
     private fun loadAttendance() {

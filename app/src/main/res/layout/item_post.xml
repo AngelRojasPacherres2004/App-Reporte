@@ -84,6 +84,15 @@
             android:textColor="@color/on_surface"
             android:textSize="14sp" />
 
+        <ImageView
+            android:id="@+id/ivAttachment"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:layout_marginTop="8dp"
+            android:scaleType="centerCrop"
+            android:visibility="gone"
+            android:background="@color/surface" />
+
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"

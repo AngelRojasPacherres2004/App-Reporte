@@ -69,6 +69,23 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
+    implementation("com.google.firebase:firebase-storage")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
     implementation(libs.generativeai)
+    
+    // Shimmer for Skeleton Screens
+    implementation("com.facebook.shimmer:shimmer:0.5.0")
+    
+    // Firebase Cloud Messaging (Push Notifications)
+    implementation("com.google.firebase:firebase-messaging:23.4.0")
+    
+    // Markwon for Markdown support (Tables, etc)
+    implementation("io.noties.markwon:core:4.6.2")
+    implementation("io.noties.markwon:ext-tables:4.6.2")
+
+    // MPAndroidChart para gráficos de rendimiento
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+    
+    // Glide para cargar imágenes
+    implementation("com.github.bumptech.glide:glide:4.16.0")
 }

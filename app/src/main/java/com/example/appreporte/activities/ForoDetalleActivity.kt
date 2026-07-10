@@ -89,8 +89,8 @@ class ForoDetalleActivity : AppCompatActivity() {
                 snapshot?.documents?.forEach { doc ->
                     val map = mutableMapOf<String, String>()
                     map["id"] = doc.id
-                    map["post_title"] = doc.getString("postId") ?: ""
-                    map["parent_email"] = doc.getString("parentEmail") ?: ""
+                    map["post_title"] = doc.getString("post_title") ?: ""
+                    map["parent_email"] = doc.getString("parent_email") ?: ""
                     map["content"] = doc.getString("content") ?: ""
                     map["status"] = doc.getString("status") ?: ""
                     list.add(map)
@@ -154,11 +154,22 @@ class ForoDetalleActivity : AppCompatActivity() {
         binding.bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_inicio -> {
-                    // Navegar a Inicio/Dashboard
                     finish()
                     true
                 }
                 R.id.nav_foro -> true
+                R.id.nav_asistente -> {
+                    if (userRole.lowercase() == "padre") {
+                        startActivity(android.content.Intent(this, ChatbotPadreActivity::class.java).apply {
+                            putExtra("USER_EMAIL", userEmail)
+                        })
+                    } else {
+                        startActivity(android.content.Intent(this, AsistenteActivity::class.java).apply {
+                            putExtra("SCHOOL_ID", intent.getStringExtra("SCHOOL_ID") ?: "")
+                        })
+                    }
+                    true
+                }
                 else -> {
                     Toast.makeText(this, "Funcionalidad en desarrollo", Toast.LENGTH_SHORT).show()
                     false

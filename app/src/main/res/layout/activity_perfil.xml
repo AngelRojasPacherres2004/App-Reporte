@@ -146,11 +146,20 @@
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnChangePassword"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="32dp"
+                android:text="Cambiar Contraseña"
+                app:cornerRadius="28dp" />
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnLogout"
                 style="@style/Widget.Material3.Button.OutlinedButton"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
-                android:layout_marginTop="40dp"
+                android:layout_marginTop="16dp"
                 android:text="Cerrar Sesión"
                 android:textColor="@color/priority_red"
                 app:cornerRadius="28dp"

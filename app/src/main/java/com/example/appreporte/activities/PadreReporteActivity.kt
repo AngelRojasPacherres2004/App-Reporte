@@ -94,7 +94,66 @@ class PadreReporteActivity : AppCompatActivity() {
                     doc.data?.mapValues { it.value.toString() }
                 }
                 gradesAdapter.updateData(gradesList)
+                
+                setupChart()
+                
+                binding.shimmerViewContainer.stopShimmer()
+                binding.shimmerViewContainer.visibility = android.view.View.GONE
+                binding.rvGradesHistory.visibility = android.view.View.VISIBLE
             }
+    }
+
+    private fun setupChart() {
+        val chart = findViewById<com.github.mikephil.charting.charts.LineChart>(R.id.lineChartGrades)
+        if (gradesList.isEmpty()) {
+            chart.clear()
+            return
+        }
+
+        val entries = ArrayList<com.github.mikephil.charting.data.Entry>()
+        val labels = ArrayList<String>()
+
+        // Sort by date or just use the index
+        var index = 0f
+        for (grade in gradesList) {
+            val valueStr = grade["value"] ?: "0"
+            val value = valueStr.toFloatOrNull() ?: 0f
+            entries.add(com.github.mikephil.charting.data.Entry(index, value))
+            labels.add(grade["subject"] ?: "Nota")
+            index += 1f
+        }
+
+        val textColor = androidx.core.content.ContextCompat.getColor(this, R.color.on_surface)
+        
+        val dataSet = com.github.mikephil.charting.data.LineDataSet(entries, "Evolución de Notas")
+        dataSet.color = androidx.core.content.ContextCompat.getColor(this, R.color.primary)
+        dataSet.valueTextColor = textColor
+        dataSet.valueTextSize = 10f
+        dataSet.lineWidth = 3f
+        dataSet.circleRadius = 5f
+        dataSet.setCircleColor(androidx.core.content.ContextCompat.getColor(this, R.color.support_green))
+        dataSet.mode = com.github.mikephil.charting.data.LineDataSet.Mode.CUBIC_BEZIER
+
+        val lineData = com.github.mikephil.charting.data.LineData(dataSet)
+        chart.data = lineData
+
+        val xAxis = chart.xAxis
+        xAxis.position = com.github.mikephil.charting.components.XAxis.XAxisPosition.BOTTOM
+        xAxis.valueFormatter = com.github.mikephil.charting.formatter.IndexAxisValueFormatter(labels)
+        xAxis.granularity = 1f
+        xAxis.labelRotationAngle = -45f
+        xAxis.textColor = textColor
+        
+        chart.axisLeft.textColor = textColor
+        chart.legend.textColor = textColor
+        
+        // Espacio extra para que no se corten las etiquetas rotadas
+        chart.extraBottomOffset = 40f
+
+        chart.axisRight.isEnabled = false
+        chart.description.isEnabled = false
+        chart.animateX(1000)
+        chart.invalidate()
     }
 
     private fun generateAndSavePDF() {
