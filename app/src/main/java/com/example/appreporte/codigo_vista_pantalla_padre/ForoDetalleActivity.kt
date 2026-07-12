@@ -305,7 +305,7 @@ class ForoDetalleActivity : AppCompatActivity() {
             binding.btnPublish.setOnClickListener {
                 val content = binding.etPostContent.text?.toString() ?: ""
                 if (content.isNotEmpty()) {
-                    val time = "AHORA"
+                    val time = "Ahora"
                     val author = userEmail
                     val title = "Comentario"
                     val postMap = hashMapOf(
@@ -338,7 +338,7 @@ class ForoDetalleActivity : AppCompatActivity() {
                 val title = etTitle.text?.toString() ?: ""
                 val desc = etDesc.text?.toString() ?: ""
                 if (title.isNotEmpty() && desc.isNotEmpty()) {
-                    val time = "AHORA"
+                    val time = "Ahora"
                     val author = userEmail
                     val postMap = hashMapOf(
                         "salonName" to salonName,
@@ -437,7 +437,7 @@ class ForoDetalleActivity : AppCompatActivity() {
             holder.tvAuthor.text = post.author
             holder.tvTitle.text = post.title
             holder.tvContent.text = post.content
-            holder.tvTime.text = post.time
+            holder.tvTime.text = if (post.time == "AHORA") "Ahora" else post.time
 
             // Cargar conteo de comentarios de forma dinámica si es posible, 
             // por ahora mantenemos el texto descriptivo o un placeholder

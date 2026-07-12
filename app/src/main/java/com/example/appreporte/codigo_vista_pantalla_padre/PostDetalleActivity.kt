@@ -31,6 +31,7 @@ class PostDetalleActivity : AppCompatActivity() {
     private lateinit var binding: ActivityPostDetalleBinding
     private val comments = mutableListOf<Comment>()
     private lateinit var adapter: CommentAdapter
+    private lateinit var complaintsAdapter: ComplaintsActivity.ComplaintsAdapter
     private val firestore = FirebaseFirestore.getInstance()
     private var postId: String = ""
     private var userEmail: String = ""
@@ -51,7 +52,7 @@ class PostDetalleActivity : AppCompatActivity() {
         val author = intent.getStringExtra("POST_AUTHOR") ?: "Autor"
         val title = intent.getStringExtra("POST_TITLE") ?: "Título"
         val content = intent.getStringExtra("POST_CONTENT") ?: "Contenido"
-        val time = intent.getStringExtra("POST_TIME") ?: "HACE MOMENTOS"
+        val time = intent.getStringExtra("POST_TIME") ?: "Hace momentos"
         userEmail = intent.getStringExtra("USER_EMAIL") ?: "Usuario"
         userRole = intent.getStringExtra("USER_ROL") ?: ""
         studentId = intent.getStringExtra("STUDENT_ID") ?: ""
@@ -60,7 +61,7 @@ class PostDetalleActivity : AppCompatActivity() {
         binding.includedPost.tvAuthorName.text = author
         binding.includedPost.tvTitle.text = title
         binding.includedPost.tvContent.text = content
-        binding.includedPost.tvTime.text = time
+        binding.includedPost.tvTime.text = if (time == "AHORA") "Ahora" else time
         binding.includedPost.tvCommentsCount.visibility = View.GONE
 
         if (userRole == "usuario") {
@@ -71,7 +72,9 @@ class PostDetalleActivity : AppCompatActivity() {
         }
 
         setupRecyclerView()
+        setupComplaintsRecyclerView()
         loadComments()
+        loadComplaints()
         setupCommentInput()
         setupBottomNavigation()
     }
@@ -308,6 +311,94 @@ class PostDetalleActivity : AppCompatActivity() {
         binding.rvComments.adapter = adapter
     }
 
+    private fun setupComplaintsRecyclerView() {
+        complaintsAdapter = ComplaintsActivity.ComplaintsAdapter(emptyList(), userRole) { complaintId ->
+            if (userRole == "docente" || userRole == "admin") {
+                showStatusDialog(complaintId)
+            }
+        }
+        binding.rvComplaints.layoutManager = LinearLayoutManager(this)
+        binding.rvComplaints.adapter = complaintsAdapter
+    }
+
+    private fun showStatusDialog(complaintId: String) {
+        val options = arrayOf("no atendido", "en proceso", "atendido")
+        
+        val builder = com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+        builder.setTitle(getString(R.string.manage_complaint))
+        
+        val layout = android.widget.LinearLayout(this)
+        layout.orientation = android.widget.LinearLayout.VERTICAL
+        val padding = (16 * resources.displayMetrics.density).toInt()
+        layout.setPadding(padding, padding, padding, padding)
+
+        val tvLabelStatus = android.widget.TextView(this)
+        tvLabelStatus.text = getString(R.string.status_label)
+        tvLabelStatus.setTextColor(getColor(R.color.on_surface))
+        layout.addView(tvLabelStatus)
+
+        val spinner = android.widget.Spinner(this)
+        val spinnerAdapter = android.widget.ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, options)
+        spinner.adapter = spinnerAdapter
+        layout.addView(spinner)
+
+        val tvLabelResponse = android.widget.TextView(this)
+        tvLabelResponse.text = "\n" + getString(R.string.response_to_parent_label)
+        tvLabelResponse.setTextColor(getColor(R.color.on_surface))
+        layout.addView(tvLabelResponse)
+
+        val etResponse = com.google.android.material.textfield.TextInputEditText(this)
+        etResponse.hint = getString(R.string.response_hint)
+        etResponse.setTextColor(getColor(R.color.on_surface))
+        layout.addView(etResponse)
+
+        builder.setView(layout)
+        builder.setPositiveButton(getString(R.string.save)) { _, _ ->
+            val newStatus = options[spinner.selectedItemPosition]
+            val responseText = etResponse.text.toString().trim()
+            
+            val updates = hashMapOf<String, Any>(
+                "status" to newStatus,
+                "response" to responseText
+            )
+            
+            firestore.collection("complaints").document(complaintId).update(updates)
+                .addOnSuccessListener {
+                    Toast.makeText(this, "Queja actualizada y respondida", Toast.LENGTH_SHORT).show()
+                }
+        }
+        builder.setNegativeButton(getString(R.string.cancel), null)
+        builder.show()
+    }
+
+    private fun loadComplaints() {
+        if (postId.isNotEmpty()) {
+            firestore.collection("complaints")
+                .whereEqualTo("postId", postId)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) return@addSnapshotListener
+                    val list = mutableListOf<Map<String, String>>()
+                    snapshot?.documents?.forEach { doc ->
+                        val map = mutableMapOf<String, String>()
+                        map["id"] = doc.id
+                        map["post_title"] = "Queja sobre el post"
+                        map["parent_email"] = doc.getString("parentEmail") ?: "Anónimo"
+                        map["content"] = doc.getString("content") ?: ""
+                        map["status"] = doc.getString("status") ?: "en proceso"
+                        map["response"] = doc.getString("response") ?: ""
+                        list.add(map)
+                    }
+                    
+                    if (list.isNotEmpty()) {
+                        binding.rvComplaints.visibility = View.VISIBLE
+                        complaintsAdapter.updateData(list)
+                    } else {
+                        binding.rvComplaints.visibility = View.GONE
+                    }
+                }
+        }
+    }
+
     private fun setupCommentInput() {
         binding.btnSendComment.setOnClickListener {
             val text = binding.etComment.text?.toString()?.trim() ?: ""
@@ -316,7 +407,7 @@ class PostDetalleActivity : AppCompatActivity() {
                     "postId" to postId,
                     "author" to userEmail,
                     "content" to text,
-                    "time" to "AHORA",
+                    "time" to "Ahora",
                     "timestamp" to System.currentTimeMillis()
                 )
                 binding.etComment.text?.clear()
@@ -352,7 +443,7 @@ class PostDetalleActivity : AppCompatActivity() {
             val comment = comments[position]
             holder.tvAuthor.text = comment.author
             holder.tvContent.text = comment.content
-            holder.tvTime.text = comment.time
+            holder.tvTime.text = if (comment.time == "AHORA") "Ahora" else comment.time
         }
 
         override fun getItemCount() = comments.size

@@ -101,4 +101,10 @@
     <string name="phone">Teléfono</string>
     <string name="phone_hint">Ej: 912345678</string>
     <string name="attendance_control">Control de Asistencia</string>
+    <string name="complaint_response_label">Respuesta del Docente:</string>
+    <string name="complaint_response_placeholder">Aquí aparecerá la respuesta…</string>
+    <string name="manage_complaint">Gestionar Queja</string>
+    <string name="status_label">Estado:</string>
+    <string name="response_to_parent_label">Respuesta al Padre:</string>
+    <string name="response_hint">Escriba su respuesta aquí…</string>
 </resources>

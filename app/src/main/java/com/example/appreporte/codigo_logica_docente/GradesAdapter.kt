@@ -26,7 +26,8 @@ class GradesAdapter(private var grades: List<Map<String, String>>) :
     override fun onBindViewHolder(holder: GradeViewHolder, position: Int) {
         val grade = grades[position]
         holder.tvSubject.text = grade["subject"]
-        holder.tvTypeDate.text = "${grade["type"]?.uppercase()} - ${grade["date"]}"
+        val type = grade["type"]?.lowercase()?.replaceFirstChar { it.uppercase() } ?: ""
+        holder.tvTypeDate.text = "$type - ${grade["date"]}"
         holder.tvValue.text = grade["value"]
     }
 

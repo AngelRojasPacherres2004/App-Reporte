@@ -44,6 +44,9 @@ class PadreReporteActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityPadreReporteBinding
     private lateinit var gradesAdapter: GradesAdapter
+    private lateinit var diariaAdapter: GradesAdapter
+    private lateinit var mensualAdapter: GradesAdapter
+    private lateinit var bimestralAdapter: GradesAdapter
     private var userEmail: String = ""
     private var studentId: String = ""
     private var studentName: String = ""
@@ -138,6 +141,19 @@ class PadreReporteActivity : AppCompatActivity() {
         gradesAdapter = GradesAdapter(emptyList())
         binding.rvGradesHistory.adapter = gradesAdapter
 
+        // Setup individual lists by type
+        binding.rvDiaria.layoutManager = LinearLayoutManager(this)
+        diariaAdapter = GradesAdapter(emptyList())
+        binding.rvDiaria.adapter = diariaAdapter
+
+        binding.rvMensual.layoutManager = LinearLayoutManager(this)
+        mensualAdapter = GradesAdapter(emptyList())
+        binding.rvMensual.adapter = mensualAdapter
+
+        binding.rvBimestral.layoutManager = LinearLayoutManager(this)
+        bimestralAdapter = GradesAdapter(emptyList())
+        binding.rvBimestral.adapter = bimestralAdapter
+
         setupEvolutionChart()
         setupBarChart()
 
@@ -228,11 +244,15 @@ class PadreReporteActivity : AppCompatActivity() {
     }
 
     private fun setupBarChart() {
+        setupSpecificBarChart(binding.barChartAverages)
+    }
+
+    private fun setupSpecificBarChart(chart: BarChart) {
         val isNightMode = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
         val textColor = if (isNightMode) Color.WHITE else Color.BLACK
         val gridColor = if (isNightMode) Color.parseColor("#40FFFFFF") else Color.parseColor("#E0E0E0")
 
-        binding.barChartAverages.apply {
+        chart.apply {
             description.isEnabled = false
             setDrawBarShadow(false)
             setDrawValueAboveBar(true)
@@ -242,7 +262,7 @@ class PadreReporteActivity : AppCompatActivity() {
             
             legend.apply {
                 this.textColor = textColor
-                this.textSize = 13f
+                this.textSize = 11f
                 this.typeface = android.graphics.Typeface.DEFAULT_BOLD
             }
             
@@ -251,7 +271,7 @@ class PadreReporteActivity : AppCompatActivity() {
                 setDrawGridLines(false)
                 granularity = 1f
                 this.textColor = textColor
-                this.textSize = 12f
+                this.textSize = 10f
                 this.typeface = android.graphics.Typeface.DEFAULT_BOLD
             }
             
@@ -259,7 +279,7 @@ class PadreReporteActivity : AppCompatActivity() {
             
             axisLeft.apply {
                 this.textColor = textColor
-                this.textSize = 12f
+                this.textSize = 10f
                 this.typeface = android.graphics.Typeface.DEFAULT_BOLD
                 this.gridColor = gridColor
             }
@@ -358,6 +378,22 @@ class PadreReporteActivity : AppCompatActivity() {
             xAxis.labelCount = subjects.size
             xAxis.granularity = 1f
             invalidate()
+        }
+
+        // 3. Update Type Specific Lists
+        updateTypeSpecificList(grades, "diaria", diariaAdapter, binding.cardDiaria)
+        updateTypeSpecificList(grades, "mensual", mensualAdapter, binding.cardMensual)
+        updateTypeSpecificList(grades, "bimestral", bimestralAdapter, binding.cardBimestral)
+    }
+
+    private fun updateTypeSpecificList(allGrades: List<Map<String, String>>, type: String, adapter: GradesAdapter, card: View) {
+        val filteredGrades = allGrades.filter { it["type"]?.lowercase() == type }
+        
+        if (filteredGrades.isEmpty()) {
+            card.visibility = View.GONE
+        } else {
+            card.visibility = View.VISIBLE
+            adapter.updateData(filteredGrades)
         }
     }
 

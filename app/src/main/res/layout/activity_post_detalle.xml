@@ -73,6 +73,26 @@
                     android:layout_height="wrap_content"
                     android:nestedScrollingEnabled="false"
                     tools:listitem="@layout/item_comment" />
+
+                <TextView
+                    android:id="@+id/tvQuejasHeader"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:layout_marginBottom="12dp"
+                    android:text="Quejas Reportadas"
+                    android:textStyle="bold"
+                    android:textColor="@color/error"
+                    android:textSize="16sp"
+                    android:visibility="gone" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvComplaints"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false"
+                    android:visibility="gone"
+                    tools:listitem="@layout/item_complaint" />
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
 

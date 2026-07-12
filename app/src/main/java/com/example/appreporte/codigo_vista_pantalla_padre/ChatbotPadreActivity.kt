@@ -274,20 +274,31 @@ class ChatbotPadreActivity : AppCompatActivity() {
             return
         }
 
-        val complaint = hashMapOf(
-            "student_id" to studentId,
-            "parentEmail" to userEmail,
-            "content" to text,
-            "status" to "Pendiente",
-            "date" to SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date())
-        )
+        // Obtener el classroom_id del estudiante antes de guardar la queja
+        firestore.collection("students").document(studentId).get()
+            .addOnSuccessListener { studentDoc ->
+                val classroomId = studentDoc.getString("classroom_id") ?: ""
+                
+                val complaint = hashMapOf(
+                    "student_id" to studentId,
+                    "classroom_id" to classroomId, // Crucial para que el docente lo vea
+                    "parentEmail" to userEmail,
+                    "content" to text,
+                    "status" to "Pendiente",
+                    "date" to SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date()),
+                    "timestamp" to System.currentTimeMillis() // Para mejor ordenamiento
+                )
 
-        firestore.collection("complaints").add(complaint)
-            .addOnSuccessListener {
-                addBotMessage("Tu reporte ha sido enviado exitosamente. Se le dará seguimiento a la brevedad. ¿Algo más en lo que pueda ayudarte?")
+                firestore.collection("complaints").add(complaint)
+                    .addOnSuccessListener {
+                        addBotMessage("Tu reporte ha sido enviado exitosamente. Se le dará seguimiento a la brevedad. ¿Algo más en lo que pueda ayudarte?")
+                    }
+                    .addOnFailureListener {
+                        addBotMessage("Hubo un error al enviar el reporte. Por favor, intenta más tarde.")
+                    }
             }
             .addOnFailureListener {
-                addBotMessage("Hubo un error al enviar el reporte. Por favor, intenta más tarde.")
+                addBotMessage("Error al validar la información del estudiante. Intenta de nuevo.")
             }
     }
 

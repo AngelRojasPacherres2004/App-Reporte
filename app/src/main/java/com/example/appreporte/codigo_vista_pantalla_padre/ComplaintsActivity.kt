@@ -106,6 +106,7 @@ class ComplaintsActivity : AppCompatActivity() {
 
     class ComplaintsAdapter(
         private var items: List<Map<String, String>>,
+        private var userRole: String = "docente",
         private val onStatusClick: (String) -> Unit
     ) : RecyclerView.Adapter<ComplaintsAdapter.ViewHolder>() {
 
@@ -115,6 +116,8 @@ class ComplaintsActivity : AppCompatActivity() {
             val tvContent: TextView = view.findViewById(R.id.tvComplaintContent)
             val tvStatus: TextView = view.findViewById(R.id.tvComplaintStatus)
             val btnStatus: MaterialButton = view.findViewById(R.id.btnChangeStatus)
+            val layoutResponse: View = view.findViewById(R.id.layoutResponse)
+            val tvResponse: TextView = view.findViewById(R.id.tvComplaintResponse)
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -124,10 +127,47 @@ class ComplaintsActivity : AppCompatActivity() {
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = items[position]
-            holder.tvTitle.text = item["post_title"]
-            holder.tvParent.text = "De: ${item["parent_email"]}"
-            holder.tvContent.text = item["content"]
-            holder.tvStatus.text = "Estado: ${item["status"]}"
+            val response = item["response"]
+            
+            // Si es usuario (padre), solo mostramos la respuesta del docente
+            if (userRole == "usuario") {
+                holder.tvTitle.text = "Respuesta del Docente"
+                holder.tvParent.visibility = View.GONE
+                holder.tvContent.visibility = View.GONE
+                holder.btnStatus.visibility = View.GONE
+                holder.tvStatus.visibility = View.GONE
+                
+                if (!response.isNullOrEmpty()) {
+                    holder.layoutResponse.visibility = View.VISIBLE
+                    holder.tvResponse.text = response
+                    holder.itemView.visibility = View.VISIBLE
+                    holder.itemView.layoutParams = RecyclerView.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    )
+                } else {
+                    // Si no hay respuesta, ocultamos todo el ítem para el padre
+                    holder.itemView.visibility = View.GONE
+                    holder.itemView.layoutParams = RecyclerView.LayoutParams(0, 0)
+                }
+            } else {
+                // Vista para Docente/Admin (completa)
+                holder.tvTitle.text = item["post_title"]
+                holder.tvParent.visibility = View.VISIBLE
+                holder.tvParent.text = "De: ${item["parent_email"]}"
+                holder.tvContent.visibility = View.VISIBLE
+                holder.tvContent.text = item["content"]
+                holder.tvStatus.visibility = View.VISIBLE
+                holder.tvStatus.text = "Estado: ${item["status"]}"
+                holder.btnStatus.visibility = View.VISIBLE
+
+                if (!response.isNullOrEmpty()) {
+                    holder.layoutResponse.visibility = View.VISIBLE
+                    holder.tvResponse.text = response
+                } else {
+                    holder.layoutResponse.visibility = View.GONE
+                }
+            }
             
             holder.btnStatus.setOnClickListener {
                 onStatusClick(item["id"] ?: "")
